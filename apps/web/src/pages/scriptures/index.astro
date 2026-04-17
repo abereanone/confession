@@ -1,5 +1,6 @@
 ---
 import Main from "../../layouts/Main.astro";
+import { BOOKS_BY_CODE } from "../../lib/bible/books";
 import { listConfessions } from "../../lib/confessions";
 import { listScriptureBookGroups, listScriptures } from "../../lib/scriptures";
 
@@ -7,11 +8,44 @@ const scriptureGroups = listScriptureBookGroups();
 const totalReferences = listScriptures().length;
 const confessions = listConfessions();
 const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, item.slug]));
+const oldTestamentGroups = scriptureGroups.filter(
+  (group) => BOOKS_BY_CODE.get(group.bookCode)?.testament === "ot"
+);
+const newTestamentGroups = scriptureGroups.filter(
+  (group) => BOOKS_BY_CODE.get(group.bookCode)?.testament === "nt"
+);
+const defaultTestament =
+  oldTestamentGroups.length > 0 ? "ot" : newTestamentGroups.length > 0 ? "nt" : "";
 ---
 
 <Main title="Scripture References">
   <h1>Scripture References</h1>
   <p>Every indexed scripture citation from the confessions, searchable by book/ref text.</p>
+
+  {scriptureGroups.length > 0 ? (
+    <div class="scripture-testament-picker" aria-label="Choose testament">
+      <button
+        type="button"
+        class:list={["scripture-testament-button", defaultTestament === "ot" && "is-active"]}
+        data-testament-button
+        data-testament-target="ot"
+        aria-pressed={defaultTestament === "ot" ? "true" : "false"}
+        disabled={oldTestamentGroups.length === 0}
+      >
+        Old Testament
+      </button>
+      <button
+        type="button"
+        class:list={["scripture-testament-button", defaultTestament === "nt" && "is-active"]}
+        data-testament-button
+        data-testament-target="nt"
+        aria-pressed={defaultTestament === "nt" ? "true" : "false"}
+        disabled={newTestamentGroups.length === 0}
+      >
+        New Testament
+      </button>
+    </div>
+  ) : null}
 
   <label for="scripture-filter">Filter references</label>
   <input
@@ -24,39 +58,117 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
   <p id="empty-state" hidden>No scripture references matched that filter.</p>
 
   {scriptureGroups.length > 0 ? (
-    <div class="scripture-groups">
-      {scriptureGroups.map((group) => (
-        <section class="book-group card-panel" data-scripture-group>
-          <header class="book-group-header">
-            <h2>{group.bookName}</h2>
-            <p class="meta">{group.entries.length === 1 ? "1 reference" : `${group.entries.length} references`}</p>
-          </header>
+    <div
+      class="scripture-index"
+      data-default-testament={defaultTestament}
+    >
+      <div
+        class="scripture-testament-panel"
+        data-testament-panel="ot"
+        hidden={defaultTestament !== "ot"}
+      >
+        <nav class="scripture-book-jump" aria-label="Jump to Old Testament book">
+          {oldTestamentGroups.map((group) => (
+            <a href={`#book-${group.bookCode}`} data-scripture-jump-link data-book-code={group.bookCode}>
+              {group.bookName}
+            </a>
+          ))}
+        </nav>
+        <div class="scripture-groups">
+          {oldTestamentGroups.map((group) => (
+            <section
+              class="book-group card-panel"
+              data-scripture-group
+              data-testament="ot"
+              id={`book-${group.bookCode}`}
+            >
+              <header class="book-group-header">
+                <h2>{group.bookName}</h2>
+                <p class="meta">{group.entries.length === 1 ? "1 reference" : `${group.entries.length} references`}</p>
+              </header>
 
-          <ul class="scripture-grid">
-            {group.entries.map((entry) => (
-              <li
-                class="scripture-item"
-                data-scripture-item
-                data-scripture-text={entry.searchText}
-              >
-                <a class="scripture-link" href={`/scriptures/${entry.slug}`}>
-                  {entry.reference}
-                </a>
-                <p class="meta">
-                  {entry.occurrenceCount} {entry.occurrenceCount === 1 ? "mention" : "mentions"}
-                </p>
-                <p class="confession-codes">
-                  {entry.confessionCodes.map((code) => (
-                    <span class="confession-badge" data-confession={confessionSlugByCode.get(code) ?? undefined}>
-                      {code}
-                    </span>
-                  ))}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+              <ul class="scripture-grid">
+                {group.entries.map((entry) => (
+                  <li
+                    class="scripture-item"
+                    data-scripture-item
+                    data-testament="ot"
+                    data-scripture-text={entry.searchText}
+                  >
+                    <a class="scripture-card card-panel" href={`/scriptures/${entry.slug}`}>
+                      <span class="scripture-reference">{entry.reference}</span>
+                      <span class="meta">
+                        {entry.occurrenceCount} {entry.occurrenceCount === 1 ? "mention" : "mentions"}
+                      </span>
+                      <span class="confession-codes">
+                        {entry.confessionCodes.map((code) => (
+                          <span class="confession-badge" data-confession={confessionSlugByCode.get(code) ?? undefined}>
+                            {code}
+                          </span>
+                        ))}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+
+      <div
+        class="scripture-testament-panel"
+        data-testament-panel="nt"
+        hidden={defaultTestament !== "nt"}
+      >
+        <nav class="scripture-book-jump" aria-label="Jump to New Testament book">
+          {newTestamentGroups.map((group) => (
+            <a href={`#book-${group.bookCode}`} data-scripture-jump-link data-book-code={group.bookCode}>
+              {group.bookName}
+            </a>
+          ))}
+        </nav>
+        <div class="scripture-groups">
+          {newTestamentGroups.map((group) => (
+            <section
+              class="book-group card-panel"
+              data-scripture-group
+              data-testament="nt"
+              id={`book-${group.bookCode}`}
+            >
+              <header class="book-group-header">
+                <h2>{group.bookName}</h2>
+                <p class="meta">{group.entries.length === 1 ? "1 reference" : `${group.entries.length} references`}</p>
+              </header>
+
+              <ul class="scripture-grid">
+                {group.entries.map((entry) => (
+                  <li
+                    class="scripture-item"
+                    data-scripture-item
+                    data-testament="nt"
+                    data-scripture-text={entry.searchText}
+                  >
+                    <a class="scripture-card card-panel" href={`/scriptures/${entry.slug}`}>
+                      <span class="scripture-reference">{entry.reference}</span>
+                      <span class="meta">
+                        {entry.occurrenceCount} {entry.occurrenceCount === 1 ? "mention" : "mentions"}
+                      </span>
+                      <span class="confession-codes">
+                        {entry.confessionCodes.map((code) => (
+                          <span class="confession-badge" data-confession={confessionSlugByCode.get(code) ?? undefined}>
+                            {code}
+                          </span>
+                        ))}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
     </div>
   ) : (
     <p><em>No scripture references are indexed yet.</em></p>
@@ -69,9 +181,14 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
   const emptyState = document.getElementById("empty-state");
   const groups = Array.from(document.querySelectorAll("[data-scripture-group]"));
   const items = Array.from(document.querySelectorAll("[data-scripture-item]"));
+  const buttons = Array.from(document.querySelectorAll("[data-testament-button]"));
+  const panels = Array.from(document.querySelectorAll("[data-testament-panel]"));
+  const jumpLinks = Array.from(document.querySelectorAll("[data-scripture-jump-link]"));
+  const index = document.querySelector("[data-default-testament]");
 
-  if (input instanceof HTMLInputElement && meta && emptyState) {
+  if (input instanceof HTMLInputElement && meta && emptyState && index instanceof HTMLElement) {
     const total = items.length;
+    let activeTestament = String(index.dataset.defaultTestament || "");
 
     const applyFilter = () => {
       const query = input.value.trim().toLowerCase();
@@ -79,7 +196,10 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
 
       items.forEach((item) => {
         const text = String(item.getAttribute("data-scripture-text") || "").toLowerCase();
-        const match = !query || text.includes(query);
+        const testament = String(item.getAttribute("data-testament") || "");
+        const matchesQuery = !query || text.includes(query);
+        const matchesTestament = !activeTestament || testament === activeTestament;
+        const match = matchesQuery && matchesTestament;
         item.hidden = !match;
         if (match) {
           visible += 1;
@@ -87,21 +207,123 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
       });
 
       groups.forEach((group) => {
+        const groupTestament = String(group.getAttribute("data-testament") || "");
         const hasVisible = Array.from(group.querySelectorAll("[data-scripture-item]")).some(
           (item) => !item.hidden
         );
-        group.hidden = !hasVisible;
+        group.hidden = !hasVisible || (!!activeTestament && groupTestament !== activeTestament);
+      });
+
+      jumpLinks.forEach((link) => {
+        const code = link.getAttribute("data-book-code");
+        if (!code) {
+          return;
+        }
+        const group = document.getElementById(`book-${code}`);
+        link.hidden = !(group instanceof HTMLElement) || group.hidden;
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.getAttribute("data-testament-panel") !== activeTestament;
       });
 
       meta.textContent = query ? `${visible} of ${total} shown` : `${total} total references`;
       emptyState.hidden = visible !== 0;
     };
 
+    const setActiveTestament = (target) => {
+      if (!target) {
+        return;
+      }
+
+      activeTestament = target;
+
+      buttons.forEach((button) => {
+        const isActive = button.getAttribute("data-testament-target") === target;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+
+      applyFilter();
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.hasAttribute("disabled")) {
+          return;
+        }
+        setActiveTestament(String(button.getAttribute("data-testament-target") || ""));
+      });
+    });
+
     input.addEventListener("input", applyFilter);
+    setActiveTestament(activeTestament);
   }
 </script>
 
 <style>
+  .scripture-testament-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.9rem 0 0.8rem;
+  }
+
+  .scripture-testament-button {
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .scripture-testament-button.is-active,
+  .scripture-testament-button:hover,
+  .scripture-testament-button:focus-visible {
+    background: var(--surface-bg-strong);
+    border-color: var(--surface-border-strong);
+    text-decoration: none;
+    outline: none;
+  }
+
+  .scripture-testament-button[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .scripture-testament-panel[hidden] {
+    display: none;
+  }
+
+  .scripture-book-jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.9rem 0 0.95rem;
+  }
+
+  .scripture-book-jump a {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    text-decoration: none;
+    color: var(--color-text);
+    background: var(--surface-bg-muted);
+    font-size: 0.9rem;
+  }
+
+  .scripture-book-jump a:hover,
+  .scripture-book-jump a:focus-visible {
+    background: var(--surface-bg-hover);
+    border-color: var(--surface-border-strong);
+    text-decoration: none;
+    outline: none;
+  }
+
   .scripture-groups {
     margin-top: 1rem;
     display: grid;
@@ -121,6 +343,10 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
     margin-bottom: 0.6rem;
   }
 
+  .book-group {
+    scroll-margin-top: 7.5rem;
+  }
+
   .book-group-header h2 {
     margin: 0;
   }
@@ -138,23 +364,29 @@ const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, 
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   }
 
-  .scripture-item {
+  .scripture-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-decoration: none;
+    height: 100%;
+    border-color: var(--surface-border);
     background: var(--surface-bg-muted);
-    border: 1px solid var(--surface-border);
-    border-radius: 10px;
-    padding: 0.6rem 0.7rem;
   }
 
-  .scripture-link {
-    font-weight: 600;
+  .scripture-card:hover,
+  .scripture-card:focus-visible {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
   }
 
-  .scripture-item p {
-    margin: 0.3rem 0 0;
+  .scripture-reference {
+    font-weight: 700;
+    color: var(--color-text);
   }
 
   .confession-codes {
-    margin-top: 0.35rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;

@@ -22,16 +22,6 @@ if (!confession) {
 
 const about = getConfessionAbout(confession);
 const displayUnitCount = getConfessionDisplayUnits(confession).length;
-const aboutSourceUrl =
-  confession.slug === "savoy-declaration"
-    ? "https://ccel.org/ccel/schaff/creeds3.v.i.i.html"
-    : confession.sourceUrl !== "TODO"
-      ? confession.sourceUrl
-    : confession.slug === "lbcf-1689"
-      ? "https://the1689.org/chapters/0"
-      : confession.slug === "westminster-confession"
-        ? "https://reformedstandards.com/westminster/epistle-to-the-reader.html"
-      : "";
 ---
 
 <Main title={`About ${confession.title}`}>
@@ -46,17 +36,6 @@ const aboutSourceUrl =
         in this confession.
       </p>
     </header>
-
-    <section class="card-panel about-card">
-      <h2>Source</h2>
-      <p>
-        {!aboutSourceUrl ? (
-          <em>Source URL has not been added yet.</em>
-        ) : (
-          <a class="confession-link" href={aboutSourceUrl} target="_blank" rel="noreferrer">{aboutSourceUrl}</a>
-        )}
-      </p>
-    </section>
 
     <section class="card-panel about-card">
       <h2>{about.title}</h2>

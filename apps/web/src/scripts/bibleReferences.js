@@ -15,6 +15,27 @@ function getVerseFromLookup(reference) {
   return lookup[normalizeLookupKey(reference)] || null;
 }
 
+function formatVersionLabel(version) {
+  const normalized = String(version || "").trim().toLowerCase();
+  if (!normalized) {
+    return "BSB";
+  }
+  if (normalized === "berean standard bible" || normalized === "bsb") {
+    return "BSB";
+  }
+  if (normalized === "king james version" || normalized === "kjv") {
+    return "KJV";
+  }
+  return String(version).trim();
+}
+
+function getTooltipText(verse) {
+  if (!verse) {
+    return "Verse not found.";
+  }
+  return `${verse.text} (${formatVersionLabel(verse.version)})`;
+}
+
 function ensureTooltip(element) {
   if (element.__tooltipElement) {
     const tooltip = element.__tooltipElement;
@@ -26,7 +47,7 @@ function ensureTooltip(element) {
   const verse = getVerseFromLookup(element.dataset.ref);
   const tooltip = document.createElement("div");
   tooltip.className = "bible-tooltip";
-  tooltip.textContent = verse ? `${verse.text} (${verse.version})` : "Verse not found.";
+  tooltip.textContent = getTooltipText(verse);
   document.body.appendChild(tooltip);
 
   element.__tooltipElement = tooltip;

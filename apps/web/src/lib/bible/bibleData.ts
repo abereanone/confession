@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +16,7 @@ type RawBibleData = Record<string, RawVerse[][]>;
 type BibleSourceConfig = {
   provider?: string;
   datasetPath?: string;
+  citedDatasetPath?: string;
 };
 
 export type BibleBookSummary = {
@@ -58,11 +60,30 @@ type LoadedBibleData = {
   sourcePath: string;
 };
 
+type CitedVerseEntry =
+  | string
+  | {
+      text?: string;
+      version?: string;
+    };
+
+type CitedBibleData = {
+  verses?: Record<string, CitedVerseEntry>;
+};
+
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(moduleDir, "../../../../..");
+const projectRootCandidates = [
+  path.resolve(moduleDir, "../../../../.."),
+  path.resolve(moduleDir, "../../../.."),
+];
+const projectRoot =
+  projectRootCandidates.find((candidate) =>
+    existsSync(path.join(candidate, "shared", "data", "bible-source.json"))
+  ) ?? projectRootCandidates[0];
 const sourceConfigPath = path.join(projectRoot, "shared", "data", "bible-source.json");
 
 let bibleDataPromise: Promise<LoadedBibleData> | null = null;
+let citedLookupPromise: Promise<Map<string, CitedVerseEntry>> | null = null;
 
 function normalizeLookupKey(reference: string): string {
   return normalizeReference(reference)
@@ -71,6 +92,52 @@ function normalizeLookupKey(reference: string): string {
     .replace(/\s+/g, " ")
     .replace(/[;,]\s*$/g, "")
     .trim();
+}
+
+function normalizeCitedLookupKey(reference: string): string {
+  return normalizeReference(reference)
+    .replace(/\|.*$/g, "")
+    .replace(/(\d+)\s+and\s+(\d+)/gi, "$1, $2")
+    .toLowerCase()
+    .replace(/\u2013|\u2014/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeVersionLabel(version: string): string {
+  const trimmed = String(version ?? "").trim();
+  if (!trimmed) {
+    return "BSB";
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (lower === "bsb" || lower === "berean standard bible") {
+    return "BSB";
+  }
+  if (lower === "kjv" || lower === "king james version") {
+    return "KJV";
+  }
+
+  return trimmed;
+}
+
+function toCitedVerseData(entry: CitedVerseEntry | undefined): { text: string; version: string } | null {
+  if (typeof entry === "string") {
+    const text = entry.trim();
+    return text ? { text, version: "BSB" } : null;
+  }
+
+  if (!entry || typeof entry !== "object" || typeof entry.text !== "string") {
+    return null;
+  }
+
+  const text = entry.text.trim();
+  if (!text) {
+    return null;
+  }
+
+  const version = normalizeVersionLabel(typeof entry.version === "string" ? entry.version : "BSB");
+  return { text, version };
 }
 
 function normalizeBookCode(value: string): string | null {
@@ -118,6 +185,49 @@ async function resolveBiblePath(config: BibleSourceConfig): Promise<string> {
   throw new Error(
     `Unable to locate bsb.json. Checked: ${fallbackPaths.join(", ")}`
   );
+}
+
+async function resolveCitedBiblePath(config: BibleSourceConfig): Promise<string | null> {
+  const configPath =
+    typeof config.citedDatasetPath === "string" && config.citedDatasetPath.trim()
+      ? path.resolve(path.dirname(sourceConfigPath), config.citedDatasetPath)
+      : "";
+
+  const fallbackPaths = [
+    configPath,
+    path.join(projectRoot, "shared", "data", "bible-cited.json"),
+    path.resolve(projectRoot, "..", "catechize.ing", "src", "generated", "bible-cited.json"),
+  ].filter(Boolean);
+
+  for (const targetPath of fallbackPaths) {
+    if (await fileExists(targetPath)) {
+      return targetPath;
+    }
+  }
+
+  return null;
+}
+
+async function getCitedLookup(): Promise<Map<string, CitedVerseEntry>> {
+  if (!citedLookupPromise) {
+    citedLookupPromise = (async () => {
+      const sourceConfig = await readBibleSourceConfig();
+      const citedPath = await resolveCitedBiblePath(sourceConfig);
+      if (!citedPath) {
+        return new Map<string, CitedVerseEntry>();
+      }
+
+      try {
+        const raw = await readFile(citedPath, "utf-8");
+        const parsed = JSON.parse(raw) as CitedBibleData;
+        return new Map<string, CitedVerseEntry>(Object.entries(parsed?.verses ?? {}));
+      } catch {
+        return new Map<string, CitedVerseEntry>();
+      }
+    })();
+  }
+
+  return citedLookupPromise;
 }
 
 async function loadBibleData(): Promise<LoadedBibleData> {
@@ -267,6 +377,16 @@ export async function resolveBibleReference(
 export async function getVerseByReference(
   rawReference: string
 ): Promise<VerseData | null> {
+  const citedLookup = await getCitedLookup();
+  const citedVerse = toCitedVerseData(citedLookup.get(normalizeCitedLookupKey(rawReference)));
+  if (citedVerse) {
+    return {
+      reference: String(rawReference ?? "").trim(),
+      text: citedVerse.text,
+      version: citedVerse.version,
+    };
+  }
+
   const resolved = await resolveBibleReference(rawReference);
   if (!resolved || resolved.verse === null) {
     return null;
@@ -282,7 +402,7 @@ export async function getVerseByReference(
   return {
     reference: verse.reference,
     text: verse.text,
-    version: data.provider || "BSB",
+    version: normalizeVersionLabel(data.provider || "BSB"),
   };
 }
 

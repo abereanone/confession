@@ -104,11 +104,9 @@ const nextChapterHref = nextTarget
 ---
 
 <Main title="Bible Reader">
-  <h1>Bible Reader (BSB)</h1>
-  <p class="meta">Source: {provider}</p>
-
+  <h1>Bible Reader ({provider})</h1>
   <details class="reader-tools card-panel" open>
-    <summary>Reader Tools</summary>
+    <summary>Show/Hide Reader Tools</summary>
     <section class="controls">
       <form method="get" action="/bible" class="control-group" data-chapter-form>
         <label for="book">Book</label>
@@ -150,8 +148,12 @@ const nextChapterHref = nextTarget
     <header class="chapter-header">
       <h2>{selectedBookName} {selectedChapter}</h2>
       <div class="chapter-nav">
-        {previousChapterHref ? <a href={previousChapterHref}>Previous</a> : <span class="meta">Previous</span>}
-        {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="meta">Next</span>}
+        {previousChapterHref ? (
+          <a href={previousChapterHref}>Previous</a>
+        ) : (
+          <span class="chapter-nav-disabled">Previous</span>
+        )}
+        {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="chapter-nav-disabled">Next</span>}
       </div>
     </header>
 
@@ -169,6 +171,15 @@ const nextChapterHref = nextTarget
     ) : (
       <p><em>No verses available for this chapter.</em></p>
     )}
+
+    <div class="chapter-nav chapter-nav-bottom">
+      {previousChapterHref ? (
+        <a href={previousChapterHref}>Previous</a>
+      ) : (
+        <span class="chapter-nav-disabled">Previous</span>
+      )}
+      {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="chapter-nav-disabled">Next</span>}
+    </div>
   </section>
 
   {query ? (
@@ -323,7 +334,7 @@ const nextChapterHref = nextTarget
   .chapter-header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
   }
@@ -335,6 +346,36 @@ const nextChapterHref = nextTarget
   .chapter-nav {
     display: flex;
     gap: 0.8rem;
+    align-items: center;
+  }
+
+  .chapter-nav a,
+  .chapter-nav-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6.2rem;
+    padding: 0.42rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .chapter-nav a:hover,
+  .chapter-nav a:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg);
+  }
+
+  .chapter-nav-disabled {
+    opacity: 0.58;
+  }
+
+  .chapter-nav-bottom {
+    margin-top: 0.8rem;
   }
 
   .verse-list {
@@ -342,11 +383,12 @@ const nextChapterHref = nextTarget
     padding-left: 0;
     list-style: none;
     display: grid;
-    gap: 0.45rem;
+    gap: 0.1rem;
   }
 
   .verse-item {
-    padding: 0.35rem 0.45rem;
+    padding: 0.1rem 0.45rem;
+    line-height: 1.22;
     border-radius: 8px;
     scroll-margin-top: 6.5rem;
   }

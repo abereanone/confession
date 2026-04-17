@@ -55,15 +55,6 @@ const verseLookup = await getVerseLookup([...references]);
         <span>{confession.title}</span>
       </h1>
       <p class="confession-meta-line">
-        <span>
-          Source:
-          {confession.sourceUrl === "TODO" ? (
-            <em> add source URL</em>
-          ) : (
-            <a class="confession-link" href={confession.sourceUrl} target="_blank" rel="noreferrer">{confession.sourceUrl}</a>
-          )}
-        </span>
-        <span class="meta-sep">|</span>
         <a class="confession-link" href={`/confessions/${confession.slug}/about`}>About this confession</a>
       </p>
     </section>
@@ -194,10 +185,6 @@ const verseLookup = await getVerseLookup([...references]);
     flex-wrap: wrap;
     gap: 0.45rem;
     align-items: center;
-  }
-
-  .meta-sep {
-    color: var(--color-muted);
   }
 
   input[type="search"] {

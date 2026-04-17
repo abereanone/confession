@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "npm run dev:web",
+    "build": "npm run build:web",
     "import:symbolics": "node ./scripts/import-symbolics-confessions.mjs",
     "sync:data": "node ./scripts/sync-shared-data.mjs",
     "dev:web": "npm --workspace @confessions-hub/web run dev",
