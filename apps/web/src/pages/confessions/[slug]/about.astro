@@ -1,0 +1,109 @@
+---
+import Main from "../../../layouts/Main.astro";
+import {
+  findConfession,
+  getConfessionAbout,
+  getConfessionDisplayUnits,
+  listConfessions,
+} from "../../../lib/confessions";
+
+export function getStaticPaths() {
+  return listConfessions().map((item) => ({
+    params: { slug: item.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const confession = findConfession(String(slug));
+
+if (!confession) {
+  return Astro.redirect("/confessions");
+}
+
+const about = getConfessionAbout(confession);
+const displayUnitCount = getConfessionDisplayUnits(confession).length;
+const aboutSourceUrl =
+  confession.slug === "savoy-declaration"
+    ? "https://ccel.org/ccel/schaff/creeds3.v.i.i.html"
+    : confession.sourceUrl !== "TODO"
+      ? confession.sourceUrl
+    : confession.slug === "lbcf-1689"
+      ? "https://the1689.org/chapters/0"
+      : confession.slug === "westminster-confession"
+        ? "https://reformedstandards.com/westminster/epistle-to-the-reader.html"
+      : "";
+---
+
+<Main title={`About ${confession.title}`}>
+  <section class="about-page" data-confession={confession.slug}>
+    <header class="about-header">
+      <h1>
+        <span class="confession-badge">{confession.shortCode}</span>
+        <span>About {confession.title}</span>
+      </h1>
+      <p class="meta">
+        {displayUnitCount} {displayUnitCount === 1 ? confession.unitLabel.toLowerCase() : `${confession.unitLabel.toLowerCase()}s`}
+        in this confession.
+      </p>
+    </header>
+
+    <section class="card-panel about-card">
+      <h2>Source</h2>
+      <p>
+        {!aboutSourceUrl ? (
+          <em>Source URL has not been added yet.</em>
+        ) : (
+          <a class="confession-link" href={aboutSourceUrl} target="_blank" rel="noreferrer">{aboutSourceUrl}</a>
+        )}
+      </p>
+    </section>
+
+    <section class="card-panel about-card">
+      <h2>{about.title}</h2>
+      {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+    </section>
+
+    <p class="back-link">
+      <a class="confession-link" href={`/confessions/${confession.slug}`}>Back to confession text</a>
+    </p>
+  </section>
+</Main>
+
+<style>
+  .about-page {
+    border: 1px solid var(--confession-accent-border, var(--surface-border));
+    border-radius: 14px;
+    padding: 0.8rem;
+    background:
+      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 30%),
+      transparent;
+  }
+
+  .about-header h1 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+  }
+
+  .about-header p {
+    margin-top: 0;
+  }
+
+  .about-card {
+    margin-top: 0.75rem;
+    border-color: var(--confession-accent-border, var(--card-border));
+    background:
+      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 55%),
+      var(--card-bg);
+  }
+
+  .about-card p:last-child {
+    margin-bottom: 0;
+  }
+
+  .back-link {
+    margin-top: 0.8rem;
+  }
+</style>

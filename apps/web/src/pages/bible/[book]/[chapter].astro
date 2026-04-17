@@ -1,0 +1,404 @@
+---
+import Main from "../../../layouts/Main.astro";
+import {
+  getBibleProviderName,
+  getBibleChapter,
+  listBibleBooks,
+  resolveBibleReference,
+  searchBible,
+} from "../../../lib/bible/bibleData";
+
+export async function getStaticPaths() {
+  const books = await listBibleBooks();
+  return books.flatMap((book) =>
+    Array.from({ length: book.chapterCount }, (_value, index) => ({
+      params: {
+        book: book.code,
+        chapter: String(index + 1),
+      },
+    }))
+  );
+}
+
+const query = String(Astro.url.searchParams.get("q") ?? "").trim();
+const refQuery = String(Astro.url.searchParams.get("ref") ?? "").trim();
+const requestedBook = String(Astro.params.book ?? "").trim().toLowerCase();
+const requestedChapter = Number.parseInt(String(Astro.params.chapter ?? ""), 10);
+
+let provider = "BSB";
+let books: Awaited<ReturnType<typeof listBibleBooks>> = [];
+let selectedBookCode = "";
+let selectedBookName = "";
+let selectedChapter = 1;
+let chapterCount = 1;
+let chapterVerses: Awaited<ReturnType<typeof getBibleChapter>> = [];
+let searchResults: Awaited<ReturnType<typeof searchBible>> = [];
+let targetVerse = 0;
+let selectedBookIndex = -1;
+
+provider = await getBibleProviderName();
+books = await listBibleBooks();
+
+if (books.length > 0) {
+  const fallbackBook = books[0]?.code ?? "";
+  const candidateBook =
+    books.some((book) => book.code === requestedBook) ? requestedBook : fallbackBook;
+  const selectedBook = books.find((book) => book.code === candidateBook) ?? books[0];
+  selectedBookIndex = books.findIndex((book) => book.code === selectedBook?.code);
+
+  selectedBookCode = selectedBook?.code ?? fallbackBook;
+  selectedBookName = selectedBook?.name ?? "";
+  chapterCount = selectedBook?.chapterCount ?? 1;
+
+  const candidateChapter = Number.isFinite(requestedChapter) ? requestedChapter : 1;
+  selectedChapter = Math.min(Math.max(candidateChapter, 1), Math.max(chapterCount, 1));
+
+  chapterVerses = await getBibleChapter(selectedBookCode, selectedChapter);
+
+  if (refQuery) {
+    const resolvedRef = await resolveBibleReference(refQuery);
+    if (
+      resolvedRef &&
+      resolvedRef.bookCode === selectedBookCode &&
+      resolvedRef.chapter === selectedChapter &&
+      resolvedRef.verse
+    ) {
+      targetVerse = resolvedRef.verse;
+    }
+  }
+}
+
+if (query) {
+  searchResults = await searchBible(query, 250);
+}
+
+let previousTarget: { bookCode: string; chapter: number } | null = null;
+let nextTarget: { bookCode: string; chapter: number } | null = null;
+
+if (selectedBookCode && books.length > 0 && selectedBookIndex >= 0) {
+  if (selectedChapter > 1) {
+    previousTarget = { bookCode: selectedBookCode, chapter: selectedChapter - 1 };
+  } else if (selectedBookIndex > 0) {
+    const previousBook = books[selectedBookIndex - 1];
+    if (previousBook) {
+      previousTarget = { bookCode: previousBook.code, chapter: previousBook.chapterCount };
+    }
+  }
+
+  if (selectedChapter < chapterCount) {
+    nextTarget = { bookCode: selectedBookCode, chapter: selectedChapter + 1 };
+  } else if (selectedBookIndex < books.length - 1) {
+    const nextBook = books[selectedBookIndex + 1];
+    if (nextBook) {
+      nextTarget = { bookCode: nextBook.code, chapter: 1 };
+    }
+  }
+}
+
+const previousChapterHref = previousTarget
+  ? `/bible/${previousTarget.bookCode}/${previousTarget.chapter}`
+  : "";
+const nextChapterHref = nextTarget
+  ? `/bible/${nextTarget.bookCode}/${nextTarget.chapter}`
+  : "";
+---
+
+<Main title="Bible Reader">
+  <h1>Bible Reader (BSB)</h1>
+  <p class="meta">Source: {provider}</p>
+
+  <details class="reader-tools card-panel" open>
+    <summary>Reader Tools</summary>
+    <section class="controls">
+      <form method="get" action="/bible" class="control-group" data-chapter-form>
+        <label for="book">Book</label>
+        <select id="book" name="book" data-book-select>
+          {books.map((book) => (
+            <option value={book.code} selected={book.code === selectedBookCode}>
+              {book.name}
+            </option>
+          ))}
+        </select>
+        <label for="chapter">Chapter</label>
+        <input
+          id="chapter"
+          type="number"
+          name="chapter"
+          min="1"
+          max={chapterCount}
+          value={selectedChapter}
+          data-chapter-input
+        />
+        <button type="submit">Go</button>
+      </form>
+
+      <form method="get" action="/bible" class="control-group" data-reference-form>
+        <label for="ref">Reference jump</label>
+        <input id="ref" type="text" name="ref" placeholder="e.g. John 3:16" value={refQuery} data-reference-input />
+        <button type="submit">Open</button>
+      </form>
+
+      <form method="get" class="control-group" action={`/bible/${selectedBookCode}/${selectedChapter}`}>
+        <label for="q">Search text or verse</label>
+        <input id="q" type="search" name="q" placeholder="e.g. in the beginning" value={query} />
+        <button type="submit">Search</button>
+      </form>
+    </section>
+  </details>
+
+  <section class="card-panel section-spacer">
+    <header class="chapter-header">
+      <h2>{selectedBookName} {selectedChapter}</h2>
+      <div class="chapter-nav">
+        {previousChapterHref ? <a href={previousChapterHref}>Previous</a> : <span class="meta">Previous</span>}
+        {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="meta">Next</span>}
+      </div>
+    </header>
+
+    {chapterVerses.length > 0 ? (
+      <ol class="verse-list">
+        {chapterVerses.map((verse) => (
+          <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
+            <a href={`#verse-${verse.verse}`} class="verse-ref">
+              {verse.verse}
+            </a>
+            <span>{verse.text}</span>
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <p><em>No verses available for this chapter.</em></p>
+    )}
+  </section>
+
+  {query ? (
+    <section class="card-panel section-spacer">
+      <h2>Search Results</h2>
+      <p class="meta">{searchResults.length} results shown for "{query}"</p>
+
+      {searchResults.length > 0 ? (
+        <ul class="search-results">
+          {searchResults.map((result) => (
+            <li>
+              <a href={`/bible/${result.bookCode}/${result.chapter}#verse-${result.verse}`}>{result.reference}</a>
+              <p>{result.text}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+      <p><em>No verses matched that search.</em></p>
+      )}
+    </section>
+  ) : null}
+
+  <script is:inline>
+    (() => {
+      const parseVerseTarget = () => {
+        const params = new URLSearchParams(window.location.search);
+        const refValue = String(params.get("ref") || "").trim();
+        if (refValue) {
+          const normalized = refValue
+            .toLowerCase()
+            .replace(/\./g, "")
+            .replace(/\u2013|\u2014/g, "-")
+            .replace(/\s+/g, " ")
+            .trim();
+          const match = normalized.match(/^(.+?)\s+(\d+)(?::(\d+(?:-\d+)?))?$/);
+          if (match) {
+            const chapterFromRef = Number.parseInt(String(match[2] || ""), 10);
+            const versePart = String(match[3] || "");
+            const verseFromRef = versePart ? Number.parseInt(versePart.split("-")[0] || "", 10) : NaN;
+            if (Number.isFinite(verseFromRef) && verseFromRef > 0) {
+              return verseFromRef;
+            }
+            const pathParts = window.location.pathname.split("/").filter(Boolean);
+            const currentChapter = Number.parseInt(pathParts[pathParts.length - 1] || "", 10);
+            if (Number.isFinite(chapterFromRef) && Number.isFinite(currentChapter) && currentChapter === 1) {
+              return chapterFromRef;
+            }
+          }
+        }
+
+        const hashMatch = window.location.hash.match(/^#verse-(\d+)$/);
+        if (hashMatch) {
+          const hashVerse = Number.parseInt(hashMatch[1] || "", 10);
+          if (Number.isFinite(hashVerse) && hashVerse > 0) {
+            return hashVerse;
+          }
+        }
+
+        return NaN;
+      };
+
+      const highlightVerse = (verseNumber) => {
+        if (!Number.isFinite(verseNumber) || verseNumber < 1) {
+          return;
+        }
+
+        const target = document.getElementById(`verse-${verseNumber}`);
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+
+        target.classList.add("is-target", "is-target-flash");
+
+        const header = document.querySelector(".top");
+        const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerHeight - 12;
+
+        const rect = target.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top;
+        const absoluteBottom = window.scrollY + rect.bottom;
+        const visibleTop = window.scrollY + headerHeight + 8;
+        const visibleBottom = window.scrollY + window.innerHeight - 16;
+        const isVisible = absoluteTop >= visibleTop && absoluteBottom <= visibleBottom;
+
+        if (!isVisible) {
+          window.scrollTo({
+            top: Math.max(targetTop, 0),
+            behavior: "smooth",
+          });
+        }
+
+        window.setTimeout(() => {
+          target.classList.remove("is-target-flash");
+        }, 1400);
+      };
+
+      const verseTarget = parseVerseTarget();
+      highlightVerse(verseTarget);
+    })();
+  </script>
+</Main>
+
+<style>
+  .section-spacer {
+    margin-top: 1rem;
+  }
+
+  .controls {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+  }
+
+  .reader-tools summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-link);
+    list-style: none;
+  }
+
+  .reader-tools summary:hover,
+  .reader-tools summary:focus-visible {
+    color: var(--color-link-hover);
+  }
+
+  .reader-tools summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .reader-tools summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.45rem;
+    transition: transform 0.15s ease;
+  }
+
+  .reader-tools[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  .control-group {
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .control-group label {
+    font-weight: 600;
+  }
+
+  .chapter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .chapter-header h2 {
+    margin: 0;
+  }
+
+  .chapter-nav {
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  .verse-list {
+    margin: 0.9rem 0 0;
+    padding-left: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .verse-item {
+    padding: 0.35rem 0.45rem;
+    border-radius: 8px;
+    scroll-margin-top: 6.5rem;
+  }
+
+  .verse-item.is-target {
+    background: rgba(255, 232, 107, 0.72);
+    border: 1px solid rgba(232, 179, 35, 0.58);
+    box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.26);
+  }
+
+  .verse-item:target {
+    background: rgba(255, 232, 107, 0.72);
+    border: 1px solid rgba(232, 179, 35, 0.58);
+    box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.26);
+  }
+
+  .verse-item.is-target-flash {
+    animation: verse-target-pulse 1.2s ease-out 1;
+  }
+
+  @keyframes verse-target-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(232, 179, 35, 0.6);
+    }
+    100% {
+      box-shadow: 0 0 0 10px rgba(232, 179, 35, 0);
+    }
+  }
+
+  .verse-ref {
+    display: inline-block;
+    min-width: 1.6rem;
+    font-weight: 700;
+    margin-right: 0.45rem;
+  }
+
+  .search-results {
+    list-style: none;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .search-results li {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    padding: 0.6rem 0.7rem;
+  }
+
+  .search-results li p {
+    margin: 0.35rem 0 0;
+  }
+</style>

@@ -1,0 +1,99 @@
+---
+import Main from "../../layouts/Main.astro";
+---
+
+<Main title="Bible Reader">
+  <h1>Bible Reader (BSB)</h1>
+  <p class="meta">Opening the reader...</p>
+  <p><a href="/bible/gen/1">Continue to Genesis 1</a></p>
+</Main>
+
+<script>
+  import bookMap from "../../lib/bible/bookMap.json";
+  import { normalizeReference } from "../../lib/bible/normalizeRef";
+
+  (() => {
+    const normalizeToken = (value) =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/\./g, "")
+        .replace(/\s*:\s*/g, ":")
+        .replace(/\s*-\s*/g, "-")
+        .replace(/[()]/g, "")
+        .replace(/\u2013|\u2014/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const bookLookup = bookMap;
+    const validBookCodes = new Set(Object.values(bookLookup).map((value) => String(value)));
+
+    const resolveBookCode = (value) => {
+      const token = normalizeToken(value);
+      if (!token) {
+        return "";
+      }
+      if (validBookCodes.has(token)) {
+        return token;
+      }
+      return String(bookLookup[token] || "");
+    };
+
+    const resolveRefTarget = (reference) => {
+      const normalizedReference = normalizeToken(normalizeReference(String(reference || "")));
+      const match = normalizedReference.match(/^(.+?)\s+(\d+)(?::(\d+(?:-\d+)?))?$/);
+      if (!match) {
+        return null;
+      }
+
+      const resolvedBook = resolveBookCode(match[1]);
+      const resolvedChapter = Number.parseInt(String(match[2] || ""), 10);
+      const verseChunk = String(match[3] || "");
+      const resolvedVerse = verseChunk
+        ? Number.parseInt(verseChunk.split("-")[0] || "", 10)
+        : NaN;
+
+      if (!resolvedBook || !Number.isFinite(resolvedChapter) || resolvedChapter < 1) {
+        return null;
+      }
+
+      return {
+        book: resolvedBook,
+        chapter: resolvedChapter,
+        verse: Number.isFinite(resolvedVerse) && resolvedVerse > 0 ? resolvedVerse : 0,
+      };
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const query = String(params.get("q") || "").trim();
+    const ref = String(params.get("ref") || "").trim();
+    const rawBook = params.get("book") || "gen";
+    let book = resolveBookCode(rawBook) || "gen";
+    let chapter = Number.parseInt(String(params.get("chapter") || "1"), 10);
+    if (!Number.isFinite(chapter) || chapter < 1) {
+      chapter = 1;
+    }
+    let targetVerse = 0;
+
+    if (ref) {
+      const resolvedTarget = resolveRefTarget(ref);
+      if (resolvedTarget) {
+        book = resolvedTarget.book;
+        chapter = resolvedTarget.chapter;
+        targetVerse = resolvedTarget.verse;
+      }
+    }
+
+    let target = `/bible/${encodeURIComponent(book)}/${chapter}`;
+    if (query) {
+      target += `?q=${encodeURIComponent(query)}`;
+    }
+    if (ref) {
+      target += query ? `&ref=${encodeURIComponent(ref)}` : `?ref=${encodeURIComponent(ref)}`;
+    }
+    if (targetVerse > 0) {
+      target += `#verse-${targetVerse}`;
+    }
+
+    window.location.replace(target);
+  })();
+</script>

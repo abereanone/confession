@@ -1,0 +1,108 @@
+---
+import Main from "../../layouts/Main.astro";
+import { findScripture, listScriptures } from "../../lib/scriptures";
+import { getVerseByReference } from "../../lib/bible/bibleData";
+
+export function getStaticPaths() {
+  return listScriptures().map((entry) => ({
+    params: { scripture: entry.slug },
+  }));
+}
+
+const scriptureParam = String(Astro.params.scripture ?? "");
+const entry = findScripture(scriptureParam);
+
+if (!entry) {
+  return Astro.redirect("/scriptures");
+}
+
+const verse = await getVerseByReference(entry.reference);
+---
+
+<Main title={`${entry.reference} | Scripture References`}>
+  <h1>{entry.reference}</h1>
+
+  <section class="card-panel">
+    <h2>Verse</h2>
+    {verse ? (
+      <p>{verse.text} ({verse.version})</p>
+    ) : (
+      <p><em>No single verse preview is available for this reference.</em></p>
+    )}
+  </section>
+
+  <section class="card-panel section-spacer">
+    <h2>Used In Confessions</h2>
+    <p class="meta">
+      {entry.occurrenceCount} mentions across {entry.confessionCount} confessions
+    </p>
+
+    {entry.locations.length > 0 ? (
+      <ul class="location-list">
+        {entry.locations.map((location) => (
+          <li class="location-item" data-confession={location.confessionSlug}>
+            <a
+              class="confession-link location-link"
+              href={`/confessions/${location.confessionSlug}?ref=${encodeURIComponent(entry.reference)}#${
+                location.confessionSlug === "belgic-confession"
+                  ? `unit-${location.unitNumber}`
+                  : `para-${location.unitNumber}-${location.paragraphNumber}`
+              }`}
+            >
+              <span class="confession-badge">{location.confessionShortCode}</span>
+              <span>{location.confessionTitle}</span>
+            </a>
+            <p class="meta">
+              {location.unitLabel} {location.unitNumber}
+              {location.confessionSlug === "belgic-confession"
+                ? ""
+                : `, paragraph ${location.paragraphNumber}`}
+              : {location.unitTitle}
+            </p>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p><em>No linked confession chapters found.</em></p>
+    )}
+  </section>
+
+  <p class="back-link"><a href="/scriptures">Back to Scripture References</a></p>
+</Main>
+
+<style>
+  .section-spacer {
+    margin-top: 1rem;
+  }
+
+  .location-list {
+    list-style: none;
+    margin: 0.8rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .location-item {
+    border: 1px solid var(--surface-border);
+    border-left-width: 4px;
+    border-left-color: var(--confession-accent-border, var(--surface-border-strong));
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    padding: 0.6rem 0.7rem;
+  }
+
+  .location-link {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .location-item p {
+    margin: 0.25rem 0 0;
+  }
+
+  .back-link {
+    margin-top: 0.9rem;
+  }
+</style>

@@ -1,0 +1,166 @@
+---
+import Main from "../../layouts/Main.astro";
+import { listConfessions } from "../../lib/confessions";
+import { listScriptureBookGroups, listScriptures } from "../../lib/scriptures";
+
+const scriptureGroups = listScriptureBookGroups();
+const totalReferences = listScriptures().length;
+const confessions = listConfessions();
+const confessionSlugByCode = new Map(confessions.map((item) => [item.shortCode, item.slug]));
+---
+
+<Main title="Scripture References">
+  <h1>Scripture References</h1>
+  <p>Every indexed scripture citation from the confessions, searchable by book/ref text.</p>
+
+  <label for="scripture-filter">Filter references</label>
+  <input
+    id="scripture-filter"
+    type="search"
+    placeholder="Try: romans 8 or psalm 19"
+    autocomplete="off"
+  />
+  <p id="results-meta" class="meta">{totalReferences} total references</p>
+  <p id="empty-state" hidden>No scripture references matched that filter.</p>
+
+  {scriptureGroups.length > 0 ? (
+    <div class="scripture-groups">
+      {scriptureGroups.map((group) => (
+        <section class="book-group card-panel" data-scripture-group>
+          <header class="book-group-header">
+            <h2>{group.bookName}</h2>
+            <p class="meta">{group.entries.length === 1 ? "1 reference" : `${group.entries.length} references`}</p>
+          </header>
+
+          <ul class="scripture-grid">
+            {group.entries.map((entry) => (
+              <li
+                class="scripture-item"
+                data-scripture-item
+                data-scripture-text={entry.searchText}
+              >
+                <a class="scripture-link" href={`/scriptures/${entry.slug}`}>
+                  {entry.reference}
+                </a>
+                <p class="meta">
+                  {entry.occurrenceCount} {entry.occurrenceCount === 1 ? "mention" : "mentions"}
+                </p>
+                <p class="confession-codes">
+                  {entry.confessionCodes.map((code) => (
+                    <span class="confession-badge" data-confession={confessionSlugByCode.get(code) ?? undefined}>
+                      {code}
+                    </span>
+                  ))}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <p><em>No scripture references are indexed yet.</em></p>
+  )}
+</Main>
+
+<script>
+  const input = document.getElementById("scripture-filter");
+  const meta = document.getElementById("results-meta");
+  const emptyState = document.getElementById("empty-state");
+  const groups = Array.from(document.querySelectorAll("[data-scripture-group]"));
+  const items = Array.from(document.querySelectorAll("[data-scripture-item]"));
+
+  if (input instanceof HTMLInputElement && meta && emptyState) {
+    const total = items.length;
+
+    const applyFilter = () => {
+      const query = input.value.trim().toLowerCase();
+      let visible = 0;
+
+      items.forEach((item) => {
+        const text = String(item.getAttribute("data-scripture-text") || "").toLowerCase();
+        const match = !query || text.includes(query);
+        item.hidden = !match;
+        if (match) {
+          visible += 1;
+        }
+      });
+
+      groups.forEach((group) => {
+        const hasVisible = Array.from(group.querySelectorAll("[data-scripture-item]")).some(
+          (item) => !item.hidden
+        );
+        group.hidden = !hasVisible;
+      });
+
+      meta.textContent = query ? `${visible} of ${total} shown` : `${total} total references`;
+      emptyState.hidden = visible !== 0;
+    };
+
+    input.addEventListener("input", applyFilter);
+  }
+</script>
+
+<style>
+  .scripture-groups {
+    margin-top: 1rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  #scripture-filter {
+    width: min(34rem, 100%);
+    margin-top: 0.2rem;
+  }
+
+  .book-group-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .book-group-header h2 {
+    margin: 0;
+  }
+
+  .book-group-header p {
+    margin: 0;
+  }
+
+  .scripture-grid {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+
+  .scripture-item {
+    background: var(--surface-bg-muted);
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
+  }
+
+  .scripture-link {
+    font-weight: 600;
+  }
+
+  .scripture-item p {
+    margin: 0.3rem 0 0;
+  }
+
+  .confession-codes {
+    margin-top: 0.35rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  #empty-state {
+    color: var(--color-muted);
+  }
+</style>

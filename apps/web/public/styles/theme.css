@@ -1,0 +1,273 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  --font-body: "Source Sans 3", sans-serif;
+  --font-heading: "Cormorant Garamond", serif;
+  --color-bg: #0f1712;
+  --color-text: #dce7dc;
+  --color-heading: #f2f8f0;
+  --color-muted: #95a697;
+  --color-link: #8fbc8a;
+  --color-link-hover: #b3d2ac;
+  --color-nav-bg: rgba(12, 21, 15, 0.94);
+  --surface-border: rgba(120, 157, 123, 0.24);
+  --surface-border-strong: rgba(161, 196, 158, 0.42);
+  --surface-bg-muted: rgba(196, 223, 196, 0.05);
+  --surface-bg-strong: rgba(49, 83, 56, 0.24);
+  --surface-bg-hover: rgba(68, 111, 74, 0.22);
+  --card-bg: linear-gradient(180deg, rgba(23, 38, 27, 0.94), rgba(14, 24, 17, 0.98));
+  --card-border: rgba(120, 157, 123, 0.2);
+  --card-hover-border: rgba(161, 196, 158, 0.38);
+  --input-bg: #17231a;
+  --input-border: rgba(120, 157, 123, 0.22);
+  --input-text: #edf5ea;
+  --input-placeholder: #9eb09f;
+  --button-bg: #244431;
+  --button-bg-hover: #315942;
+  --button-border: rgba(161, 196, 158, 0.36);
+  --button-text: #ffffff;
+  --tooltip-bg: rgba(244, 248, 241, 0.98);
+  --tooltip-text: #152018;
+  --tooltip-border: rgba(73, 104, 78, 0.28);
+  --shadow-card: 0 18px 32px rgba(0, 0, 0, 0.22);
+  --shadow-card-hover: 0 22px 38px rgba(0, 0, 0, 0.28);
+  --shadow-tooltip: 0 18px 38px rgba(10, 8, 6, 0.42);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #e6eee6;
+  --color-text: #1f2d22;
+  --color-heading: #152018;
+  --color-muted: #5f7363;
+  --color-link: #2f5a37;
+  --color-link-hover: #214127;
+  --color-nav-bg: rgba(239, 247, 239, 0.92);
+  --surface-border: rgba(73, 104, 78, 0.18);
+  --surface-border-strong: rgba(73, 104, 78, 0.32);
+  --surface-bg-muted: rgba(73, 104, 78, 0.05);
+  --surface-bg-strong: rgba(73, 104, 78, 0.12);
+  --surface-bg-hover: rgba(73, 104, 78, 0.18);
+  --card-bg: linear-gradient(180deg, rgba(250, 253, 249, 0.98), rgba(231, 240, 231, 0.98));
+  --card-border: rgba(73, 104, 78, 0.16);
+  --card-hover-border: rgba(47, 90, 55, 0.28);
+  --input-bg: #f7fbf7;
+  --input-border: rgba(73, 104, 78, 0.18);
+  --input-text: #213024;
+  --input-placeholder: rgba(39, 59, 43, 0.52);
+  --button-bg: #2f5a37;
+  --button-bg-hover: #214127;
+  --button-border: rgba(47, 90, 55, 0.34);
+  --button-text: #f2f8f0;
+  --tooltip-bg: rgba(18, 32, 22, 0.97);
+  --tooltip-text: #f2f8f0;
+  --tooltip-border: rgba(120, 157, 123, 0.28);
+  --shadow-card: 0 16px 28px rgba(21, 33, 24, 0.12);
+  --shadow-card-hover: 0 20px 34px rgba(21, 33, 24, 0.16);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(88, 131, 93, 0.16), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(28, 63, 37, 0.16), transparent 28%),
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-heading);
+  font-family: var(--font-heading);
+  line-height: 1.15;
+  margin-top: 1.3rem;
+  margin-bottom: 0.75rem;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input[type="search"],
+input[type="text"],
+input[type="number"],
+select {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+
+input::placeholder {
+  color: var(--input-placeholder);
+}
+
+button {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+button:hover,
+button:focus-visible {
+  background: var(--button-bg-hover);
+}
+
+.card-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.card-panel:hover,
+.card-panel:focus-within {
+  border-color: var(--card-hover-border);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.bible-ref {
+  color: var(--color-link);
+  cursor: pointer;
+  border-bottom: 1px dotted currentColor;
+}
+
+.bible-ref:hover,
+.bible-ref:focus-visible {
+  color: var(--color-link-hover);
+  border-bottom-style: solid;
+  outline: none;
+}
+
+.bible-tooltip {
+  display: none;
+  position: absolute;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  max-width: 420px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  box-shadow: var(--shadow-tooltip);
+  border: 1px solid var(--tooltip-border);
+  z-index: 2000;
+}
+
+.meta {
+  color: var(--color-muted);
+}
+
+.confession-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--confession-accent-border, var(--surface-border-strong));
+  background: var(--confession-accent-bg, var(--surface-bg-strong));
+  color: var(--confession-accent-text, var(--color-heading));
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+a.confession-link {
+  color: var(--confession-accent-text, var(--color-link));
+  font-weight: 600;
+}
+
+a.confession-link:hover,
+a.confession-link:focus-visible {
+  color: var(--confession-accent-text, var(--color-link-hover));
+}
+
+[data-confession="westminster-confession"] {
+  --confession-accent-border: rgba(109, 177, 255, 0.54);
+  --confession-accent-bg: rgba(109, 177, 255, 0.2);
+  --confession-accent-text: #dceeff;
+}
+
+[data-confession="lbcf-1689"] {
+  --confession-accent-border: rgba(238, 195, 84, 0.58);
+  --confession-accent-bg: rgba(238, 195, 84, 0.24);
+  --confession-accent-text: #ffe8ab;
+}
+
+[data-confession="savoy-declaration"] {
+  --confession-accent-border: rgba(230, 122, 100, 0.58);
+  --confession-accent-bg: rgba(230, 122, 100, 0.22);
+  --confession-accent-text: #ffd9cf;
+}
+
+[data-confession="belgic-confession"] {
+  --confession-accent-border: rgba(105, 201, 191, 0.52);
+  --confession-accent-bg: rgba(105, 201, 191, 0.2);
+  --confession-accent-text: #d7fffb;
+}
+
+[data-confession="second-helvetic-confession"] {
+  --confession-accent-border: rgba(178, 137, 255, 0.56);
+  --confession-accent-bg: rgba(178, 137, 255, 0.22);
+  --confession-accent-text: #eee0ff;
+}
+
+[data-theme="light"] [data-confession="westminster-confession"] {
+  --confession-accent-border: rgba(45, 118, 198, 0.4);
+  --confession-accent-bg: rgba(67, 135, 210, 0.16);
+  --confession-accent-text: #18406d;
+}
+
+[data-theme="light"] [data-confession="lbcf-1689"] {
+  --confession-accent-border: rgba(178, 132, 26, 0.44);
+  --confession-accent-bg: rgba(212, 167, 57, 0.18);
+  --confession-accent-text: #63450a;
+}
+
+[data-theme="light"] [data-confession="savoy-declaration"] {
+  --confession-accent-border: rgba(180, 83, 62, 0.44);
+  --confession-accent-bg: rgba(211, 111, 87, 0.16);
+  --confession-accent-text: #6e2516;
+}
+
+[data-theme="light"] [data-confession="belgic-confession"] {
+  --confession-accent-border: rgba(42, 137, 128, 0.4);
+  --confession-accent-bg: rgba(50, 154, 144, 0.14);
+  --confession-accent-text: #16534d;
+}
+
+[data-theme="light"] [data-confession="second-helvetic-confession"] {
+  --confession-accent-border: rgba(122, 84, 189, 0.42);
+  --confession-accent-bg: rgba(147, 106, 216, 0.16);
+  --confession-accent-text: #4d2f80;
+}

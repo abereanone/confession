@@ -1,0 +1,25 @@
+---
+type VerseLookup = Record<string, { text: string; version: string }>;
+const verseLookup = (Astro.props.verseLookup ?? {}) as VerseLookup;
+const verseLookupJson = JSON.stringify(verseLookup);
+---
+
+<script is:inline define:vars={{ verseLookupJson }}>
+  (() => {
+    try {
+      const parsed = JSON.parse(verseLookupJson);
+      window.__bibleVerseLookup = {
+        ...(window.__bibleVerseLookup || {}),
+        ...parsed,
+      };
+    } catch (error) {
+      window.__bibleVerseLookup = window.__bibleVerseLookup || {};
+    }
+  })();
+</script>
+
+<script>
+  import { initBibleReferences } from "../scripts/bibleReferences.js";
+
+  initBibleReferences();
+</script>

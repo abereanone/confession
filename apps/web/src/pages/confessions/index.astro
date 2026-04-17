@@ -1,0 +1,52 @@
+---
+import Main from "../../layouts/Main.astro";
+import { listConfessions } from "../../lib/confessions";
+
+const confessions = listConfessions();
+---
+
+<Main title="Confessions">
+  <h1>Confessions</h1>
+  <p>Choose a confession to browse by chapter/article.</p>
+
+  <ul id="confession-list">
+    {confessions.map((item) => (
+      <li data-confession={item.slug}>
+        <a class="confession-link" href={`/confessions/${item.slug}`}>
+          <span class="confession-badge">{item.shortCode}</span>
+          <span>{item.title}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Main>
+
+<style>
+  #confession-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 0.5rem 1rem;
+    padding: 0;
+  }
+
+  #confession-list li {
+    list-style: none;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-left-width: 4px;
+    border-left-color: var(--confession-accent-border, var(--surface-border-strong));
+    border-radius: 10px;
+    padding: 0.5rem 0.6rem;
+  }
+
+  #confession-list li:hover {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
+  }
+
+  #confession-list li a {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+  }
+</style>

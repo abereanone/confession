@@ -1,0 +1,6 @@
+{
+  "provider": "Berean Standard Bible",
+  "datasetPath": "../../bsb-data-pipeline/bsb.json",
+  "notes": "Update datasetPath if this scaffold is moved outside the current repo."
+}
+

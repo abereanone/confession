@@ -1,0 +1,312 @@
+---
+import Main from "../../layouts/Main.astro";
+import BibleReferencesScript from "../../components/BibleReferencesScript.astro";
+import ConfessionReferenceHighlightScript from "../../components/ConfessionReferenceHighlightScript.astro";
+import {
+  findConfession,
+  getConfessionDisplayUnits,
+  listConfessions,
+} from "../../lib/confessions";
+import { autoLinkBibleRefs } from "../../lib/bible/autoLinkBibleRefs";
+import { normalizeReference } from "../../lib/bible/normalizeRef";
+import { getVerseLookup } from "../../lib/bible/bibleData";
+
+export function getStaticPaths() {
+  return listConfessions().map((item) => ({
+    params: { slug: item.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const confession = findConfession(String(slug));
+
+if (!confession) {
+  return Astro.redirect("/confessions");
+}
+
+const unitId = (number: number) => `unit-${number}`;
+const paragraphId = (unitNumber: number, paragraphNumber: number) =>
+  `para-${unitNumber}-${paragraphNumber}`;
+const displayUnits = getConfessionDisplayUnits(confession);
+const showParagraphMeta = confession.slug !== "belgic-confession";
+
+const references = new Set<string>();
+for (const unit of displayUnits) {
+  for (const paragraph of unit.content) {
+    const linkedParagraph = autoLinkBibleRefs(paragraph);
+    const matches = [...linkedParagraph.matchAll(/data-ref="([^"]+)"/g)];
+    matches.forEach((match) => {
+      const reference = normalizeReference(String(match[1] ?? "").trim());
+      if (reference) {
+        references.add(reference);
+      }
+    });
+  }
+}
+
+const verseLookup = await getVerseLookup([...references]);
+---
+
+<Main title={confession.title}>
+  <div class="confession-page" data-confession={confession.slug}>
+    <section class="confession-header">
+      <h1>
+        <span class="confession-badge">{confession.shortCode}</span>
+        <span>{confession.title}</span>
+      </h1>
+      <p class="confession-meta-line">
+        <span>
+          Source:
+          {confession.sourceUrl === "TODO" ? (
+            <em> add source URL</em>
+          ) : (
+            <a class="confession-link" href={confession.sourceUrl} target="_blank" rel="noreferrer">{confession.sourceUrl}</a>
+          )}
+        </span>
+        <span class="meta-sep">|</span>
+        <a class="confession-link" href={`/confessions/${confession.slug}/about`}>About this confession</a>
+      </p>
+    </section>
+
+    <section class="tools">
+      <label for="unit-filter">Filter chapters/articles</label>
+      <input
+        id="unit-filter"
+        type="search"
+        placeholder={`Search ${confession.unitLabel.toLowerCase()} text`}
+        autocomplete="off"
+      />
+      <p id="unit-results-meta" class="meta">{displayUnits.length} total</p>
+    </section>
+
+    <section class="toc">
+      <h2>Jump To {confession.unitLabel}</h2>
+      <ul id="unit-toc">
+        {displayUnits.map((unit) => (
+          <li data-target={unitId(unit.number)}>
+            <a href={`#${unitId(unit.number)}`}>{confession.unitLabel} {unit.number}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <p id="unit-no-results" hidden>No units matched that filter.</p>
+
+    {displayUnits.map((unit) => (
+      <section class="unit" id={unitId(unit.number)}>
+        <h2 class="unit-title">{confession.unitLabel} {unit.number}: {unit.title}</h2>
+        <div class="paragraph-list">
+          {unit.content.map((paragraph, index) => (
+            <article
+              class="paragraph-card card-panel"
+              id={paragraphId(unit.number, index + 1)}
+              data-bible-autolink
+              data-paragraph-card
+            >
+              {showParagraphMeta ? (
+                <p class="paragraph-meta">{confession.unitLabel} {unit.number} - Paragraph {index + 1}</p>
+              ) : null}
+              <p>{paragraph}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Main>
+
+<BibleReferencesScript verseLookup={verseLookup} />
+<ConfessionReferenceHighlightScript />
+
+<script>
+  const input = document.getElementById("unit-filter");
+  const meta = document.getElementById("unit-results-meta");
+  const noResults = document.getElementById("unit-no-results");
+  const unitToc = document.getElementById("unit-toc");
+  const units = Array.from(document.querySelectorAll(".unit"));
+
+  if (input instanceof HTMLInputElement && meta && noResults) {
+    const tocItems = unitToc ? Array.from(unitToc.querySelectorAll("li")) : [];
+    const total = units.length;
+
+    const applyFilter = () => {
+      const query = input.value.trim().toLowerCase();
+      let visible = 0;
+
+      for (const unit of units) {
+        const text = (unit.textContent ?? "").toLowerCase();
+        const match = !query || text.includes(query);
+        unit.hidden = !match;
+        if (match) {
+          visible += 1;
+        }
+      }
+
+      for (const item of tocItems) {
+        const targetId = item.getAttribute("data-target");
+        if (!targetId) {
+          continue;
+        }
+        const target = document.getElementById(targetId);
+        item.hidden = !(target instanceof HTMLElement) || target.hidden;
+      }
+
+      meta.textContent = query ? `${visible} of ${total} shown` : `${total} total`;
+      noResults.hidden = visible !== 0;
+    };
+
+    input.addEventListener("input", applyFilter);
+  }
+</script>
+
+<style>
+  .confession-page {
+    border: 1px solid var(--confession-accent-border, var(--surface-border));
+    border-radius: 14px;
+    padding: 0.8rem;
+    background:
+      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 30%),
+      transparent;
+  }
+
+  .tools {
+    margin-bottom: 1rem;
+    border: 1px solid var(--confession-accent-border, var(--surface-border));
+    border-radius: 10px;
+    background: var(--confession-accent-bg, var(--surface-bg-muted));
+    padding: 0.75rem;
+  }
+
+  .confession-header h1 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.3rem;
+  }
+
+  .confession-header p {
+    margin-top: 0;
+  }
+
+  .confession-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  .meta-sep {
+    color: var(--color-muted);
+  }
+
+  input[type="search"] {
+    width: min(34rem, 100%);
+    margin-top: 0.25rem;
+  }
+
+  .meta {
+    margin-top: 0.6rem;
+  }
+
+  .toc {
+    border: 1px solid var(--confession-accent-border, var(--surface-border));
+    border-radius: 10px;
+    padding: 0.8rem;
+    margin-bottom: 0.9rem;
+    background: var(--confession-accent-bg, var(--surface-bg-muted));
+  }
+
+  .toc h2 {
+    margin-top: 0;
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
+  }
+
+  .toc ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: 0.4rem 0.8rem;
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+
+  #unit-no-results {
+    color: var(--color-muted);
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+  }
+
+  .unit {
+    margin-bottom: 1.1rem;
+    scroll-margin-top: 7.5rem;
+  }
+
+  .unit-title {
+    color: var(--confession-accent-text, var(--color-heading));
+    margin: 0 0 0.55rem;
+  }
+
+  .paragraph-list {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .paragraph-card {
+    border-color: var(--confession-accent-border, var(--card-border));
+    background:
+      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 55%),
+      var(--card-bg);
+    scroll-margin-top: 7.5rem;
+  }
+
+  .paragraph-card p {
+    margin: 0;
+  }
+
+  .paragraph-meta {
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .paragraph-card p:last-child {
+    margin-bottom: 0;
+  }
+
+  .unit.is-linked-unit {
+    border-left: 4px solid rgba(232, 179, 35, 0.58);
+    padding-left: 0.55rem;
+    border-radius: 8px;
+  }
+
+  .paragraph-card.is-linked-paragraph {
+    border-color: rgba(232, 179, 35, 0.58);
+    box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.2), var(--shadow-card);
+  }
+
+  :global(.bible-ref.is-linked-reference) {
+    background: rgba(255, 232, 107, 0.72);
+    border-radius: 0.35rem;
+    padding: 0.02rem 0.2rem;
+    border-bottom-style: solid;
+    border-bottom-color: rgba(232, 179, 35, 0.82);
+  }
+
+  :global([data-theme="dark"] .bible-ref.is-linked-reference) {
+    color: #050505 !important;
+    background: rgba(255, 233, 117, 0.95) !important;
+    border-bottom-color: rgba(92, 66, 2, 0.98) !important;
+    font-weight: 800;
+    text-shadow: none;
+    text-decoration-color: rgba(92, 66, 2, 0.98) !important;
+  }
+
+  :global([data-theme="dark"] .bible-ref.is-linked-reference:hover),
+  :global([data-theme="dark"] .bible-ref.is-linked-reference:focus-visible) {
+    color: #050505 !important;
+    background: rgba(255, 233, 117, 0.98) !important;
+    border-bottom-color: rgba(92, 66, 2, 0.98) !important;
+    text-decoration-color: rgba(92, 66, 2, 0.98) !important;
+  }
+</style>

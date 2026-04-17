@@ -1,0 +1,235 @@
+---
+const { title = "Confessions Hub" } = Astro.props;
+const issueReportURL = "https://github.com/abereanone/confessions-hub/issues/new";
+const currentYear = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <script is:inline>
+      (() => {
+        const storageKey = "site-theme";
+        const root = document.documentElement;
+
+        const readStoredTheme = () => {
+          try {
+            const value = window.localStorage.getItem(storageKey);
+            return value === "light" || value === "dark" ? value : null;
+          } catch {
+            return null;
+          }
+        };
+
+        const prefersDark = () => {
+          if (typeof window.matchMedia !== "function") {
+            return null;
+          }
+          try {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          } catch {
+            return null;
+          }
+        };
+
+        root.dataset.theme = readStoredTheme() || prefersDark() || "light";
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles/theme.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a href="/" class="brand">Confessions Hub</a>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/confessions">Confessions</a>
+        <a href="/scriptures">Scriptures</a>
+        <a href="/bible/gen/1">Bible</a>
+      </nav>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
+        <span data-theme-toggle-label>Dark</span>
+      </button>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="footer-search" aria-label="Footer quick links">
+        <a href="/confessions" class="footer-search-link">Browse Confessions</a>
+        <a href="/scriptures" class="footer-search-link">Scripture Index</a>
+        <a href="/bible/gen/1" class="footer-search-link">Bible Reader</a>
+      </div>
+      <p class="footer-links">
+        <a href="/about">About</a> |
+        <a href="/copyright">Copyright Info</a> |
+        <a href={issueReportURL} target="_blank" rel="noopener noreferrer">Report an Issue</a>
+      </p>
+      <p class="footer-meta">Confessions Hub &copy; {currentYear}</p>
+    </footer>
+    <script is:inline>
+      (() => {
+        const storageKey = "site-theme";
+        const root = document.documentElement;
+
+        const readStoredTheme = () => {
+          try {
+            const value = window.localStorage.getItem(storageKey);
+            return value === "light" || value === "dark" ? value : null;
+          } catch {
+            return null;
+          }
+        };
+
+        const writeStoredTheme = (theme) => {
+          try {
+            window.localStorage.setItem(storageKey, theme);
+          } catch {
+            // ignore
+          }
+        };
+
+        const updateButtons = (theme) => {
+          document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+            button.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+            const label = button.querySelector("[data-theme-toggle-label]");
+            if (label) {
+              label.textContent = theme === "dark" ? "Light" : "Dark";
+            }
+          });
+        };
+
+        const applyTheme = (theme, persist = true) => {
+          const nextTheme = theme === "dark" ? "dark" : "light";
+          root.dataset.theme = nextTheme;
+          if (persist) {
+            writeStoredTheme(nextTheme);
+          }
+          updateButtons(nextTheme);
+        };
+
+        const toggleTheme = () => {
+          const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+          applyTheme(nextTheme);
+        };
+
+        const init = () => {
+          applyTheme(readStoredTheme() || root.dataset.theme || "light", false);
+          document.addEventListener("click", (event) => {
+            const trigger =
+              event.target instanceof Element ? event.target.closest("[data-theme-toggle]") : null;
+            if (!trigger) {
+              return;
+            }
+            event.preventDefault();
+            toggleTheme();
+          });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init, { once: true });
+        } else {
+          init();
+        }
+      })();
+    </script>
+  </body>
+</html>
+
+<style>
+  .top {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--color-nav-bg);
+    backdrop-filter: blur(8px);
+  }
+
+  .brand {
+    color: var(--color-heading);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  nav {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  nav a {
+    color: var(--color-link);
+    text-decoration: none;
+  }
+
+  .theme-toggle {
+    margin-left: auto;
+  }
+
+  main {
+    padding: 1rem 1rem 2.2rem;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 720px) {
+    .theme-toggle {
+      margin-left: 0;
+    }
+  }
+
+  .site-footer {
+    text-align: center;
+    margin-top: 1.4rem;
+    padding: 1.5rem 1rem 3rem;
+    border-top: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+  }
+
+  .footer-search {
+    display: inline-flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.7rem;
+  }
+
+  .footer-search-link {
+    display: inline-block;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-strong);
+    color: var(--color-text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .footer-search-link:hover,
+  .footer-search-link:focus-visible {
+    background: var(--surface-bg-hover);
+    border-color: var(--surface-border-strong);
+    text-decoration: none;
+  }
+
+  .footer-links {
+    margin: 0;
+  }
+
+  .footer-meta {
+    margin: 0.35rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+  }
+</style>

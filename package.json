@@ -1,0 +1,18 @@
+{
+  "name": "confessions-hub",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "import:symbolics": "node ./scripts/import-symbolics-confessions.mjs",
+    "sync:data": "node ./scripts/sync-shared-data.mjs",
+    "dev:web": "npm --workspace @confessions-hub/web run dev",
+    "build:web": "npm --workspace @confessions-hub/web run build",
+    "dev:mobile": "npm --workspace @confessions-hub/mobile run start",
+    "android": "npm --workspace @confessions-hub/mobile run android",
+    "ios": "npm --workspace @confessions-hub/mobile run ios"
+  }
+}

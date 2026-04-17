@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Confessions Hub",
+    "slug": "confessions-hub",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
+
