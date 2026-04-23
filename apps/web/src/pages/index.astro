@@ -16,8 +16,10 @@ const updatedAt = getUpdatedAt();
     <ul class="confession-list">
       {confessions.map((item) => (
         <li data-confession={item.slug}>
-          <span class="confession-badge">{item.shortCode}</span>
-          <a class="confession-link" href={`/confessions/${item.slug}`}>{item.title}</a>
+          <a class="confession-link confession-item-link" href={`/confessions/${item.slug}`}>
+            <span class="confession-badge">{item.shortCode}</span>
+            <span>{item.title}</span>
+          </a>
         </li>
       ))}
     </ul>
@@ -44,6 +46,10 @@ const updatedAt = getUpdatedAt();
   }
 
   .confession-list li {
+    list-style: none;
+  }
+
+  .confession-item-link {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -53,5 +59,12 @@ const updatedAt = getUpdatedAt();
     border-radius: 10px;
     background: var(--surface-bg-muted);
     padding: 0.45rem 0.55rem;
+    text-decoration: none;
+  }
+
+  .confession-item-link:hover,
+  .confession-item-link:focus-visible {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
+    text-decoration: none;
   }
 </style>

@@ -49,16 +49,18 @@ const verse = await getVerseByReference(entry.reference);
                   : `para-${location.unitNumber}-${location.paragraphNumber}`
               }`}
             >
-              <span class="confession-badge">{location.confessionShortCode}</span>
-              <span>{location.confessionTitle}</span>
+              <span class="location-title">
+                <span class="confession-badge">{location.confessionShortCode}</span>
+                <span>{location.confessionTitle}</span>
+              </span>
+              <span class="meta location-meta">
+                {location.unitLabel} {location.unitNumber}
+                {location.confessionSlug === "belgic-confession"
+                  ? ""
+                  : `, paragraph ${location.paragraphNumber}`}
+                : {location.unitTitle}
+              </span>
             </a>
-            <p class="meta">
-              {location.unitLabel} {location.unitNumber}
-              {location.confessionSlug === "belgic-confession"
-                ? ""
-                : `, paragraph ${location.paragraphNumber}`}
-              : {location.unitTitle}
-            </p>
           </li>
         ))}
       </ul>
@@ -84,22 +86,36 @@ const verse = await getVerseByReference(entry.reference);
   }
 
   .location-item {
+    list-style: none;
+  }
+
+  .location-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
     border: 1px solid var(--surface-border);
     border-left-width: 4px;
     border-left-color: var(--confession-accent-border, var(--surface-border-strong));
     border-radius: 10px;
     background: var(--surface-bg-muted);
     padding: 0.6rem 0.7rem;
+    text-decoration: none;
   }
 
-  .location-link {
+  .location-link:hover,
+  .location-link:focus-visible {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
+    text-decoration: none;
+  }
+
+  .location-title {
     display: flex;
     align-items: center;
     gap: 0.55rem;
   }
 
-  .location-item p {
-    margin: 0.25rem 0 0;
+  .location-meta {
+    margin: 0;
   }
 
   .back-link {

@@ -49,9 +49,14 @@ const currentYear = new Date().getFullYear();
         <a href="/scriptures">Scriptures</a>
         <a href="/bible/gen/1">Bible</a>
       </nav>
-      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
-        <span data-theme-toggle-label>Dark</span>
-      </button>
+      <div class="header-controls">
+        <button type="button" class="reader-toggle" data-reader-toggle aria-label="Toggle reading mode">
+          <span data-reader-toggle-label>Read Mode</span>
+        </button>
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
+          <span data-theme-toggle-label>Dark</span>
+        </button>
+      </div>
     </header>
     <main>
       <slot />
@@ -72,6 +77,7 @@ const currentYear = new Date().getFullYear();
     <script is:inline>
       (() => {
         const storageKey = "site-theme";
+        const readerStorageKey = "site-reader-mode";
         const root = document.documentElement;
 
         const readStoredTheme = () => {
@@ -91,12 +97,40 @@ const currentYear = new Date().getFullYear();
           }
         };
 
+        const readStoredReaderMode = () => {
+          try {
+            const value = window.localStorage.getItem(readerStorageKey);
+            return value === "read" || value === "study" ? value : "study";
+          } catch {
+            return "study";
+          }
+        };
+
+        const writeStoredReaderMode = (mode) => {
+          try {
+            window.localStorage.setItem(readerStorageKey, mode);
+          } catch {
+            // ignore
+          }
+        };
+
         const updateButtons = (theme) => {
           document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
             button.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
             const label = button.querySelector("[data-theme-toggle-label]");
             if (label) {
               label.textContent = theme === "dark" ? "Light" : "Dark";
+            }
+          });
+        };
+
+        const updateReaderButtons = (mode) => {
+          document.querySelectorAll("[data-reader-toggle]").forEach((button) => {
+            button.setAttribute("aria-pressed", mode === "read" ? "true" : "false");
+            const label = button.querySelector("[data-reader-toggle-label]");
+            if (label) {
+              // Action-style label: show the mode the click will activate.
+              label.textContent = mode === "read" ? "Study Mode" : "Read Mode";
             }
           });
         };
@@ -115,16 +149,46 @@ const currentYear = new Date().getFullYear();
           applyTheme(nextTheme);
         };
 
+        const applyReaderMode = (mode, persist = true) => {
+          const nextMode = mode === "read" ? "read" : "study";
+          root.dataset.readerMode = nextMode;
+          if (persist) {
+            writeStoredReaderMode(nextMode);
+          }
+          updateReaderButtons(nextMode);
+          document.dispatchEvent(
+            new CustomEvent("site:reader-mode-change", {
+              detail: { mode: nextMode },
+            })
+          );
+        };
+
+        const toggleReaderMode = () => {
+          const nextMode = root.dataset.readerMode === "read" ? "study" : "read";
+          applyReaderMode(nextMode);
+        };
+
         const init = () => {
           applyTheme(readStoredTheme() || root.dataset.theme || "light", false);
+          applyReaderMode(readStoredReaderMode(), false);
           document.addEventListener("click", (event) => {
-            const trigger =
-              event.target instanceof Element ? event.target.closest("[data-theme-toggle]") : null;
-            if (!trigger) {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target) {
               return;
             }
-            event.preventDefault();
-            toggleTheme();
+
+            const themeTrigger = target.closest("[data-theme-toggle]");
+            if (themeTrigger) {
+              event.preventDefault();
+              toggleTheme();
+              return;
+            }
+
+            const readerTrigger = target.closest("[data-reader-toggle]");
+            if (readerTrigger) {
+              event.preventDefault();
+              toggleReaderMode();
+            }
           });
         };
 
@@ -174,7 +238,14 @@ const currentYear = new Date().getFullYear();
   }
 
   .theme-toggle {
+    margin-left: 0;
+  }
+
+  .header-controls {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
   }
 
   main {
@@ -184,7 +255,7 @@ const currentYear = new Date().getFullYear();
   }
 
   @media (max-width: 720px) {
-    .theme-toggle {
+    .header-controls {
       margin-left: 0;
     }
   }

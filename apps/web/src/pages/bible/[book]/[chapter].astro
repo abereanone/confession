@@ -7,6 +7,8 @@ import {
   resolveBibleReference,
   searchBible,
 } from "../../../lib/bible/bibleData";
+import { listScriptures } from "../../../lib/scriptures";
+import { buildChapterVerseScriptureMap } from "../../../lib/scriptureRanges";
 
 export async function getStaticPaths() {
   const books = await listBibleBooks();
@@ -101,6 +103,27 @@ const previousChapterHref = previousTarget
 const nextChapterHref = nextTarget
   ? `/bible/${nextTarget.bookCode}/${nextTarget.chapter}`
   : "";
+const chapterFootnotesByVerse = new Map<number, { href: string; referenceCount: number }>();
+let chapterFootnoteCount = 0;
+
+if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
+  const chapterMaxVerse = chapterVerses[chapterVerses.length - 1]?.verse ?? chapterVerses.length;
+  const scriptureEntries = listScriptures();
+  const verseMatches = buildChapterVerseScriptureMap(
+    scriptureEntries,
+    selectedBookCode,
+    selectedChapter,
+    chapterMaxVerse
+  );
+
+  verseMatches.forEach((entries, verseNumber) => {
+    chapterFootnotesByVerse.set(verseNumber, {
+      href: `/scriptures/verse/${selectedBookCode}/${selectedChapter}#verse-${verseNumber}`,
+      referenceCount: entries.length,
+    });
+  });
+  chapterFootnoteCount = chapterFootnotesByVerse.size;
+}
 ---
 
 <Main title="Bible Reader">
@@ -156,17 +179,43 @@ const nextChapterHref = nextTarget
         {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="chapter-nav-disabled">Next</span>}
       </div>
     </header>
+    {chapterFootnoteCount > 0 ? (
+      <div class="chapter-footnotes-controls">
+        <button type="button" class="footnote-toggle" data-footnote-toggle aria-expanded="false">
+          Show Footnotes
+        </button>
+        <p class="meta">
+          {chapterFootnoteCount} verse
+          {chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
+        </p>
+      </div>
+    ) : null}
 
     {chapterVerses.length > 0 ? (
       <ol class="verse-list">
-        {chapterVerses.map((verse) => (
-          <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
-            <a href={`#verse-${verse.verse}`} class="verse-ref">
-              {verse.verse}
-            </a>
-            <span>{verse.text}</span>
-          </li>
-        ))}
+        {chapterVerses.map((verse) => {
+          const footnote = chapterFootnotesByVerse.get(verse.verse);
+          return (
+            <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
+              <a href={`#verse-${verse.verse}`} class="verse-ref">
+                {verse.verse}
+              </a>
+              <span>{verse.text}</span>
+              {footnote ? (
+                <span class="verse-footnotes" data-verse-footnotes hidden>
+                  <a
+                    class="verse-footnote-pill"
+                    href={footnote.href}
+                    title={`Open ${footnote.referenceCount} confession reference${footnote.referenceCount === 1 ? "" : "s"} for ${selectedBookName} ${selectedChapter}:${verse.verse}`}
+                    aria-label={`Open confession references for ${selectedBookName} ${selectedChapter}:${verse.verse}`}
+                  >
+                    MORE
+                  </a>
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
       </ol>
     ) : (
       <p><em>No verses available for this chapter.</em></p>
@@ -191,8 +240,10 @@ const nextChapterHref = nextTarget
         <ul class="search-results">
           {searchResults.map((result) => (
             <li>
-              <a href={`/bible/${result.bookCode}/${result.chapter}#verse-${result.verse}`}>{result.reference}</a>
-              <p>{result.text}</p>
+              <a class="search-result-card" href={`/bible/${result.bookCode}/${result.chapter}#verse-${result.verse}`}>
+                <span class="search-result-reference">{result.reference}</span>
+                <span class="search-result-text">{result.text}</span>
+              </a>
             </li>
           ))}
         </ul>
@@ -204,6 +255,30 @@ const nextChapterHref = nextTarget
 
   <script is:inline>
     (() => {
+      const initFootnoteToggle = () => {
+        const toggle = document.querySelector("[data-footnote-toggle]");
+        const footnotes = Array.from(document.querySelectorAll("[data-verse-footnotes]"));
+        if (!(toggle instanceof HTMLButtonElement) || footnotes.length === 0) {
+          return;
+        }
+
+        const setVisible = (visible) => {
+          footnotes.forEach((item) => {
+            if (item instanceof HTMLElement) {
+              item.hidden = !visible;
+            }
+          });
+          toggle.setAttribute("aria-expanded", String(visible));
+          toggle.textContent = visible ? "Hide Footnotes" : "Show Footnotes";
+        };
+
+        setVisible(false);
+        toggle.addEventListener("click", () => {
+          const expanded = toggle.getAttribute("aria-expanded") === "true";
+          setVisible(!expanded);
+        });
+      };
+
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
         const refValue = String(params.get("ref") || "").trim();
@@ -276,6 +351,7 @@ const nextChapterHref = nextTarget
         }, 1400);
       };
 
+      initFootnoteToggle();
       const verseTarget = parseVerseTarget();
       highlightVerse(verseTarget);
     })();
@@ -341,6 +417,37 @@ const nextChapterHref = nextTarget
 
   .chapter-header h2 {
     margin: 0;
+  }
+
+  .chapter-footnotes-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.55rem;
+  }
+
+  .chapter-footnotes-controls p {
+    margin: 0;
+  }
+
+  .footnote-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .footnote-toggle:hover,
+  .footnote-toggle:focus-visible {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-hover);
   }
 
   .chapter-nav {
@@ -425,6 +532,39 @@ const nextChapterHref = nextTarget
     margin-right: 0.45rem;
   }
 
+  .verse-footnotes {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-left: 0.45rem;
+    vertical-align: text-top;
+  }
+
+  .verse-footnote-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.2rem;
+    padding: 0.06rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border-strong);
+    background: var(--surface-bg-strong);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .verse-footnote-pill:hover,
+  .verse-footnote-pill:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
   .search-results {
     list-style: none;
     margin: 0.85rem 0 0;
@@ -433,14 +573,30 @@ const nextChapterHref = nextTarget
     gap: 0.65rem;
   }
 
-  .search-results li {
+  .search-result-card {
+    display: block;
     border: 1px solid var(--surface-border);
     border-radius: 10px;
     background: var(--surface-bg-muted);
     padding: 0.6rem 0.7rem;
+    color: var(--color-text);
+    text-decoration: none;
   }
 
-  .search-results li p {
+  .search-result-card:hover,
+  .search-result-card:focus-visible {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .search-result-reference {
+    display: block;
+    font-weight: 700;
+  }
+
+  .search-result-text {
+    display: block;
     margin: 0.35rem 0 0;
   }
 </style>

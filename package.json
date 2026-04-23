@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "npm run dev:web",
     "build": "npm run build:web",
-    "import:symbolics": "node ./scripts/import-symbolics-confessions.mjs",
-    "sync:data": "node ./scripts/sync-shared-data.mjs",
+    "import:symbolics": "node ./scripts/import-symbolics-confessions.mjs && node ./scripts/build-confession-files.mjs",
+    "build:data": "node ./scripts/build-confession-files.mjs",
+    "sync:data": "node ./scripts/build-confession-files.mjs && node ./scripts/sync-shared-data.mjs",
     "dev:web": "npm --workspace @confessions-hub/web run dev",
     "build:web": "npm --workspace @confessions-hub/web run build",
     "dev:mobile": "npm --workspace @confessions-hub/mobile run start",

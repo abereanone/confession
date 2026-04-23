@@ -31,22 +31,25 @@ const confessions = listConfessions();
 
   #confession-list li {
     list-style: none;
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-left-width: 4px;
-    border-left-color: var(--confession-accent-border, var(--surface-border-strong));
-    border-radius: 10px;
-    padding: 0.5rem 0.6rem;
-  }
-
-  #confession-list li:hover {
-    border-color: var(--confession-accent-border, var(--card-hover-border));
   }
 
   #confession-list li a {
     display: flex;
     align-items: center;
     gap: 0.55rem;
+    height: 100%;
+    padding: 0.5rem 0.6rem;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    border-left-width: 4px;
+    border-left-color: var(--confession-accent-border, var(--surface-border-strong));
+    background: var(--card-bg);
+    text-decoration: none;
+  }
+
+  #confession-list li a:hover,
+  #confession-list li a:focus-visible {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
     text-decoration: none;
   }
 </style>

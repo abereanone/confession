@@ -306,7 +306,8 @@ const defaultTestament =
   }
 
   .scripture-book-jump a {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 0.35rem 0.75rem;
     border-radius: 999px;
     border: 1px solid var(--surface-border);
@@ -360,8 +361,13 @@ const defaultTestament =
     padding: 0;
     list-style: none;
     display: grid;
-    gap: 0.5rem;
+    gap: 0.9rem;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+
+  .scripture-item {
+    display: flex;
+    min-width: 0;
   }
 
   .scripture-card {
@@ -369,7 +375,8 @@ const defaultTestament =
     flex-direction: column;
     gap: 0.35rem;
     text-decoration: none;
-    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
     border-color: var(--surface-border);
     background: var(--surface-bg-muted);
   }

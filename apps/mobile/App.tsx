@@ -1,6 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import confessionsJson from "./src/data/confessions.json";
+import manifestJson from "./src/data/confessions/manifest.json";
+import belgicConfessionJson from "./src/data/confessions/belgic-confession.json";
+import canonsOfDordtJson from "./src/data/confessions/canons-of-dordt.json";
+import lbcf1689Json from "./src/data/confessions/lbcf-1689.json";
+import savoyDeclarationJson from "./src/data/confessions/savoy-declaration.json";
+import secondHelveticConfessionJson from "./src/data/confessions/second-helvetic-confession.json";
+import westminsterConfessionJson from "./src/data/confessions/westminster-confession.json";
 
 type Unit = {
   number: number;
@@ -16,12 +22,29 @@ type Confession = {
   units: Unit[];
 };
 
-type ConfessionData = {
+type ConfessionManifest = {
   updatedAt: string;
-  items: Confession[];
+  slugs: string[];
 };
 
-const data = confessionsJson as ConfessionData;
+const manifest = manifestJson as ConfessionManifest;
+const confessionsBySlug = new Map<string, Confession>(
+  [
+    westminsterConfessionJson,
+    lbcf1689Json,
+    savoyDeclarationJson,
+    belgicConfessionJson,
+    secondHelveticConfessionJson,
+    canonsOfDordtJson,
+  ].map((item) => {
+    const confession = item as Confession;
+    return [confession.slug, confession];
+  })
+);
+
+const confessions = manifest.slugs
+  .map((slug) => confessionsBySlug.get(slug))
+  .filter(Boolean) as Confession[];
 
 type Tab = "home" | "confessions" | "scriptures";
 
@@ -30,7 +53,6 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
-  const confessions = data.items;
   const selected = confessions.find((item) => item.slug === selectedSlug) ?? confessions[0] ?? null;
 
   const filtered = useMemo(() => {
@@ -47,7 +69,7 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>Confessions Hub</Text>
-        <Text style={styles.meta}>Updated {data.updatedAt}</Text>
+        <Text style={styles.meta}>Updated {manifest.updatedAt}</Text>
       </View>
 
       <View style={styles.tabs}>
@@ -181,4 +203,3 @@ const styles = StyleSheet.create({
   },
   unitTitle: { color: "#ccead9", fontWeight: "600", marginBottom: 8 },
 });
-

@@ -29,11 +29,29 @@ const paragraphId = (unitNumber: number, paragraphNumber: number) =>
   `para-${unitNumber}-${paragraphNumber}`;
 const displayUnits = getConfessionDisplayUnits(confession);
 const showParagraphMeta = confession.slug !== "belgic-confession";
+const proofTagPattern = /\{\{proofs:\s*([^}]+?)\s*\}\}/gi;
+
+function hasProofTags(value: string): boolean {
+  return /\{\{proofs:\s*[^}]+?\s*\}\}/i.test(value);
+}
+
+function renderParagraphFromProofTags(value: string, readerModeEnabled: boolean): string {
+  const source = String(value ?? "");
+  if (readerModeEnabled) {
+    return source
+      .replace(proofTagPattern, "")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\s+([,.;:!?])/g, "$1")
+      .trim();
+  }
+
+  return source.replace(proofTagPattern, "($1)");
+}
 
 const references = new Set<string>();
 for (const unit of displayUnits) {
   for (const paragraph of unit.content) {
-    const linkedParagraph = autoLinkBibleRefs(paragraph);
+    const linkedParagraph = autoLinkBibleRefs(renderParagraphFromProofTags(paragraph, false));
     const matches = [...linkedParagraph.matchAll(/data-ref="([^"]+)"/g)];
     matches.forEach((match) => {
       const reference = normalizeReference(String(match[1] ?? "").trim());
@@ -48,7 +66,7 @@ const verseLookup = await getVerseLookup([...references]);
 ---
 
 <Main title={confession.title}>
-  <div class="confession-page" data-confession={confession.slug}>
+  <div class="confession-page" id="confession-top" data-confession={confession.slug}>
     <section class="confession-header">
       <h1>
         <span class="confession-badge">{confession.shortCode}</span>
@@ -60,11 +78,11 @@ const verseLookup = await getVerseLookup([...references]);
     </section>
 
     <section class="tools">
-      <label for="unit-filter">Filter chapters/articles</label>
+      <label for="unit-filter">Filter paragraphs</label>
       <input
         id="unit-filter"
         type="search"
-        placeholder={`Search ${confession.unitLabel.toLowerCase()} text`}
+        placeholder="Search confession paragraph text"
         autocomplete="off"
       />
       <p id="unit-results-meta" class="meta">{displayUnits.length} total</p>
@@ -81,7 +99,7 @@ const verseLookup = await getVerseLookup([...references]);
       </ul>
     </section>
 
-    <p id="unit-no-results" hidden>No units matched that filter.</p>
+    <p id="unit-no-results" hidden>No paragraphs matched that filter.</p>
 
     {displayUnits.map((unit) => (
       <section class="unit" id={unitId(unit.number)}>
@@ -93,14 +111,18 @@ const verseLookup = await getVerseLookup([...references]);
               id={paragraphId(unit.number, index + 1)}
               data-bible-autolink
               data-paragraph-card
+              data-proof-source={hasProofTags(paragraph) ? paragraph : undefined}
             >
               {showParagraphMeta ? (
                 <p class="paragraph-meta">{confession.unitLabel} {unit.number} - Paragraph {index + 1}</p>
               ) : null}
-              <p>{paragraph}</p>
+              <p>{renderParagraphFromProofTags(paragraph, false)}</p>
             </article>
           ))}
         </div>
+        <p class="unit-back-to-top">
+          <a href="#confession-top">Back to top</a>
+        </p>
       </section>
     ))}
   </div>
@@ -110,27 +132,221 @@ const verseLookup = await getVerseLookup([...references]);
 <ConfessionReferenceHighlightScript />
 
 <script>
+  const confessionPage = document.querySelector(".confession-page");
+  const root = document.documentElement;
   const input = document.getElementById("unit-filter");
   const meta = document.getElementById("unit-results-meta");
   const noResults = document.getElementById("unit-no-results");
   const unitToc = document.getElementById("unit-toc");
   const units = Array.from(document.querySelectorAll(".unit"));
+  const paragraphCards = Array.from(document.querySelectorAll("[data-paragraph-card]"));
+  const paragraphBodies = Array.from(document.querySelectorAll(".paragraph-card p:last-child"));
+
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const clearHighlights = (root) => {
+    const marks = Array.from(root.querySelectorAll("mark.search-hit"));
+    marks.forEach((mark) => {
+      const parent = mark.parentNode;
+      if (!parent) {
+        return;
+      }
+      parent.replaceChild(document.createTextNode(mark.textContent || ""), mark);
+      parent.normalize();
+    });
+  };
+
+  const highlightInNode = (node, regex) => {
+    const text = node.nodeValue || "";
+    const matches = Array.from(text.matchAll(regex));
+    if (matches.length === 0) {
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+
+    matches.forEach((match) => {
+      const index = match.index ?? 0;
+      const hit = match[0] ?? "";
+      if (!hit) {
+        return;
+      }
+
+      if (index > cursor) {
+        fragment.appendChild(document.createTextNode(text.slice(cursor, index)));
+      }
+
+      const mark = document.createElement("mark");
+      mark.className = "search-hit";
+      mark.textContent = hit;
+      fragment.appendChild(mark);
+      cursor = index + hit.length;
+    });
+
+    if (cursor < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(cursor)));
+    }
+
+    node.parentNode?.replaceChild(fragment, node);
+  };
+
+  const highlightMatches = (rawQuery) => {
+    paragraphBodies.forEach((paragraph) => {
+      if (!(paragraph instanceof HTMLElement)) {
+        return;
+      }
+
+      clearHighlights(paragraph);
+    });
+
+    const tokens = rawQuery
+      .trim()
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+
+    if (tokens.length === 0) {
+      return;
+    }
+
+    const pattern = [...new Set(tokens)]
+      .map((token) => escapeRegExp(token))
+      .sort((a, b) => b.length - a.length)
+      .join("|");
+
+    if (!pattern) {
+      return;
+    }
+
+    const regex = new RegExp(pattern, "gi");
+
+    paragraphBodies.forEach((paragraph) => {
+      if (!(paragraph instanceof HTMLElement)) {
+        return;
+      }
+
+      const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+          const value = node.nodeValue || "";
+          if (!value.trim()) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          const parent = node.parentElement;
+          if (!parent || parent.closest("mark.search-hit")) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          regex.lastIndex = 0;
+          return regex.test(value) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        },
+      });
+
+      const textNodes = [];
+      while (walker.nextNode()) {
+        textNodes.push(walker.currentNode);
+      }
+
+      textNodes.forEach((node) => {
+        regex.lastIndex = 0;
+        highlightInNode(node, regex);
+      });
+    });
+  };
+
+  const renderParagraphFromProofTagsClient = (source, enabled) => {
+    const raw = String(source ?? "");
+    if (enabled) {
+      return raw
+        .replace(/\{\{proofs:\s*([^}]+?)\s*\}\}/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+([,.;:!?])/g, "$1")
+        .trim();
+    }
+    return raw.replace(/\{\{proofs:\s*([^}]+?)\s*\}\}/gi, "($1)");
+  };
+
+  const applyReaderModeToTaggedParagraphs = (enabled) => {
+    const taggedCards = Array.from(document.querySelectorAll("[data-proof-source]"));
+    taggedCards.forEach((card) => {
+      if (!(card instanceof HTMLElement)) {
+        return;
+      }
+
+      const source = card.dataset.proofSource;
+      if (!source) {
+        return;
+      }
+
+      const paragraph = card.querySelector("p:last-child");
+      if (!(paragraph instanceof HTMLElement)) {
+        return;
+      }
+
+      paragraph.textContent = renderParagraphFromProofTagsClient(source, enabled);
+      card.dataset.bibleProcessed = "false";
+    });
+
+    document.dispatchEvent(new Event("astro:page-load"));
+  };
+
+  const setReaderMode = (enabled) => {
+    if (!(confessionPage instanceof HTMLElement)) {
+      return;
+    }
+
+    applyReaderModeToTaggedParagraphs(enabled);
+    confessionPage.classList.toggle("reader-mode-enabled", enabled);
+  };
+
+  const applyFromGlobalMode = (mode) => {
+    setReaderMode(mode === "read");
+    if (input instanceof HTMLInputElement) {
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  };
+
+  applyFromGlobalMode(root.dataset.readerMode || "study");
+  document.addEventListener("site:reader-mode-change", (event) => {
+    const mode = event instanceof CustomEvent ? String(event.detail?.mode || "study") : "study";
+    applyFromGlobalMode(mode);
+  });
 
   if (input instanceof HTMLInputElement && meta && noResults) {
     const tocItems = unitToc ? Array.from(unitToc.querySelectorAll("li")) : [];
-    const total = units.length;
+    const totalParagraphs = paragraphCards.length;
 
     const applyFilter = () => {
-      const query = input.value.trim().toLowerCase();
-      let visible = 0;
+      const rawQuery = input.value.trim();
+      const query = rawQuery.toLowerCase();
+      let visibleParagraphs = 0;
+      const visibleUnitIds = new Set<string>();
+
+      for (const paragraphCard of paragraphCards) {
+        if (!(paragraphCard instanceof HTMLElement)) {
+          continue;
+        }
+
+        const paragraphBody = paragraphCard.querySelector("p:last-child");
+        const text = (paragraphBody?.textContent ?? "").toLowerCase();
+        const match = !query || text.includes(query);
+        paragraphCard.hidden = !match;
+
+        if (match) {
+          visibleParagraphs += 1;
+          const unit = paragraphCard.closest(".unit");
+          if (unit instanceof HTMLElement && unit.id) {
+            visibleUnitIds.add(unit.id);
+          }
+        }
+      }
 
       for (const unit of units) {
-        const text = (unit.textContent ?? "").toLowerCase();
-        const match = !query || text.includes(query);
-        unit.hidden = !match;
-        if (match) {
-          visible += 1;
+        if (!(unit instanceof HTMLElement)) {
+          continue;
         }
+        unit.hidden = !visibleUnitIds.has(unit.id);
       }
 
       for (const item of tocItems) {
@@ -142,11 +358,15 @@ const verseLookup = await getVerseLookup([...references]);
         item.hidden = !(target instanceof HTMLElement) || target.hidden;
       }
 
-      meta.textContent = query ? `${visible} of ${total} shown` : `${total} total`;
-      noResults.hidden = visible !== 0;
+      meta.textContent = query
+        ? `${visibleParagraphs} of ${totalParagraphs} paragraphs shown`
+        : `${totalParagraphs} paragraphs total`;
+      noResults.hidden = !query || visibleParagraphs !== 0;
+      highlightMatches(rawQuery);
     };
 
     input.addEventListener("input", applyFilter);
+    applyFilter();
   }
 </script>
 
@@ -215,7 +435,37 @@ const verseLookup = await getVerseLookup([...references]);
     grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
     gap: 0.4rem 0.8rem;
     margin: 0;
-    padding-left: 1.2rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .toc li {
+    min-width: 0;
+  }
+
+  .toc li a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .toc li a:hover,
+  .toc li a:focus-visible {
+    background: var(--surface-bg-hover);
+    border-color: var(--surface-border-strong);
+    text-decoration: none;
+    outline: none;
   }
 
   #unit-no-results {
@@ -239,6 +489,12 @@ const verseLookup = await getVerseLookup([...references]);
     gap: 0.55rem;
   }
 
+  .unit-back-to-top {
+    margin: 0.55rem 0 0;
+    text-align: right;
+    font-size: 0.9rem;
+  }
+
   .paragraph-card {
     border-color: var(--confession-accent-border, var(--card-border));
     background:
@@ -259,6 +515,22 @@ const verseLookup = await getVerseLookup([...references]);
 
   .paragraph-card p:last-child {
     margin-bottom: 0;
+  }
+
+  .confession-page.reader-mode-enabled .paragraph-card p:last-child {
+    font-size: 1.06rem;
+    line-height: 1.8;
+  }
+
+  .paragraph-card mark.search-hit {
+    background: rgba(255, 232, 107, 0.72);
+    border-radius: 0.2rem;
+    padding: 0 0.12rem;
+  }
+
+  :global([data-theme="dark"] .paragraph-card mark.search-hit) {
+    color: #050505;
+    background: rgba(255, 233, 117, 0.95);
   }
 
   .unit.is-linked-unit {
@@ -296,4 +568,5 @@ const verseLookup = await getVerseLookup([...references]);
     border-bottom-color: rgba(92, 66, 2, 0.98) !important;
     text-decoration-color: rgba(92, 66, 2, 0.98) !important;
   }
+
 </style>

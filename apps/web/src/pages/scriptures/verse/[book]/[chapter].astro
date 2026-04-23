@@ -1,0 +1,266 @@
+---
+import Main from "../../../../layouts/Main.astro";
+import { getBibleChapter, listBibleBooks } from "../../../../lib/bible/bibleData";
+import { buildChapterVerseScriptureMap } from "../../../../lib/scriptureRanges";
+import { listScriptures, type ScriptureLocation } from "../../../../lib/scriptures";
+
+type VerseLocation = ScriptureLocation & {
+  referenceCount: number;
+};
+
+type VerseSection = {
+  verse: number;
+  text: string;
+  referenceCount: number;
+  locations: VerseLocation[];
+};
+
+export async function getStaticPaths() {
+  const books = await listBibleBooks();
+  const scriptureEntries = listScriptures();
+  const scriptureByBook = new Map<string, typeof scriptureEntries>();
+
+  scriptureEntries.forEach((entry) => {
+    const existing = scriptureByBook.get(entry.bookCode) ?? [];
+    existing.push(entry);
+    scriptureByBook.set(entry.bookCode, existing);
+  });
+
+  const paths: { params: { book: string; chapter: string } }[] = [];
+
+  for (const book of books) {
+    const bookEntries = scriptureByBook.get(book.code) ?? [];
+    if (bookEntries.length === 0) {
+      continue;
+    }
+
+    for (let chapter = 1; chapter <= book.chapterCount; chapter += 1) {
+      const chapterVerses = await getBibleChapter(book.code, chapter);
+      const chapterMaxVerse = chapterVerses[chapterVerses.length - 1]?.verse ?? chapterVerses.length;
+      if (chapterMaxVerse < 1) {
+        continue;
+      }
+
+      const matches = buildChapterVerseScriptureMap(
+        bookEntries,
+        book.code,
+        chapter,
+        chapterMaxVerse
+      );
+
+      if (matches.size > 0) {
+        paths.push({
+          params: {
+            book: book.code,
+            chapter: String(chapter),
+          },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+const requestedBook = String(Astro.params.book ?? "").trim().toLowerCase();
+const requestedChapter = Number.parseInt(String(Astro.params.chapter ?? ""), 10);
+const books = await listBibleBooks();
+const selectedBook = books.find((book) => book.code === requestedBook) ?? books[0];
+
+if (!selectedBook) {
+  return Astro.redirect("/scriptures");
+}
+
+const selectedBookCode = selectedBook.code;
+const selectedBookName = selectedBook.name;
+const selectedChapter = Number.isFinite(requestedChapter)
+  ? Math.min(Math.max(requestedChapter, 1), selectedBook.chapterCount)
+  : 1;
+
+const chapterVerses = await getBibleChapter(selectedBookCode, selectedChapter);
+const chapterMaxVerse = chapterVerses[chapterVerses.length - 1]?.verse ?? chapterVerses.length;
+const scriptureEntries = listScriptures().filter((entry) => entry.bookCode === selectedBookCode);
+const verseMatches = buildChapterVerseScriptureMap(
+  scriptureEntries,
+  selectedBookCode,
+  selectedChapter,
+  chapterMaxVerse
+);
+const verseTextByNumber = new Map(chapterVerses.map((verse) => [verse.verse, verse.text]));
+
+const verseSections: VerseSection[] = [...verseMatches.keys()]
+  .sort((a, b) => a - b)
+  .map((verseNumber) => {
+    const entries = verseMatches.get(verseNumber) ?? [];
+    const locationMap = new Map<string, { location: ScriptureLocation; references: Set<string> }>();
+
+    entries.forEach((entry) => {
+      entry.locations.forEach((location) => {
+        const locationKey = `${location.confessionSlug}:${location.unitNumber}:${location.paragraphNumber}`;
+        const existing = locationMap.get(locationKey);
+        if (existing) {
+          existing.references.add(entry.reference);
+          return;
+        }
+
+        locationMap.set(locationKey, {
+          location,
+          references: new Set([entry.reference]),
+        });
+      });
+    });
+
+    const locations = [...locationMap.values()]
+      .map(({ location, references }) => ({
+        ...location,
+        referenceCount: references.size,
+      }))
+      .sort((a, b) => {
+        const confessionSort = a.confessionTitle.localeCompare(b.confessionTitle);
+        if (confessionSort !== 0) {
+          return confessionSort;
+        }
+        if (a.unitNumber !== b.unitNumber) {
+          return a.unitNumber - b.unitNumber;
+        }
+        return a.paragraphNumber - b.paragraphNumber;
+      });
+
+    return {
+      verse: verseNumber,
+      text: verseTextByNumber.get(verseNumber) ?? "",
+      referenceCount: entries.length,
+      locations,
+    };
+  });
+
+const chapterHref = `/bible/${selectedBookCode}/${selectedChapter}`;
+---
+
+<Main title={`${selectedBookName} ${selectedChapter} | Verse References`}>
+  <h1>{selectedBookName} {selectedChapter} Verse References</h1>
+  <p>
+    Each verse below shows all confession links that cite it, including citations where the verse appears inside a
+    larger grouped reference.
+  </p>
+  <p class="back-link"><a href={chapterHref}>Back to {selectedBookName} {selectedChapter}</a></p>
+
+  {verseSections.length > 0 ? (
+    <ul class="verse-section-list">
+      {verseSections.map((section) => (
+        <li class="verse-section card-panel" id={`verse-${section.verse}`}>
+          <h2>{selectedBookName} {selectedChapter}:{section.verse}</h2>
+          {section.text ? <p class="verse-text">{section.text}</p> : null}
+          <p class="meta">
+            {section.locations.length} confession link{section.locations.length === 1 ? "" : "s"} from{" "}
+            {section.referenceCount} scripture reference{section.referenceCount === 1 ? "" : "s"}
+          </p>
+
+          {section.locations.length > 0 ? (
+            <ul class="location-list">
+              {section.locations.map((location) => (
+                <li class="location-item" data-confession={location.confessionSlug}>
+                  <a
+                    class="location-link"
+                    href={`/confessions/${location.confessionSlug}?ref=${encodeURIComponent(
+                      `${selectedBookName} ${selectedChapter}:${section.verse}`
+                    )}#${
+                      location.confessionSlug === "belgic-confession"
+                        ? `unit-${location.unitNumber}`
+                        : `para-${location.unitNumber}-${location.paragraphNumber}`
+                    }`}
+                  >
+                    <span class="location-title">
+                      <span class="confession-badge">{location.confessionShortCode}</span>
+                      <span>{location.confessionTitle}</span>
+                    </span>
+                    <span class="meta location-meta">
+                      {location.unitLabel} {location.unitNumber}
+                      {location.confessionSlug === "belgic-confession"
+                        ? ""
+                        : `, paragraph ${location.paragraphNumber}`}
+                      : {location.unitTitle}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p><em>No confession links found for this verse.</em></p>
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p><em>No confession links are indexed for this chapter.</em></p>
+  )}
+</Main>
+
+<style>
+  .back-link {
+    margin: 0.85rem 0 0;
+  }
+
+  .verse-section-list {
+    list-style: none;
+    margin: 0.95rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .verse-section {
+    scroll-margin-top: 7.5rem;
+  }
+
+  .verse-section:target {
+    border-color: rgba(232, 179, 35, 0.58);
+    box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.26);
+  }
+
+  .verse-section h2 {
+    margin: 0;
+  }
+
+  .verse-text {
+    margin: 0.55rem 0 0;
+  }
+
+  .location-list {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .location-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    border: 1px solid var(--surface-border);
+    border-left-width: 4px;
+    border-left-color: var(--confession-accent-border, var(--surface-border-strong));
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    padding: 0.6rem 0.7rem;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .location-link:hover,
+  .location-link:focus-visible {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
+    text-decoration: none;
+  }
+
+  .location-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .location-meta {
+    margin: 0;
+  }
+</style>
