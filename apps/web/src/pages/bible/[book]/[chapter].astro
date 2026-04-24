@@ -136,9 +136,9 @@ const bookCatalogJson = JSON.stringify(books);
 ---
 
 <Main title="Bible Reader">
-  <h1>Bible Reader ({provider})</h1>
-  <details class="reader-tools card-panel" open>
-    <summary>Show/Hide Reader Tools</summary>
+  <h1>{provider}</h1>
+  <details class="reader-tools card-panel" open data-tools-details>
+    <summary data-tools-summary-label>Hide Search Tools</summary>
     <section class="controls">
       <div class="scope-pills" role="group" aria-label="Book scope">
         <button
@@ -301,6 +301,8 @@ const bookCatalogJson = JSON.stringify(books);
       const chapterForm = document.querySelector("[data-chapter-form]");
       const bookSelect = document.querySelector("[data-book-select]");
       const chapterSelect = document.querySelector("[data-chapter-select]");
+      const toolsDetails = document.querySelector("[data-tools-details]");
+      const toolsSummaryLabel = document.querySelector("[data-tools-summary-label]");
       const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
       const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
 
@@ -393,6 +395,18 @@ const bookCatalogJson = JSON.stringify(books);
       let activeScope = getActiveScope();
       setActiveScopePill(activeScope);
       syncScopeInputs(activeScope);
+
+      const updateToolsSummaryLabel = () => {
+        if (!(toolsDetails instanceof HTMLDetailsElement) || !(toolsSummaryLabel instanceof HTMLElement)) {
+          return;
+        }
+        toolsSummaryLabel.textContent = toolsDetails.open ? "Hide Search Tools" : "Show Search Tools";
+      };
+
+      updateToolsSummaryLabel();
+      if (toolsDetails instanceof HTMLDetailsElement) {
+        toolsDetails.addEventListener("toggle", updateToolsSummaryLabel);
+      }
 
       if (
         chapterForm instanceof HTMLFormElement &&
@@ -577,6 +591,8 @@ const bookCatalogJson = JSON.stringify(books);
     display: inline-flex;
     flex-wrap: wrap;
     gap: 0.45rem;
+    align-self: center;
+    margin-top: -0.12rem;
   }
 
   .scope-pill {
@@ -841,4 +857,3 @@ const bookCatalogJson = JSON.stringify(books);
     margin: 0.35rem 0 0;
   }
 </style>
-
