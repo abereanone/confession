@@ -13,12 +13,22 @@ const currentYear = new Date().getFullYear();
     <script is:inline>
       (() => {
         const storageKey = "site-theme";
+        const readerStorageKey = "site-reader-mode";
         const root = document.documentElement;
 
         const readStoredTheme = () => {
           try {
             const value = window.localStorage.getItem(storageKey);
             return value === "light" || value === "dark" ? value : null;
+          } catch {
+            return null;
+          }
+        };
+
+        const readStoredReaderMode = () => {
+          try {
+            const value = window.localStorage.getItem(readerStorageKey);
+            return value === "read" || value === "study" ? value : null;
           } catch {
             return null;
           }
@@ -36,6 +46,7 @@ const currentYear = new Date().getFullYear();
         };
 
         root.dataset.theme = readStoredTheme() || prefersDark() || "light";
+        root.dataset.readerMode = readStoredReaderMode() || "study";
       })();
     </script>
     <link rel="stylesheet" href="/styles/theme.css" />
@@ -51,7 +62,7 @@ const currentYear = new Date().getFullYear();
       </nav>
       <div class="header-controls">
         <button type="button" class="reader-toggle" data-reader-toggle aria-label="Toggle reading mode">
-          <span data-reader-toggle-label>Read Mode</span>
+          <span data-reader-toggle-label>Reading Mode</span>
         </button>
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
           <span data-theme-toggle-label>Dark</span>
@@ -130,7 +141,7 @@ const currentYear = new Date().getFullYear();
             const label = button.querySelector("[data-reader-toggle-label]");
             if (label) {
               // Action-style label: show the mode the click will activate.
-              label.textContent = mode === "read" ? "Study Mode" : "Read Mode";
+              label.textContent = mode === "read" ? "Study Mode" : "Reading Mode";
             }
           });
         };

@@ -66,6 +66,8 @@ import Main from "../../layouts/Main.astro";
     const params = new URLSearchParams(window.location.search);
     const query = String(params.get("q") || "").trim();
     const ref = String(params.get("ref") || "").trim();
+    const rawScope = String(params.get("scope") || "").trim().toLowerCase();
+    const scope = rawScope === "ot" || rawScope === "nt" ? rawScope : "all";
     const rawBook = params.get("book") || "gen";
     let book = resolveBookCode(rawBook) || "gen";
     let chapter = Number.parseInt(String(params.get("chapter") || "1"), 10);
@@ -89,6 +91,9 @@ import Main from "../../layouts/Main.astro";
     }
     if (ref) {
       target += query ? `&ref=${encodeURIComponent(ref)}` : `?ref=${encodeURIComponent(ref)}`;
+    }
+    if (scope !== "all") {
+      target += query || ref ? `&scope=${encodeURIComponent(scope)}` : `?scope=${encodeURIComponent(scope)}`;
     }
     if (targetVerse > 0) {
       target += `#verse-${targetVerse}`;

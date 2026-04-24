@@ -431,7 +431,8 @@ export async function getVerseLookup(
 
 export async function searchBible(
   query: string,
-  limit = 200
+  limit = 200,
+  options?: { testament?: "ot" | "nt" }
 ): Promise<BibleVerse[]> {
   const trimmed = query.trim();
   if (!trimmed) {
@@ -447,6 +448,7 @@ export async function searchBible(
 
   const seenKeys = new Set<string>();
   const results: BibleVerse[] = [];
+  const scopedTestament = options?.testament;
 
   const directMatch = await getVerseByReference(trimmed);
   if (directMatch) {
@@ -454,7 +456,7 @@ export async function searchBible(
     if (resolved?.verse !== null) {
       const key = `${resolved.bookCode} ${resolved.chapter}:${resolved.verse}`;
       const verse = data.verseMap.get(key);
-      if (verse) {
+      if (verse && (!scopedTestament || verse.testament === scopedTestament)) {
         results.push(verse);
         seenKeys.add(verse.key);
       }
@@ -463,6 +465,9 @@ export async function searchBible(
 
   for (const verse of data.verses) {
     if (seenKeys.has(verse.key)) {
+      continue;
+    }
+    if (scopedTestament && verse.testament !== scopedTestament) {
       continue;
     }
 

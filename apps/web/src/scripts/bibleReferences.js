@@ -15,6 +15,35 @@ function getVerseFromLookup(reference) {
   return lookup[normalizeLookupKey(reference)] || null;
 }
 
+function parseChapterReference(reference) {
+  const normalized = normalizeLookupKey(reference);
+  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const bookCode = String(match[1] || "");
+  const chapter = Number.parseInt(String(match[2] || ""), 10);
+  if (!bookCode || !Number.isFinite(chapter) || chapter < 1) {
+    return null;
+  }
+
+  return { bookCode, chapter };
+}
+
+function getChapterLinkInfo(reference) {
+  const parsed = parseChapterReference(reference);
+  if (!parsed) {
+    return null;
+  }
+
+  const cleanReference = String(reference || "").replace(/[;,]\s*$/g, "").trim();
+  return {
+    href: `/bible/${parsed.bookCode}/${parsed.chapter}`,
+    label: cleanReference || `${parsed.bookCode} ${parsed.chapter}`,
+  };
+}
+
 function formatVersionLabel(version) {
   const normalized = String(version || "").trim().toLowerCase();
   if (!normalized) {
@@ -44,10 +73,22 @@ function ensureTooltip(element) {
     return;
   }
 
-  const verse = getVerseFromLookup(element.dataset.ref);
+  const reference = String(element.dataset.ref || "");
+  const verse = getVerseFromLookup(reference);
+  const chapterLink = verse ? null : getChapterLinkInfo(reference);
   const tooltip = document.createElement("div");
   tooltip.className = "bible-tooltip";
-  tooltip.textContent = getTooltipText(verse);
+  if (chapterLink) {
+    const chapterLinkElement = document.createElement("a");
+    chapterLinkElement.className = "bible-tooltip-link";
+    chapterLinkElement.href = chapterLink.href;
+    chapterLinkElement.target = "_blank";
+    chapterLinkElement.rel = "noopener noreferrer";
+    chapterLinkElement.textContent = `Open ${chapterLink.label} in Bible Reader`;
+    tooltip.append(chapterLinkElement);
+  } else {
+    tooltip.textContent = getTooltipText(verse);
+  }
   document.body.appendChild(tooltip);
 
   element.__tooltipElement = tooltip;
@@ -87,6 +128,31 @@ function hideTooltip(element) {
 function enhanceElement(element) {
   if (element.dataset.bibleTooltipState === "ready") {
     return;
+  }
+
+  const reference = String(element.dataset.ref || "");
+  const verse = getVerseFromLookup(reference);
+  const chapterLink = verse ? null : getChapterLinkInfo(reference);
+
+  if (chapterLink) {
+    const openChapterLink = () => {
+      window.open(chapterLink.href, "_blank", "noopener,noreferrer");
+    };
+
+    element.setAttribute("role", "link");
+    element.setAttribute("tabindex", "0");
+    element.style.cursor = "pointer";
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      openChapterLink();
+    });
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      openChapterLink();
+    });
   }
 
   const handleEnter = () => {

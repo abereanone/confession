@@ -8,13 +8,19 @@
   "scripts": {
     "dev": "npm run dev:web",
     "build": "npm run build:web",
+    "sync:confessions": "node ./scripts/sync-shared-data.mjs",
     "import:symbolics": "node ./scripts/import-symbolics-confessions.mjs && node ./scripts/build-confession-files.mjs",
     "build:data": "node ./scripts/build-confession-files.mjs",
     "sync:data": "node ./scripts/build-confession-files.mjs && node ./scripts/sync-shared-data.mjs",
+    "predev:web": "npm run sync:confessions",
     "dev:web": "npm --workspace @confessions-hub/web run dev",
+    "prebuild:web": "npm run sync:confessions",
     "build:web": "npm --workspace @confessions-hub/web run build",
+    "predev:mobile": "npm run sync:confessions",
     "dev:mobile": "npm --workspace @confessions-hub/mobile run start",
+    "preandroid": "npm run sync:confessions",
     "android": "npm --workspace @confessions-hub/mobile run android",
+    "preios": "npm run sync:confessions",
     "ios": "npm --workspace @confessions-hub/mobile run ios"
   }
 }

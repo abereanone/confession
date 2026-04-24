@@ -180,6 +180,21 @@ button:focus-visible {
   box-shadow: var(--shadow-tooltip);
   border: 1px solid var(--tooltip-border);
   z-index: 2000;
+  word-break: break-word;
+}
+
+.bible-tooltip .bible-tooltip-link {
+  color: var(--tooltip-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--tooltip-text) 70%, transparent);
+}
+
+.bible-tooltip .bible-tooltip-link:hover,
+.bible-tooltip .bible-tooltip-link:focus-visible {
+  color: var(--tooltip-text);
+  text-decoration-color: var(--tooltip-text);
+  outline: none;
 }
 
 .meta {

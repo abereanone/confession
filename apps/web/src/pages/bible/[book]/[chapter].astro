@@ -24,6 +24,8 @@ export async function getStaticPaths() {
 
 const query = String(Astro.url.searchParams.get("q") ?? "").trim();
 const refQuery = String(Astro.url.searchParams.get("ref") ?? "").trim();
+const rawScope = String(Astro.url.searchParams.get("scope") ?? "").trim().toLowerCase();
+const selectedScope = rawScope === "ot" || rawScope === "nt" ? rawScope : "all";
 const requestedBook = String(Astro.params.book ?? "").trim().toLowerCase();
 const requestedChapter = Number.parseInt(String(Astro.params.chapter ?? ""), 10);
 
@@ -71,7 +73,11 @@ if (books.length > 0) {
 }
 
 if (query) {
-  searchResults = await searchBible(query, 250);
+  searchResults = await searchBible(
+    query,
+    250,
+    selectedScope === "all" ? undefined : { testament: selectedScope }
+  );
 }
 
 let previousTarget: { bookCode: string; chapter: number } | null = null;
@@ -97,11 +103,12 @@ if (selectedBookCode && books.length > 0 && selectedBookIndex >= 0) {
   }
 }
 
+const scopeSuffix = selectedScope === "all" ? "" : `?scope=${selectedScope}`;
 const previousChapterHref = previousTarget
-  ? `/bible/${previousTarget.bookCode}/${previousTarget.chapter}`
+  ? `/bible/${previousTarget.bookCode}/${previousTarget.chapter}${scopeSuffix}`
   : "";
 const nextChapterHref = nextTarget
-  ? `/bible/${nextTarget.bookCode}/${nextTarget.chapter}`
+  ? `/bible/${nextTarget.bookCode}/${nextTarget.chapter}${scopeSuffix}`
   : "";
 const chapterFootnotesByVerse = new Map<number, { href: string; referenceCount: number }>();
 let chapterFootnoteCount = 0;
@@ -124,6 +131,8 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
   });
   chapterFootnoteCount = chapterFootnotesByVerse.size;
 }
+
+const bookCatalogJson = JSON.stringify(books);
 ---
 
 <Main title="Bible Reader">
@@ -131,6 +140,33 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
   <details class="reader-tools card-panel" open>
     <summary>Show/Hide Reader Tools</summary>
     <section class="controls">
+      <div class="scope-pills" role="group" aria-label="Book scope">
+        <button
+          type="button"
+          class:list={["scope-pill", selectedScope === "all" && "is-active"]}
+          data-scope-pill
+          data-scope="all"
+        >
+          ALL
+        </button>
+        <button
+          type="button"
+          class:list={["scope-pill", selectedScope === "ot" && "is-active"]}
+          data-scope-pill
+          data-scope="ot"
+        >
+          OT
+        </button>
+        <button
+          type="button"
+          class:list={["scope-pill", selectedScope === "nt" && "is-active"]}
+          data-scope-pill
+          data-scope="nt"
+        >
+          NT
+        </button>
+      </div>
+
       <form method="get" action="/bible" class="control-group" data-chapter-form>
         <label for="book">Book</label>
         <select id="book" name="book" data-book-select>
@@ -141,27 +177,33 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
           ))}
         </select>
         <label for="chapter">Chapter</label>
-        <input
+        <select
           id="chapter"
-          type="number"
           name="chapter"
-          min="1"
-          max={chapterCount}
-          value={selectedChapter}
-          data-chapter-input
-        />
-        <button type="submit">Go</button>
+          data-chapter-select
+        >
+          {Array.from({ length: chapterCount }, (_value, index) => {
+            const chapterNumber = index + 1;
+            return (
+              <option value={chapterNumber} selected={chapterNumber === selectedChapter}>
+                {chapterNumber}
+              </option>
+            );
+          })}
+        </select>
       </form>
 
       <form method="get" action="/bible" class="control-group" data-reference-form>
         <label for="ref">Reference jump</label>
         <input id="ref" type="text" name="ref" placeholder="e.g. John 3:16" value={refQuery} data-reference-input />
+        <input type="hidden" name="scope" value={selectedScope} data-scope-input />
         <button type="submit">Open</button>
       </form>
 
-      <form method="get" class="control-group" action={`/bible/${selectedBookCode}/${selectedChapter}`}>
+      <form method="get" class="control-group" action={`/bible/${selectedBookCode}/${selectedChapter}`} data-search-form>
         <label for="q">Search text or verse</label>
-        <input id="q" type="search" name="q" placeholder="e.g. in the beginning" value={query} />
+        <input id="q" type="search" name="q" placeholder="e.g. in the beginning" value={query} data-search-input />
+        <input type="hidden" name="scope" value={selectedScope} data-scope-input />
         <button type="submit">Search</button>
       </form>
     </section>
@@ -180,10 +222,7 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
       </div>
     </header>
     {chapterFootnoteCount > 0 ? (
-      <div class="chapter-footnotes-controls">
-        <button type="button" class="footnote-toggle" data-footnote-toggle aria-expanded="false">
-          Show Footnotes
-        </button>
+      <div class="chapter-footnotes-controls" data-chapter-footnotes-controls>
         <p class="meta">
           {chapterFootnoteCount} verse
           {chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
@@ -202,7 +241,7 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
               </a>
               <span>{verse.text}</span>
               {footnote ? (
-                <span class="verse-footnotes" data-verse-footnotes hidden>
+                <span class="verse-footnotes" data-verse-footnotes>
                   <a
                     class="verse-footnote-pill"
                     href={footnote.href}
@@ -240,7 +279,10 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
         <ul class="search-results">
           {searchResults.map((result) => (
             <li>
-              <a class="search-result-card" href={`/bible/${result.bookCode}/${result.chapter}#verse-${result.verse}`}>
+              <a
+                class="search-result-card"
+                href={`/bible/${result.bookCode}/${result.chapter}${scopeSuffix}#verse-${result.verse}`}
+              >
                 <span class="search-result-reference">{result.reference}</span>
                 <span class="search-result-text">{result.text}</span>
               </a>
@@ -253,31 +295,186 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
     </section>
   ) : null}
 
-  <script is:inline>
+  <script is:inline define:vars={{ bookCatalogJson }}>
     (() => {
-      const initFootnoteToggle = () => {
-        const toggle = document.querySelector("[data-footnote-toggle]");
-        const footnotes = Array.from(document.querySelectorAll("[data-verse-footnotes]"));
-        if (!(toggle instanceof HTMLButtonElement) || footnotes.length === 0) {
-          return;
+      const bookCatalog = JSON.parse(bookCatalogJson);
+      const chapterForm = document.querySelector("[data-chapter-form]");
+      const bookSelect = document.querySelector("[data-book-select]");
+      const chapterSelect = document.querySelector("[data-chapter-select]");
+      const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
+      const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
+      const referenceForm = document.querySelector("[data-reference-form]");
+      const referenceInput = document.querySelector("[data-reference-input]");
+      const searchForm = document.querySelector("[data-search-form]");
+      const searchInput = document.querySelector("[data-search-input]");
+
+      const parseScope = (value) => {
+        if (value === "ot" || value === "nt") {
+          return value;
+        }
+        return "all";
+      };
+
+      const getActiveScope = () => {
+        const params = new URLSearchParams(window.location.search);
+        return parseScope(String(params.get("scope") || "").trim().toLowerCase());
+      };
+
+      const getScopeSuffix = (scope) => (scope === "all" ? "" : `?scope=${scope}`);
+
+      const buildChapterUrl = (bookCode, chapter, scope) =>
+        `/bible/${encodeURIComponent(bookCode)}/${chapter}${getScopeSuffix(scope)}`;
+
+      const syncScopeInputs = (scope) => {
+        for (const input of scopeInputs) {
+          if (!(input instanceof HTMLInputElement)) {
+            continue;
+          }
+          input.value = scope;
+        }
+      };
+
+      const setActiveScopePill = (scope) => {
+        for (const pill of scopePills) {
+          if (!(pill instanceof HTMLElement)) {
+            continue;
+          }
+          const pillScope = String(pill.dataset.scope || "all");
+          pill.classList.toggle("is-active", pillScope === scope);
+          if (pill instanceof HTMLButtonElement) {
+            pill.setAttribute("aria-pressed", pillScope === scope ? "true" : "false");
+          }
+        }
+      };
+
+      const getScopedBooks = (scope) =>
+        scope === "all" ? bookCatalog : bookCatalog.filter((book) => book.testament === scope);
+
+      const populateBookOptions = (scope, preferredBookCode) => {
+        if (!(bookSelect instanceof HTMLSelectElement)) {
+          return "";
         }
 
-        const setVisible = (visible) => {
-          footnotes.forEach((item) => {
-            if (item instanceof HTMLElement) {
-              item.hidden = !visible;
-            }
-          });
-          toggle.setAttribute("aria-expanded", String(visible));
-          toggle.textContent = visible ? "Hide Footnotes" : "Show Footnotes";
-        };
+        const scopedBooks = getScopedBooks(scope);
+        const fallbackBookCode = scopedBooks[0]?.code || "";
+        const activeBookCode = scopedBooks.some((book) => book.code === preferredBookCode)
+          ? preferredBookCode
+          : fallbackBookCode;
 
-        setVisible(false);
-        toggle.addEventListener("click", () => {
-          const expanded = toggle.getAttribute("aria-expanded") === "true";
-          setVisible(!expanded);
+        bookSelect.innerHTML = "";
+        for (const book of scopedBooks) {
+          const option = document.createElement("option");
+          option.value = book.code;
+          option.textContent = book.name;
+          option.selected = book.code === activeBookCode;
+          bookSelect.append(option);
+        }
+
+        return activeBookCode;
+      };
+
+      const populateChapterOptions = (bookCode, preferredChapter) => {
+        if (!(chapterSelect instanceof HTMLSelectElement)) {
+          return 1;
+        }
+
+        const selectedBook = bookCatalog.find((book) => book.code === bookCode);
+        const maxChapter = selectedBook?.chapterCount || 1;
+        const safeChapter = Math.min(Math.max(preferredChapter, 1), maxChapter);
+
+        chapterSelect.innerHTML = "";
+        for (let chapterNumber = 1; chapterNumber <= maxChapter; chapterNumber += 1) {
+          const option = document.createElement("option");
+          option.value = String(chapterNumber);
+          option.textContent = String(chapterNumber);
+          option.selected = chapterNumber === safeChapter;
+          chapterSelect.append(option);
+        }
+
+        return safeChapter;
+      };
+
+      const submitOnEnter = (input, form) => {
+        if (!(input instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) {
+          return;
+        }
+        input.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") {
+            return;
+          }
+          event.preventDefault();
+          form.requestSubmit();
         });
       };
+
+      let activeScope = getActiveScope();
+      setActiveScopePill(activeScope);
+      syncScopeInputs(activeScope);
+
+      if (
+        chapterForm instanceof HTMLFormElement &&
+        bookSelect instanceof HTMLSelectElement &&
+        chapterSelect instanceof HTMLSelectElement
+      ) {
+        const initialBookCode = String(bookSelect.value || "");
+        const initialChapterValue = Number.parseInt(String(chapterSelect.value || "1"), 10);
+        const selectedBookCode = populateBookOptions(activeScope, initialBookCode);
+        populateChapterOptions(
+          selectedBookCode,
+          Number.isFinite(initialChapterValue) && initialChapterValue > 0 ? initialChapterValue : 1
+        );
+
+        bookSelect.addEventListener("change", () => {
+          const nextBookCode = String(bookSelect.value || "");
+          if (!nextBookCode) {
+            return;
+          }
+          populateChapterOptions(nextBookCode, 1);
+          window.location.assign(buildChapterUrl(nextBookCode, 1, activeScope));
+        });
+
+        chapterSelect.addEventListener("change", () => {
+          const nextBookCode = String(bookSelect.value || "");
+          if (!nextBookCode) {
+            return;
+          }
+          const nextChapter = Number.parseInt(String(chapterSelect.value || "1"), 10);
+          const safeChapter = Number.isFinite(nextChapter) && nextChapter > 0 ? nextChapter : 1;
+          window.location.assign(buildChapterUrl(nextBookCode, safeChapter, activeScope));
+        });
+      }
+
+      for (const pill of scopePills) {
+        if (!(pill instanceof HTMLButtonElement)) {
+          continue;
+        }
+        pill.addEventListener("click", () => {
+          const nextScope = parseScope(String(pill.dataset.scope || "all"));
+          if (nextScope === activeScope) {
+            return;
+          }
+          activeScope = nextScope;
+          setActiveScopePill(activeScope);
+          syncScopeInputs(activeScope);
+
+          if (
+            chapterForm instanceof HTMLFormElement &&
+            bookSelect instanceof HTMLSelectElement &&
+            chapterSelect instanceof HTMLSelectElement
+          ) {
+            const currentBookCode = String(bookSelect.value || "");
+            const scopedBookCode = populateBookOptions(activeScope, currentBookCode);
+            if (!scopedBookCode) {
+              return;
+            }
+            populateChapterOptions(scopedBookCode, 1);
+            window.location.assign(buildChapterUrl(scopedBookCode, 1, activeScope));
+          }
+        });
+      }
+
+      submitOnEnter(referenceInput, referenceForm);
+      submitOnEnter(searchInput, searchForm);
 
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
@@ -351,7 +548,6 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
         }, 1400);
       };
 
-      initFootnoteToggle();
       const verseTarget = parseVerseTarget();
       highlightVerse(verseTarget);
     })();
@@ -367,6 +563,40 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
     display: grid;
     gap: 0.8rem;
     margin-top: 0.8rem;
+  }
+
+  .scope-pills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .scope-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.1rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .scope-pill:hover,
+  .scope-pill:focus-visible {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-hover);
+    outline: none;
+  }
+
+  .scope-pill.is-active {
+    border-color: var(--color-link);
+    background: color-mix(in srgb, var(--color-link) 14%, var(--surface-bg));
   }
 
   .reader-tools summary {
@@ -386,7 +616,7 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
   }
 
   .reader-tools summary::before {
-    content: "▸";
+    content: ">";
     display: inline-block;
     margin-right: 0.45rem;
     transition: transform 0.15s ease;
@@ -405,6 +635,10 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
 
   .control-group label {
     font-weight: 600;
+  }
+
+  .control-group select {
+    min-width: 7rem;
   }
 
   .chapter-header {
@@ -429,25 +663,6 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
 
   .chapter-footnotes-controls p {
     margin: 0;
-  }
-
-  .footnote-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2rem;
-    padding: 0.3rem 0.85rem;
-    border-radius: 999px;
-    border: 1px solid var(--surface-border);
-    background: var(--surface-bg-muted);
-    color: var(--color-text);
-    font-weight: 600;
-  }
-
-  .footnote-toggle:hover,
-  .footnote-toggle:focus-visible {
-    border-color: var(--surface-border-strong);
-    background: var(--surface-bg-hover);
   }
 
   .chapter-nav {
@@ -558,6 +773,14 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
     line-height: 1;
   }
 
+  :global(html[data-reader-mode="read"] [data-verse-footnotes]) {
+    display: none !important;
+  }
+
+  :global(html[data-reader-mode="read"] [data-chapter-footnotes-controls]) {
+    display: none !important;
+  }
+
   .verse-footnote-pill:hover,
   .verse-footnote-pill:focus-visible {
     border-color: var(--color-link);
@@ -600,3 +823,4 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
     margin: 0.35rem 0 0;
   }
 </style>
+

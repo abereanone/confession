@@ -313,6 +313,35 @@ const verseLookup = await getVerseLookup([...references]);
     applyFromGlobalMode(mode);
   });
 
+  const scrollToConfessionTop = () => {
+    if (!(confessionPage instanceof HTMLElement)) {
+      return;
+    }
+
+    const header = document.querySelector(".top");
+    const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+    const targetTop = window.scrollY + confessionPage.getBoundingClientRect().top - headerHeight - 12;
+
+    window.scrollTo({
+      top: Math.max(targetTop, 0),
+      behavior: "smooth",
+    });
+  };
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const topLink = target?.closest('a[href="#confession-top"]');
+    if (!(topLink instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    scrollToConfessionTop();
+    if (window.location.hash !== "#confession-top") {
+      window.history.replaceState(null, "", "#confession-top");
+    }
+  });
+
   if (input instanceof HTMLInputElement && meta && noResults) {
     const tocItems = unitToc ? Array.from(unitToc.querySelectorAll("li")) : [];
     const totalParagraphs = paragraphCards.length;
@@ -375,6 +404,7 @@ const verseLookup = await getVerseLookup([...references]);
     border: 1px solid var(--confession-accent-border, var(--surface-border));
     border-radius: 14px;
     padding: 0.8rem;
+    scroll-margin-top: 7.5rem;
     background:
       linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 30%),
       transparent;
