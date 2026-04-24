@@ -193,18 +193,18 @@ const bookCatalogJson = JSON.stringify(books);
         </select>
       </form>
 
-      <form method="get" action="/bible" class="control-group" data-reference-form>
-        <label for="ref">Reference jump</label>
-        <input id="ref" type="text" name="ref" placeholder="e.g. John 3:16" value={refQuery} data-reference-input />
+      <form method="get" action="/bible" class="control-group control-group-query">
+        <label for="lookup">Jump or search</label>
+        <input
+          id="lookup"
+          type="search"
+          name="lookup"
+          placeholder="e.g. John 3:16 or in the beginning"
+          value={refQuery || query}
+          data-lookup-input
+        />
         <input type="hidden" name="scope" value={selectedScope} data-scope-input />
-        <button type="submit">Open</button>
-      </form>
-
-      <form method="get" class="control-group" action={`/bible/${selectedBookCode}/${selectedChapter}`} data-search-form>
-        <label for="q">Search text or verse</label>
-        <input id="q" type="search" name="q" placeholder="e.g. in the beginning" value={query} data-search-input />
-        <input type="hidden" name="scope" value={selectedScope} data-scope-input />
-        <button type="submit">Search</button>
+        <button type="submit">Go</button>
       </form>
     </section>
   </details>
@@ -303,10 +303,6 @@ const bookCatalogJson = JSON.stringify(books);
       const chapterSelect = document.querySelector("[data-chapter-select]");
       const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
       const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
-      const referenceForm = document.querySelector("[data-reference-form]");
-      const referenceInput = document.querySelector("[data-reference-input]");
-      const searchForm = document.querySelector("[data-search-form]");
-      const searchInput = document.querySelector("[data-search-input]");
 
       const parseScope = (value) => {
         if (value === "ot" || value === "nt") {
@@ -394,19 +390,6 @@ const bookCatalogJson = JSON.stringify(books);
         return safeChapter;
       };
 
-      const submitOnEnter = (input, form) => {
-        if (!(input instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) {
-          return;
-        }
-        input.addEventListener("keydown", (event) => {
-          if (event.key !== "Enter") {
-            return;
-          }
-          event.preventDefault();
-          form.requestSubmit();
-        });
-      };
-
       let activeScope = getActiveScope();
       setActiveScopePill(activeScope);
       syncScopeInputs(activeScope);
@@ -473,9 +456,6 @@ const bookCatalogJson = JSON.stringify(books);
         });
       }
 
-      submitOnEnter(referenceInput, referenceForm);
-      submitOnEnter(searchInput, searchForm);
-
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
         const refValue = String(params.get("ref") || "").trim();
@@ -492,12 +472,12 @@ const bookCatalogJson = JSON.stringify(books);
             const versePart = String(match[3] || "");
             const verseFromRef = versePart ? Number.parseInt(versePart.split("-")[0] || "", 10) : NaN;
             if (Number.isFinite(verseFromRef) && verseFromRef > 0) {
-              return verseFromRef;
+              return { verse: verseFromRef, source: "ref" };
             }
             const pathParts = window.location.pathname.split("/").filter(Boolean);
             const currentChapter = Number.parseInt(pathParts[pathParts.length - 1] || "", 10);
             if (Number.isFinite(chapterFromRef) && Number.isFinite(currentChapter) && currentChapter === 1) {
-              return chapterFromRef;
+              return { verse: chapterFromRef, source: "ref" };
             }
           }
         }
@@ -506,14 +486,14 @@ const bookCatalogJson = JSON.stringify(books);
         if (hashMatch) {
           const hashVerse = Number.parseInt(hashMatch[1] || "", 10);
           if (Number.isFinite(hashVerse) && hashVerse > 0) {
-            return hashVerse;
+            return { verse: hashVerse, source: "hash" };
           }
         }
 
-        return NaN;
+        return { verse: NaN, source: "none" };
       };
 
-      const highlightVerse = (verseNumber) => {
+      const highlightVerse = (verseNumber, shouldScroll = true) => {
         if (!Number.isFinite(verseNumber) || verseNumber < 1) {
           return;
         }
@@ -536,7 +516,7 @@ const bookCatalogJson = JSON.stringify(books);
         const visibleBottom = window.scrollY + window.innerHeight - 16;
         const isVisible = absoluteTop >= visibleTop && absoluteBottom <= visibleBottom;
 
-        if (!isVisible) {
+        if (shouldScroll && !isVisible) {
           window.scrollTo({
             top: Math.max(targetTop, 0),
             behavior: "smooth",
@@ -548,8 +528,30 @@ const bookCatalogJson = JSON.stringify(books);
         }, 1400);
       };
 
+      const scrollChapterHeaderIntoView = () => {
+        const chapterHeader = document.querySelector(".chapter-header");
+        if (!(chapterHeader instanceof HTMLElement)) {
+          return;
+        }
+        const header = document.querySelector(".top");
+        const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+        const chapterTop = window.scrollY + chapterHeader.getBoundingClientRect().top - headerHeight - 10;
+        window.scrollTo({
+          top: Math.max(chapterTop, 0),
+          behavior: "auto",
+        });
+      };
+
       const verseTarget = parseVerseTarget();
-      highlightVerse(verseTarget);
+      if (verseTarget.source === "ref") {
+        if (/^#verse-\d+$/.test(window.location.hash)) {
+          window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
+          scrollChapterHeaderIntoView();
+        }
+        highlightVerse(verseTarget.verse, false);
+      } else {
+        highlightVerse(verseTarget.verse, verseTarget.source === "hash");
+      }
     })();
   </script>
 </Main>
@@ -560,9 +562,15 @@ const bookCatalogJson = JSON.stringify(books);
   }
 
   .controls {
-    display: grid;
-    gap: 0.8rem;
-    margin-top: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.55rem 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .reader-tools {
+    padding: 0.7rem 0.85rem;
   }
 
   .scope-pills {
@@ -628,9 +636,10 @@ const bookCatalogJson = JSON.stringify(books);
 
   .control-group {
     display: flex;
-    gap: 0.55rem;
+    gap: 0.45rem;
     align-items: center;
     flex-wrap: wrap;
+    margin: 0;
   }
 
   .control-group label {
@@ -639,6 +648,15 @@ const bookCatalogJson = JSON.stringify(books);
 
   .control-group select {
     min-width: 7rem;
+  }
+
+  .control-group-query {
+    flex: 1 1 26rem;
+  }
+
+  .control-group-query input[type="search"] {
+    flex: 1 1 18rem;
+    min-width: 16rem;
   }
 
   .chapter-header {

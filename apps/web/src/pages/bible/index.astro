@@ -64,8 +64,9 @@ import Main from "../../layouts/Main.astro";
     };
 
     const params = new URLSearchParams(window.location.search);
-    const query = String(params.get("q") || "").trim();
-    const ref = String(params.get("ref") || "").trim();
+    let query = String(params.get("q") || "").trim();
+    let ref = String(params.get("ref") || "").trim();
+    const lookup = String(params.get("lookup") || "").trim();
     const rawScope = String(params.get("scope") || "").trim().toLowerCase();
     const scope = rawScope === "ot" || rawScope === "nt" ? rawScope : "all";
     const rawBook = params.get("book") || "gen";
@@ -74,14 +75,22 @@ import Main from "../../layouts/Main.astro";
     if (!Number.isFinite(chapter) || chapter < 1) {
       chapter = 1;
     }
-    let targetVerse = 0;
+    if (!query && !ref && lookup) {
+      const lookupTarget = resolveRefTarget(lookup);
+      if (lookupTarget) {
+        ref = lookup;
+        book = lookupTarget.book;
+        chapter = lookupTarget.chapter;
+      } else {
+        query = lookup;
+      }
+    }
 
     if (ref) {
       const resolvedTarget = resolveRefTarget(ref);
       if (resolvedTarget) {
         book = resolvedTarget.book;
         chapter = resolvedTarget.chapter;
-        targetVerse = resolvedTarget.verse;
       }
     }
 
@@ -95,10 +104,6 @@ import Main from "../../layouts/Main.astro";
     if (scope !== "all") {
       target += query || ref ? `&scope=${encodeURIComponent(scope)}` : `?scope=${encodeURIComponent(scope)}`;
     }
-    if (targetVerse > 0) {
-      target += `#verse-${targetVerse}`;
-    }
-
     window.location.replace(target);
   })();
 </script>

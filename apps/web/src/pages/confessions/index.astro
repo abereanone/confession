@@ -25,7 +25,7 @@ const confessions = listConfessions();
   #confession-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-    gap: 0.5rem 1rem;
+    gap: 1.1rem;
     padding: 0;
   }
 
@@ -36,13 +36,16 @@ const confessions = listConfessions();
   #confession-list li a {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.35rem;
     height: 100%;
-    padding: 0.5rem 0.6rem;
+    min-height: 3.9rem;
+    padding: .35rem;
     border-radius: 10px;
     border: 1px solid var(--card-border);
     border-left-width: 4px;
+    border-top-width: 2px;
     border-left-color: var(--confession-accent-border, var(--surface-border-strong));
+    border-top-color: var(--confession-accent-border, var(--surface-border-strong));
     background: var(--card-bg);
     text-decoration: none;
   }

@@ -1,6 +1,9 @@
 ---
-const { title = "Confessions Hub" } = Astro.props;
-const issueReportURL = "https://github.com/abereanone/confession/issues/new";
+import { siteSettings } from "../lib/siteSettings";
+
+const { title = siteSettings.siteName } = Astro.props;
+const issueReportURL = siteSettings.issueReportUrl;
+const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
 const currentYear = new Date().getFullYear();
 ---
 
@@ -10,6 +13,21 @@ const currentYear = new Date().getFullYear();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    {siteSettings.analytics.enabled ? (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}></script>
+        <script is:inline define:vars={{ gaMeasurementId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            dataLayer.push(arguments);
+          }
+          gtag("js", new Date());
+          gtag("config", gaMeasurementId, {
+            anonymize_ip: true,
+          });
+        </script>
+      </>
+    ) : null}
     <script is:inline>
       (() => {
         const storageKey = "site-theme";
