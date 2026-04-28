@@ -58,11 +58,11 @@ function formatVersionLabel(version) {
   return String(version).trim();
 }
 
-function getTooltipText(verse) {
+function getTooltipText(reference, verse) {
   if (!verse) {
     return "Verse not found.";
   }
-  return `${verse.text} (${formatVersionLabel(verse.version)})`;
+  return `${reference} - ${verse.text} (${formatVersionLabel(verse.version)})`;
 }
 
 function ensureTooltip(element) {
@@ -87,7 +87,7 @@ function ensureTooltip(element) {
     chapterLinkElement.textContent = `Open ${chapterLink.label} in Bible Reader`;
     tooltip.append(chapterLinkElement);
   } else {
-    tooltip.textContent = getTooltipText(verse);
+    tooltip.textContent = getTooltipText(reference, verse);
   }
   document.body.appendChild(tooltip);
 

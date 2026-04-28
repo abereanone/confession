@@ -224,8 +224,7 @@ const bookCatalogJson = JSON.stringify(books);
     {chapterFootnoteCount > 0 ? (
       <div class="chapter-footnotes-controls" data-chapter-footnotes-controls>
         <p class="meta">
-          {chapterFootnoteCount} verse
-          {chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
+          {chapterFootnoteCount} verse{chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
         </p>
       </div>
     ) : null}

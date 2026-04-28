@@ -417,12 +417,39 @@ export async function getVerseLookup(
       continue;
     }
 
-    const verse = await getVerseByReference(reference);
-    if (verse) {
-      lookup[key] = {
-        text: verse.text,
-        version: verse.version,
-      };
+    // Check for range (e.g., "1Co 2:10-12")
+    const rangeMatch = reference.match(/:(\d+)-(\d+)$/);
+    if (rangeMatch) {
+      const start = parseInt(rangeMatch[1], 10);
+      const end = parseInt(rangeMatch[2], 10);
+      const baseRef = reference.replace(/-\d+$/, ""); // e.g., "1Co 2:10"
+      const resolved = await resolveBibleReference(baseRef);
+      if (resolved) {
+        const data = await getLoadedBibleData();
+        const verses: string[] = [];
+        for (let v = start; v <= end; v++) {
+          const verseKey = `${resolved.bookCode} ${resolved.chapter}:${v}`;
+          const verse = data.verseMap.get(verseKey);
+          if (verse) {
+            verses.push(`${v} ${verse.text}`);
+          }
+        }
+        if (verses.length > 0) {
+          lookup[key] = {
+            text: verses.join(" "),
+            version: "BSB",
+          };
+        }
+      }
+    } else {
+      // Single verse
+      const verse = await getVerseByReference(reference);
+      if (verse) {
+        lookup[key] = {
+          text: verse.text,
+          version: verse.version,
+        };
+      }
     }
   }
 
