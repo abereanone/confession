@@ -1,4 +1,4 @@
-const googleAnalyticsMeasurementId = String(import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "").trim();
+const googleAnalyticsMeasurementId = String(import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "G-TK98VB1MR2").trim();
 
 export const siteSettings = {
   siteName: "Confessions Hub",
@@ -8,4 +8,3 @@ export const siteSettings = {
     enabled: googleAnalyticsMeasurementId.length > 0,
   },
 } as const;
-
