@@ -137,9 +137,8 @@ const bookCatalogJson = JSON.stringify(books);
 
 <Main title="Bible Reader">
   <h1>{provider}</h1>
-  <details class="reader-tools card-panel" open data-tools-details>
-    <summary data-tools-summary-label>Hide Search Tools</summary>
-    <section class="controls">
+  <section class="reader-tools card-panel">
+    <div class="controls">
       <div class="scope-pills" role="group" aria-label="Book scope">
         <button
           type="button"
@@ -206,19 +205,19 @@ const bookCatalogJson = JSON.stringify(books);
         <input type="hidden" name="scope" value={selectedScope} data-scope-input />
         <button type="submit">Go</button>
       </form>
-    </section>
-  </details>
+    </div>
+  </section>
 
   <section class="card-panel section-spacer">
     <header class="chapter-header">
       <h2>{selectedBookName} {selectedChapter}</h2>
       <div class="chapter-nav">
         {previousChapterHref ? (
-          <a href={previousChapterHref}>Previous</a>
+          <a href={previousChapterHref} data-reader-nav>Previous</a>
         ) : (
           <span class="chapter-nav-disabled">Previous</span>
         )}
-        {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="chapter-nav-disabled">Next</span>}
+        {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
       </div>
     </header>
     {chapterFootnoteCount > 0 ? (
@@ -261,11 +260,11 @@ const bookCatalogJson = JSON.stringify(books);
 
     <div class="chapter-nav chapter-nav-bottom">
       {previousChapterHref ? (
-        <a href={previousChapterHref}>Previous</a>
+        <a href={previousChapterHref} data-reader-nav>Previous</a>
       ) : (
         <span class="chapter-nav-disabled">Previous</span>
       )}
-      {nextChapterHref ? <a href={nextChapterHref}>Next</a> : <span class="chapter-nav-disabled">Next</span>}
+      {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
     </div>
   </section>
 
@@ -300,10 +299,11 @@ const bookCatalogJson = JSON.stringify(books);
       const chapterForm = document.querySelector("[data-chapter-form]");
       const bookSelect = document.querySelector("[data-book-select]");
       const chapterSelect = document.querySelector("[data-chapter-select]");
-      const toolsDetails = document.querySelector("[data-tools-details]");
-      const toolsSummaryLabel = document.querySelector("[data-tools-summary-label]");
       const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
       const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
+      const lookupForm = document.querySelector(".control-group-query");
+      const readerNavLinks = Array.from(document.querySelectorAll("[data-reader-nav]"));
+      const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
 
       const parseScope = (value) => {
         if (value === "ot" || value === "nt") {
@@ -321,6 +321,14 @@ const bookCatalogJson = JSON.stringify(books);
 
       const buildChapterUrl = (bookCode, chapter, scope) =>
         `/bible/${encodeURIComponent(bookCode)}/${chapter}${getScopeSuffix(scope)}`;
+
+      const requestReaderScroll = () => {
+        try {
+          window.sessionStorage.setItem(readerScrollStorageKey, "1");
+        } catch {
+          // ignore
+        }
+      };
 
       const syncScopeInputs = (scope) => {
         for (const input of scopeInputs) {
@@ -395,18 +403,6 @@ const bookCatalogJson = JSON.stringify(books);
       setActiveScopePill(activeScope);
       syncScopeInputs(activeScope);
 
-      const updateToolsSummaryLabel = () => {
-        if (!(toolsDetails instanceof HTMLDetailsElement) || !(toolsSummaryLabel instanceof HTMLElement)) {
-          return;
-        }
-        toolsSummaryLabel.textContent = toolsDetails.open ? "Hide Search Tools" : "Show Search Tools";
-      };
-
-      updateToolsSummaryLabel();
-      if (toolsDetails instanceof HTMLDetailsElement) {
-        toolsDetails.addEventListener("toggle", updateToolsSummaryLabel);
-      }
-
       if (
         chapterForm instanceof HTMLFormElement &&
         bookSelect instanceof HTMLSelectElement &&
@@ -426,6 +422,7 @@ const bookCatalogJson = JSON.stringify(books);
             return;
           }
           populateChapterOptions(nextBookCode, 1);
+          requestReaderScroll();
           window.location.assign(buildChapterUrl(nextBookCode, 1, activeScope));
         });
 
@@ -436,6 +433,7 @@ const bookCatalogJson = JSON.stringify(books);
           }
           const nextChapter = Number.parseInt(String(chapterSelect.value || "1"), 10);
           const safeChapter = Number.isFinite(nextChapter) && nextChapter > 0 ? nextChapter : 1;
+          requestReaderScroll();
           window.location.assign(buildChapterUrl(nextBookCode, safeChapter, activeScope));
         });
       }
@@ -464,9 +462,21 @@ const bookCatalogJson = JSON.stringify(books);
               return;
             }
             populateChapterOptions(scopedBookCode, 1);
+            requestReaderScroll();
             window.location.assign(buildChapterUrl(scopedBookCode, 1, activeScope));
           }
         });
+      }
+
+      if (lookupForm instanceof HTMLFormElement) {
+        lookupForm.addEventListener("submit", requestReaderScroll);
+      }
+
+      for (const link of readerNavLinks) {
+        if (!(link instanceof HTMLAnchorElement)) {
+          continue;
+        }
+        link.addEventListener("click", requestReaderScroll);
       }
 
       const parseVerseTarget = () => {
@@ -519,13 +529,13 @@ const bookCatalogJson = JSON.stringify(books);
         target.classList.add("is-target", "is-target-flash");
 
         const header = document.querySelector(".top");
-        const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
-        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerHeight - 12;
+        const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0;
+        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerBottom - 12;
 
         const rect = target.getBoundingClientRect();
         const absoluteTop = window.scrollY + rect.top;
         const absoluteBottom = window.scrollY + rect.bottom;
-        const visibleTop = window.scrollY + headerHeight + 8;
+        const visibleTop = window.scrollY + headerBottom + 8;
         const visibleBottom = window.scrollY + window.innerHeight - 16;
         const isVisible = absoluteTop >= visibleTop && absoluteBottom <= visibleBottom;
 
@@ -547,23 +557,43 @@ const bookCatalogJson = JSON.stringify(books);
           return;
         }
         const header = document.querySelector(".top");
-        const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
-        const chapterTop = window.scrollY + chapterHeader.getBoundingClientRect().top - headerHeight - 10;
+        const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0;
+        const chapterTop = window.scrollY + chapterHeader.getBoundingClientRect().top - headerBottom - 12;
         window.scrollTo({
           top: Math.max(chapterTop, 0),
           behavior: "auto",
         });
       };
 
+      const settleChapterHeaderIntoView = () => {
+        window.requestAnimationFrame(scrollChapterHeaderIntoView);
+        window.setTimeout(scrollChapterHeaderIntoView, 80);
+        window.setTimeout(scrollChapterHeaderIntoView, 220);
+      };
+
+      const shouldScrollToChapter = () => {
+        try {
+          const shouldScroll = window.sessionStorage.getItem(readerScrollStorageKey) === "1";
+          window.sessionStorage.removeItem(readerScrollStorageKey);
+          return shouldScroll;
+        } catch {
+          return false;
+        }
+      };
+
       const verseTarget = parseVerseTarget();
       if (verseTarget.source === "ref") {
         if (/^#verse-\d+$/.test(window.location.hash)) {
           window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
-          scrollChapterHeaderIntoView();
+          settleChapterHeaderIntoView();
         }
         highlightVerse(verseTarget.verse, false);
       } else {
         highlightVerse(verseTarget.verse, verseTarget.source === "hash");
+      }
+
+      if (verseTarget.source === "none" && shouldScrollToChapter()) {
+        settleChapterHeaderIntoView();
       }
     })();
   </script>
@@ -579,7 +609,7 @@ const bookCatalogJson = JSON.stringify(books);
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 0.55rem 1rem;
-    margin-top: 0.5rem;
+    margin-top: 0;
   }
 
   .reader-tools {
@@ -620,33 +650,6 @@ const bookCatalogJson = JSON.stringify(books);
   .scope-pill.is-active {
     border-color: var(--color-link);
     background: color-mix(in srgb, var(--color-link) 14%, var(--surface-bg));
-  }
-
-  .reader-tools summary {
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--color-link);
-    list-style: none;
-  }
-
-  .reader-tools summary:hover,
-  .reader-tools summary:focus-visible {
-    color: var(--color-link-hover);
-  }
-
-  .reader-tools summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .reader-tools summary::before {
-    content: ">";
-    display: inline-block;
-    margin-right: 0.45rem;
-    transition: transform 0.15s ease;
-  }
-
-  .reader-tools[open] summary::before {
-    transform: rotate(90deg);
   }
 
   .control-group {
