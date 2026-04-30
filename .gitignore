@@ -2,4 +2,7 @@ node_modules
 apps/*/node_modules
 apps/*/.expo
 apps/*/dist
+apps/*/.astro/
 
+* (# Name clash * #)*
+* (# Edit conflict * #)*
