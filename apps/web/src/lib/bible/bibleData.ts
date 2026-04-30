@@ -242,7 +242,7 @@ async function loadBibleData(): Promise<LoadedBibleData> {
   const verses: BibleVerse[] = [];
 
   for (const book of BIBLE_BOOKS) {
-    const chaptersRaw = parsed[book.bsbCode];
+    const chaptersRaw = parsed[book.code];
     if (!Array.isArray(chaptersRaw) || chaptersRaw.length === 0) {
       continue;
     }
