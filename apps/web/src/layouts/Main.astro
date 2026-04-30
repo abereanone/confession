@@ -5,6 +5,9 @@ const { title = siteSettings.siteName } = Astro.props;
 const issueReportURL = siteSettings.issueReportUrl;
 const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
 const currentYear = new Date().getFullYear();
+const siteDescription = "Search and read historic Christian confessions with their Scripture references.";
+const logoUrl = "/logo.png?v=2";
+const ogImageUrl = "/ogLogo.png?v=1";
 ---
 
 <!doctype html>
@@ -12,6 +15,19 @@ const currentYear = new Date().getFullYear();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={siteDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={siteDescription} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={`${siteSettings.siteName} social preview`} />
+    <meta property="og:image:width" content="1730" />
+    <meta property="og:image:height" content="909" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={siteDescription} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <link rel="icon" type="image/png" href={logoUrl} />
     <title>{title}</title>
     {siteSettings.analytics.enabled ? (
       <>
@@ -71,9 +87,10 @@ const currentYear = new Date().getFullYear();
   </head>
   <body>
     <header class="top">
-      <a href="/" class="brand">Confessions Hub</a>
+      <a href="/" class="brand" aria-label={`${siteSettings.siteName} home`}>
+        <img src={logoUrl} alt="" class="brand-logo" width="96" height="96" />
+      </a>
       <nav>
-        <a href="/">Home</a>
         <a href="/confessions">Confessions</a>
         <a href="/scriptures">Scriptures</a>
         <a href="/bible/gen/1">Bible</a>
@@ -102,6 +119,9 @@ const currentYear = new Date().getFullYear();
         <a href={issueReportURL} target="_blank" rel="noopener noreferrer">Report an Issue</a>
       </p>
       <p class="footer-meta">Freely Given</p>
+      <a href="/" class="footer-brand" aria-label={`${siteSettings.siteName} home`}>
+        <img src={logoUrl} alt="" class="footer-logo" width="220" height="220" />
+      </a>
     </footer>
     <script is:inline>
       (() => {
@@ -248,10 +268,17 @@ const currentYear = new Date().getFullYear();
   }
 
   .brand {
+    display: inline-flex;
+    align-items: center;
     color: var(--color-heading);
     text-decoration: none;
-    font-weight: 700;
-    font-size: 1.2rem;
+  }
+
+  .brand-logo {
+    width: 3.25rem;
+    height: 3.25rem;
+    flex: 0 0 auto;
+    object-fit: contain;
   }
 
   nav {
@@ -295,6 +322,18 @@ const currentYear = new Date().getFullYear();
     padding: 1.5rem 1rem 3rem;
     border-top: 1px solid var(--surface-border);
     background: var(--surface-bg-muted);
+  }
+
+  .footer-brand {
+    display: inline-flex;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+
+  .footer-logo {
+    width: min(70vw, 18rem);
+    height: auto;
+    object-fit: contain;
   }
 
   .footer-search {

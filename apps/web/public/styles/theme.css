@@ -257,6 +257,12 @@ a.confession-link:focus-visible {
   --confession-accent-text: #eee0ff;
 }
 
+[data-confession="canons-of-dordt"] {
+  --confession-accent-border: rgba(113, 168, 130, 0.54);
+  --confession-accent-bg: rgba(113, 168, 130, 0.18);
+  --confession-accent-text: #d8f1de;
+}
+
 [data-theme="light"] [data-confession="westminster-confession"] {
   --confession-accent-border: rgba(45, 118, 198, 0.4);
   --confession-accent-bg: rgba(67, 135, 210, 0.16);
@@ -285,4 +291,10 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(122, 84, 189, 0.42);
   --confession-accent-bg: rgba(147, 106, 216, 0.16);
   --confession-accent-text: #4d2f80;
+}
+
+[data-theme="light"] [data-confession="canons-of-dordt"] {
+  --confession-accent-border: rgba(72, 126, 88, 0.4);
+  --confession-accent-bg: rgba(93, 148, 109, 0.14);
+  --confession-accent-text: #254d30;
 }

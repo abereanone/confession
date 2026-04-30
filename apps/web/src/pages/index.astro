@@ -7,7 +7,7 @@ const updatedAt = getUpdatedAt();
 ---
 
 <Main title="Confessions Hub">
-  <h1>Find Confessions + BSB Fast</h1>
+  <h1>Reformed Confessions & Bible Hub</h1>
   <p>Browse confessions, inspect every cited scripture, and read/search the full Bible text.</p>
 
   <section class="card-panel">
@@ -26,8 +26,18 @@ const updatedAt = getUpdatedAt();
 
   <section class="card-panel section-spacer">
     <h2>Scripture Tools</h2>
-    <p><a href="/scriptures">Open scripture references index</a></p>
-    <p><a href="/bible/gen/1">Read/search the full Bible</a></p>
+    <ul class="tool-list">
+      <li data-tool="references">
+        <a class="tool-item-link" href="/scriptures">
+          <span>Scripture References</span>
+        </a>
+      </li>
+      <li data-tool="bible">
+        <a class="tool-item-link" href="/bible/gen/1">
+          <span>Read the Bible</span>
+        </a>
+      </li>
+    </ul>
   </section>
 </Main>
 
@@ -41,14 +51,17 @@ const updatedAt = getUpdatedAt();
     margin: 0;
     padding: 0;
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
-  .confession-list li {
+  .confession-list li,
+  .tool-list li {
     list-style: none;
   }
 
-  .confession-item-link {
+  .confession-item-link,
+  .tool-item-link {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -62,8 +75,68 @@ const updatedAt = getUpdatedAt();
   }
 
   .confession-item-link:hover,
-  .confession-item-link:focus-visible {
+  .confession-item-link:focus-visible,
+  .tool-item-link:hover,
+  .tool-item-link:focus-visible {
     border-color: var(--confession-accent-border, var(--card-hover-border));
     text-decoration: none;
+  }
+
+  .tool-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .tool-item-link {
+    border-left-color: var(--tool-accent-border);
+    color: var(--tool-accent-text);
+    font-weight: 600;
+  }
+
+  .tool-item-link:hover,
+  .tool-item-link:focus-visible {
+    border-color: var(--tool-accent-border);
+    color: var(--tool-accent-text);
+  }
+
+  [data-tool="references"] {
+    --tool-accent-border: rgba(168, 174, 181, 0.56);
+    --tool-accent-bg: rgba(168, 174, 181, 0.16);
+    --tool-accent-text: #d9dee4;
+  }
+
+  [data-tool="bible"] {
+    --tool-accent-border: rgba(78, 88, 98, 0.68);
+    --tool-accent-bg: rgba(78, 88, 98, 0.28);
+    --tool-accent-text: #eef1f4;
+  }
+
+  :global([data-theme="light"]) [data-tool="references"] {
+    --tool-accent-border: rgba(104, 113, 122, 0.58);
+    --tool-accent-bg: rgba(188, 194, 201, 0.5);
+    --tool-accent-text: #1f2429;
+  }
+
+  :global([data-theme="light"]) [data-tool="bible"] {
+    --tool-accent-border: rgba(50, 57, 64, 0.64);
+    --tool-accent-bg: rgba(86, 96, 106, 0.28);
+    --tool-accent-text: #11161a;
+  }
+
+  :global([data-theme="light"]) .tool-item-link,
+  :global([data-theme="light"]) .tool-item-link:hover,
+  :global([data-theme="light"]) .tool-item-link:focus-visible {
+    color: var(--tool-accent-text);
+  }
+
+  @media (max-width: 720px) {
+    .confession-list,
+    .tool-list {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
