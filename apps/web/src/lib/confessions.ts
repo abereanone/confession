@@ -17,7 +17,6 @@ export type Confession = {
   shortCode: string;
   title: string;
   unitLabel: string;
-  sourceUrl: string;
   units: Unit[];
 };
 
