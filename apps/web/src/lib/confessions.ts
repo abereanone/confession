@@ -159,8 +159,21 @@ export function getConfessionAbout(confession: Confession): ConfessionAbout {
     };
   }
 
+  if (confession.slug === "second-helvetic-confession") {
+    return {
+      title: "About the 2nd Helvetic Confession",
+      paragraphs: [
+        "From Wikipedia: The Second Helvetic Confession (Latin: Confessio Helvetica posterior) was written by Bullinger in 1562 and revised in 1564 as a private exercise. It came to the notice of Elector Palatine Frederick III, who had it translated into German and published. The Confession was attractive to some Reformed leaders as a corrective to what they saw as the overly Lutheran statements of the Strasbourg Consensus. An attempt was made in early 1566 to have all the churches of  Switzerland sign the Second Helvetic Confession as a common statement of faith. It gained a favorable hold on the Swiss churches, who had found the First Confession too short and too Lutheran.",
+        "However, 'the Basel clergy refused to sign the confession, stating that although they found no fault with it, they preferred to stand by their own Basel Confession of 1534.' Due to this near-universal approval in Reformed Switzerland, Frederick presented it to the Diet of Augsburg of 1566 as an authoritative document representing the international Reformed faith. According to W. A. Curtis, 'In theological ability and in doctrinal interest few Confessions can bear comparison with it [...] it would be difficult to conceive of a theological manifesto, or compendium of doctrine, more attractive in form and matter, more lucid, effective, and shrewd, more loyal to Scripture, or more instinct with common sense.'",
+      ],
+    };
+  }
+
   return {
     title: "About this confession",
     paragraphs: ["Placeholder: about text has not been added for this confession yet."],
   };
 }
+
+
+
