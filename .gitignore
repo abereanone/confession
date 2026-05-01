@@ -6,5 +6,7 @@ apps/*/.astro/
 apps/web/src/data/confessions/
 apps/mobile/src/data/confessions/
 
+tree.txt
+
 * (# Name clash * #)*
 * (# Edit conflict * #)*
