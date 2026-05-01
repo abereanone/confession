@@ -301,7 +301,6 @@ const bookCatalogJson = JSON.stringify(books);
       const chapterSelect = document.querySelector("[data-chapter-select]");
       const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
       const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
-      const lookupForm = document.querySelector(".control-group-query");
       const readerNavLinks = Array.from(document.querySelectorAll("[data-reader-nav]"));
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
 
@@ -422,7 +421,6 @@ const bookCatalogJson = JSON.stringify(books);
             return;
           }
           populateChapterOptions(nextBookCode, 1);
-          requestReaderScroll();
           window.location.assign(buildChapterUrl(nextBookCode, 1, activeScope));
         });
 
@@ -433,7 +431,6 @@ const bookCatalogJson = JSON.stringify(books);
           }
           const nextChapter = Number.parseInt(String(chapterSelect.value || "1"), 10);
           const safeChapter = Number.isFinite(nextChapter) && nextChapter > 0 ? nextChapter : 1;
-          requestReaderScroll();
           window.location.assign(buildChapterUrl(nextBookCode, safeChapter, activeScope));
         });
       }
@@ -462,14 +459,9 @@ const bookCatalogJson = JSON.stringify(books);
               return;
             }
             populateChapterOptions(scopedBookCode, 1);
-            requestReaderScroll();
             window.location.assign(buildChapterUrl(scopedBookCode, 1, activeScope));
           }
         });
-      }
-
-      if (lookupForm instanceof HTMLFormElement) {
-        lookupForm.addEventListener("submit", requestReaderScroll);
       }
 
       for (const link of readerNavLinks) {
