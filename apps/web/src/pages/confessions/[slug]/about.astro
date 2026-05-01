@@ -53,9 +53,7 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
     border: 1px solid var(--confession-accent-border, var(--surface-border));
     border-radius: 14px;
     padding: 0.8rem;
-    background:
-      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 30%),
-      transparent;
+    background: color-mix(in srgb, var(--confession-accent-bg, transparent) 24%, transparent);
   }
 
   .about-header h1 {
@@ -74,7 +72,7 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
     margin-top: 0.75rem;
     border-color: var(--confession-accent-border, var(--card-border));
     background:
-      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 55%),
+      color-mix(in srgb, var(--confession-accent-bg, transparent) 18%, transparent),
       var(--card-bg);
   }
 

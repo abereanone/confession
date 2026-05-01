@@ -16,7 +16,7 @@
   --surface-bg-muted: rgba(196, 223, 196, 0.05);
   --surface-bg-strong: rgba(49, 83, 56, 0.24);
   --surface-bg-hover: rgba(68, 111, 74, 0.22);
-  --card-bg: linear-gradient(180deg, rgba(23, 38, 27, 0.94), rgba(14, 24, 17, 0.98));
+  --card-bg: rgba(18, 30, 21, 0.96);
   --card-border: rgba(120, 157, 123, 0.2);
   --card-hover-border: rgba(161, 196, 158, 0.38);
   --input-bg: #17231a;
@@ -49,7 +49,7 @@
   --surface-bg-muted: rgba(73, 104, 78, 0.05);
   --surface-bg-strong: rgba(73, 104, 78, 0.12);
   --surface-bg-hover: rgba(73, 104, 78, 0.18);
-  --card-bg: linear-gradient(180deg, rgba(250, 253, 249, 0.98), rgba(231, 240, 231, 0.98));
+  --card-bg: rgba(244, 249, 244, 0.98);
   --card-border: rgba(73, 104, 78, 0.16);
   --card-hover-border: rgba(47, 90, 55, 0.28);
   --input-bg: #f7fbf7;
@@ -75,8 +75,8 @@ body {
 
 body {
   background:
-    radial-gradient(circle at top, rgba(88, 131, 93, 0.16), transparent 34%),
-    radial-gradient(circle at bottom right, rgba(28, 63, 37, 0.16), transparent 28%),
+    radial-gradient(circle at top, rgba(88, 131, 93, 0.07), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(28, 63, 37, 0.06), transparent 24%),
     var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);

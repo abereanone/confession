@@ -78,25 +78,27 @@ const verseLookup = await getVerseLookup([...references]);
     </section>
 
     <section class="tools">
-      <label for="unit-filter">Filter paragraphs</label>
-      <input
-        id="unit-filter"
-        type="search"
-        placeholder="Search confession paragraph text"
-        autocomplete="off"
-      />
+      <div class="tool-control">
+        <label for="unit-select">Jump to chapter</label>
+        <select id="unit-select">
+          <option value="">Select a chapter</option>
+          {displayUnits.map((unit) => (
+            <option value={unitId(unit.number)}>
+              {confession.unitLabel} {unit.number}: {unit.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div class="tool-control">
+        <label for="unit-filter">Filter paragraphs</label>
+        <input
+          id="unit-filter"
+          type="search"
+          placeholder="Search confession paragraph text - Use quotes for exact phrase like &quot;the church&quot;"
+          autocomplete="off"
+        />
+      </div>
       <p id="unit-results-meta" class="meta">{displayUnits.length} total</p>
-    </section>
-
-    <section class="toc">
-      <h2>Jump To {confession.unitLabel}</h2>
-      <ul id="unit-toc">
-        {displayUnits.map((unit) => (
-          <li data-target={unitId(unit.number)}>
-            <a href={`#${unitId(unit.number)}`}>{confession.unitLabel} {unit.number}</a>
-          </li>
-        ))}
-      </ul>
     </section>
 
     <p id="unit-no-results" hidden>No paragraphs matched that filter.</p>
@@ -135,14 +137,40 @@ const verseLookup = await getVerseLookup([...references]);
   const confessionPage = document.querySelector(".confession-page");
   const root = document.documentElement;
   const input = document.getElementById("unit-filter");
+  const unitSelect = document.getElementById("unit-select");
   const meta = document.getElementById("unit-results-meta");
   const noResults = document.getElementById("unit-no-results");
-  const unitToc = document.getElementById("unit-toc");
   const units = Array.from(document.querySelectorAll(".unit"));
   const paragraphCards = Array.from(document.querySelectorAll("[data-paragraph-card]"));
-  const paragraphBodies = Array.from(document.querySelectorAll(".paragraph-card p:last-child"));
 
   const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const getParagraphBodies = () =>
+    Array.from(document.querySelectorAll(".paragraph-card p:last-child"));
+
+  const parseSearchTerms = (rawQuery) => {
+    const terms = [];
+    const query = String(rawQuery ?? "");
+    const phraseRegex = /"([^"]+)"/g;
+    let remaining = query;
+
+    for (const match of query.matchAll(phraseRegex)) {
+      const phrase = String(match[1] ?? "").trim();
+      if (phrase) {
+        terms.push(phrase);
+      }
+      remaining = remaining.replace(String(match[0] ?? ""), " ");
+    }
+
+    remaining
+      .trim()
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .forEach((token) => terms.push(token));
+
+    return [...new Set(terms.map((term) => term.toLowerCase()))];
+  };
 
   const clearHighlights = (root) => {
     const marks = Array.from(root.querySelectorAll("mark.search-hit"));
@@ -192,6 +220,7 @@ const verseLookup = await getVerseLookup([...references]);
   };
 
   const highlightMatches = (rawQuery) => {
+    const paragraphBodies = getParagraphBodies();
     paragraphBodies.forEach((paragraph) => {
       if (!(paragraph instanceof HTMLElement)) {
         return;
@@ -200,18 +229,14 @@ const verseLookup = await getVerseLookup([...references]);
       clearHighlights(paragraph);
     });
 
-    const tokens = rawQuery
-      .trim()
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter(Boolean);
+    const terms = parseSearchTerms(rawQuery);
 
-    if (tokens.length === 0) {
+    if (terms.length === 0) {
       return;
     }
 
-    const pattern = [...new Set(tokens)]
-      .map((token) => escapeRegExp(token))
+    const pattern = terms
+      .map((term) => escapeRegExp(term))
       .sort((a, b) => b.length - a.length)
       .join("|");
 
@@ -289,6 +314,9 @@ const verseLookup = await getVerseLookup([...references]);
     });
 
     document.dispatchEvent(new Event("astro:page-load"));
+    if (input instanceof HTMLInputElement) {
+      window.setTimeout(() => highlightMatches(input.value), 0);
+    }
   };
 
   const setReaderMode = (enabled) => {
@@ -342,13 +370,41 @@ const verseLookup = await getVerseLookup([...references]);
     }
   });
 
+  if (unitSelect instanceof HTMLSelectElement) {
+    unitSelect.addEventListener("change", () => {
+      const targetId = unitSelect.value;
+      if (!targetId) {
+        return;
+      }
+
+      if (input instanceof HTMLInputElement && input.value) {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      const target = document.getElementById(targetId);
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const header = document.querySelector(".top");
+      const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+      const targetTop = window.scrollY + target.getBoundingClientRect().top - headerHeight - 18;
+
+      window.scrollTo({
+        top: Math.max(targetTop, 0),
+        behavior: "smooth",
+      });
+      window.history.replaceState(null, "", `#${targetId}`);
+    });
+  }
+
   if (input instanceof HTMLInputElement && meta && noResults) {
-    const tocItems = unitToc ? Array.from(unitToc.querySelectorAll("li")) : [];
     const totalParagraphs = paragraphCards.length;
 
     const applyFilter = () => {
       const rawQuery = input.value.trim();
-      const query = rawQuery.toLowerCase();
+      const terms = parseSearchTerms(rawQuery);
       let visibleParagraphs = 0;
       const visibleUnitIds = new Set<string>();
 
@@ -359,7 +415,7 @@ const verseLookup = await getVerseLookup([...references]);
 
         const paragraphBody = paragraphCard.querySelector("p:last-child");
         const text = (paragraphBody?.textContent ?? "").toLowerCase();
-        const match = !query || text.includes(query);
+        const match = terms.length === 0 || terms.every((term) => text.includes(term));
         paragraphCard.hidden = !match;
 
         if (match) {
@@ -378,19 +434,10 @@ const verseLookup = await getVerseLookup([...references]);
         unit.hidden = !visibleUnitIds.has(unit.id);
       }
 
-      for (const item of tocItems) {
-        const targetId = item.getAttribute("data-target");
-        if (!targetId) {
-          continue;
-        }
-        const target = document.getElementById(targetId);
-        item.hidden = !(target instanceof HTMLElement) || target.hidden;
-      }
-
-      meta.textContent = query
+      meta.textContent = terms.length > 0
         ? `${visibleParagraphs} of ${totalParagraphs} paragraphs shown`
         : `${totalParagraphs} paragraphs total`;
-      noResults.hidden = !query || visibleParagraphs !== 0;
+      noResults.hidden = terms.length === 0 || visibleParagraphs !== 0;
       highlightMatches(rawQuery);
     };
 
@@ -405,17 +452,25 @@ const verseLookup = await getVerseLookup([...references]);
     border-radius: 14px;
     padding: 0.8rem;
     scroll-margin-top: 7.5rem;
-    background:
-      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 30%),
-      transparent;
+    background: color-mix(in srgb, var(--confession-accent-bg, transparent) 24%, transparent);
   }
 
   .tools {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(14rem, 1fr);
+    gap: 0.75rem 1rem;
+    align-items: end;
     margin-bottom: 1rem;
     border: 1px solid var(--confession-accent-border, var(--surface-border));
     border-radius: 10px;
     background: var(--confession-accent-bg, var(--surface-bg-muted));
     padding: 0.75rem;
+  }
+
+  .tool-control {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
   }
 
   .confession-header h1 {
@@ -437,65 +492,15 @@ const verseLookup = await getVerseLookup([...references]);
     align-items: center;
   }
 
+  #unit-select,
   input[type="search"] {
-    width: min(34rem, 100%);
-    margin-top: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .meta {
-    margin-top: 0.6rem;
-  }
-
-  .toc {
-    border: 1px solid var(--confession-accent-border, var(--surface-border));
-    border-radius: 10px;
-    padding: 0.8rem;
-    margin-bottom: 0.9rem;
-    background: var(--confession-accent-bg, var(--surface-bg-muted));
-  }
-
-  .toc h2 {
-    margin-top: 0;
-    margin-bottom: 0.6rem;
-    font-size: 1rem;
-  }
-
-  .toc ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-    gap: 0.4rem 0.8rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .toc li {
-    min-width: 0;
-  }
-
-  .toc li a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    border: 1px solid var(--surface-border);
-    background: var(--surface-bg-muted);
-    color: var(--color-text);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .toc li a:hover,
-  .toc li a:focus-visible {
-    background: var(--surface-bg-hover);
-    border-color: var(--surface-border-strong);
-    text-decoration: none;
-    outline: none;
+    grid-column: 1 / -1;
+    margin: -0.25rem 0 0;
   }
 
   #unit-no-results {
@@ -528,7 +533,7 @@ const verseLookup = await getVerseLookup([...references]);
   .paragraph-card {
     border-color: var(--confession-accent-border, var(--card-border));
     background:
-      linear-gradient(180deg, var(--confession-accent-bg, transparent), transparent 55%),
+      color-mix(in srgb, var(--confession-accent-bg, transparent) 18%, transparent),
       var(--card-bg);
     scroll-margin-top: 7.5rem;
   }
@@ -553,14 +558,29 @@ const verseLookup = await getVerseLookup([...references]);
   }
 
   .paragraph-card mark.search-hit {
-    background: rgba(255, 232, 107, 0.72);
-    border-radius: 0.2rem;
-    padding: 0 0.12rem;
+    background: #ffdf4d;
+    border: 1px solid rgba(99, 69, 10, 0.42);
+    border-radius: 0.22rem;
+    box-shadow: 0 0 0 1px rgba(255, 248, 184, 0.42);
+    color: #1a1300;
+    padding: 0 0.14rem;
   }
 
   :global([data-theme="dark"] .paragraph-card mark.search-hit) {
+    background: #ffe66d;
+    border-color: rgba(92, 66, 2, 0.82);
+    box-shadow: 0 0 0 1px rgba(255, 244, 166, 0.34);
     color: #050505;
-    background: rgba(255, 233, 117, 0.95);
+  }
+
+  @media (max-width: 720px) {
+    .tools {
+      grid-template-columns: 1fr;
+    }
+
+    .meta {
+      grid-column: auto;
+    }
   }
 
   .unit.is-linked-unit {
