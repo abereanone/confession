@@ -1,13 +1,10 @@
 import bookMap from "./bookMap.json";
 
 const singleChapterBooks = new Set([
-  "obadiah",
   "oba",
-  "philemon",
   "phm",
   "2jn",
   "3jn",
-  "jude",
   "jud",
 ]);
 
