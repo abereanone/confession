@@ -160,22 +160,6 @@ function buildAliasMap(source) {
     aliases.set(normalizedAlias, String(code ?? "").trim().toLowerCase());
   }
 
-  const manualAliases = {
-    matt: "mat",
-    phil: "php",
-    eccl: "ecc",
-    deut: "deu",
-    ezek: "ezk",
-    "1 thess": "1th",
-    "2 thess": "2th",
-    "1 chron": "1ch",
-    "2 chron": "2ch",
-  };
-
-  for (const [alias, code] of Object.entries(manualAliases)) {
-    aliases.set(normalizeBookToken(alias), code);
-  }
-
   return aliases;
 }
 

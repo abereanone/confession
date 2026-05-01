@@ -1,7 +1,8 @@
 ---
 import Main from "../../layouts/Main.astro";
 import { findScripture, listScriptures } from "../../lib/scriptures";
-import { getVerseByReference } from "../../lib/bible/bibleData";
+import { getBibleChapter, getBibleProviderName, type BibleVerse } from "../../lib/bible/bibleData";
+import { isSingleChapterBook, parseRangesForChapter } from "../../lib/scriptureRanges";
 
 export function getStaticPaths() {
   return listScriptures().map((entry) => ({
@@ -16,7 +17,67 @@ if (!entry) {
   return Astro.redirect("/scriptures");
 }
 
-const verse = await getVerseByReference(entry.reference);
+type VersePreview = {
+  verses: BibleVerse[];
+  version: string;
+};
+
+async function getVersePreview(): Promise<VersePreview | null> {
+  const chapterNumber = getPreviewChapterNumber(entry.referencePart, entry.bookCode);
+  if (!chapterNumber) {
+    return null;
+  }
+
+  const chapterVerses = await getBibleChapter(entry.bookCode, chapterNumber);
+  if (chapterVerses.length === 0) {
+    return null;
+  }
+
+  const ranges = parseRangesForChapter(
+    entry.referencePart,
+    chapterNumber,
+    chapterVerses.length,
+    isSingleChapterBook(entry.bookCode)
+  );
+
+  if (ranges.length === 0) {
+    return null;
+  }
+
+  const verses = ranges.flatMap((range) =>
+    chapterVerses.filter((verse) => verse.verse >= range.startVerse && verse.verse <= range.endVerse)
+  );
+
+  if (verses.length === 0) {
+    return null;
+  }
+
+  return {
+    verses,
+    version: await getBibleProviderName(),
+  };
+}
+
+function getPreviewChapterNumber(referencePart: string, bookCode: string): number | null {
+  if (isSingleChapterBook(bookCode)) {
+    return 1;
+  }
+
+  const normalized = referencePart
+    .toLowerCase()
+    .replace(/\u2013|\u2014/g, "-")
+    .replace(/\s+/g, "");
+
+  const chapterMatch = normalized.match(/^(\d+)(?::|$|-)/);
+  if (!chapterMatch) {
+    return null;
+  }
+
+  const chapter = Number.parseInt(String(chapterMatch[1] ?? ""), 10);
+  return Number.isFinite(chapter) && chapter > 0 ? chapter : null;
+}
+
+const versePreview = await getVersePreview();
 ---
 
 <Main title={`${entry.reference} | Scripture References`}>
@@ -24,8 +85,11 @@ const verse = await getVerseByReference(entry.reference);
 
   <section class="card-panel">
     <h2>Verse</h2>
-    {verse ? (
-      <p>{verse.text} ({verse.version})</p>
+    {versePreview ? (
+      <p>
+        {versePreview.verses.map((verse) => `${verse.verse} ${verse.text}`).join(" ")}
+        {" "}({versePreview.version})
+      </p>
     ) : (
       <p><em>No single verse preview is available for this reference.</em></p>
     )}

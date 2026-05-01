@@ -1,5 +1,6 @@
 import { autoLinkBibleRefs } from "../lib/bible/autoLinkBibleRefs";
 import { normalizeReference } from "../lib/bible/normalizeRef";
+import { isSingleChapterBook } from "../lib/scriptureRanges";
 
 function normalizeLookupKey(reference) {
   return normalizeReference(reference || "")
@@ -23,6 +24,10 @@ function parseChapterReference(reference) {
   }
 
   const bookCode = String(match[1] || "");
+  if (isSingleChapterBook(bookCode)) {
+    return null;
+  }
+
   const chapter = Number.parseInt(String(match[2] || ""), 10);
   const chapterEnd = Number.parseInt(String(match[3] || match[2] || ""), 10);
   if (

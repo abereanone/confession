@@ -7,6 +7,10 @@ export type VerseRange = {
 
 const SINGLE_CHAPTER_BOOK_CODES = new Set(["oba", "phm", "2jn", "3jn", "jud"]);
 
+export function isSingleChapterBook(bookCode: string): boolean {
+  return SINGLE_CHAPTER_BOOK_CODES.has(bookCode);
+}
+
 function normalizeReferencePart(referencePart: string): string {
   return referencePart
     .toLowerCase()
@@ -217,7 +221,7 @@ export function buildChapterVerseScriptureMap(
   chapterNumber: number,
   chapterMaxVerse: number
 ): Map<number, ScriptureEntry[]> {
-  const isSingleChapterBook = SINGLE_CHAPTER_BOOK_CODES.has(bookCode);
+  const isSingleChapter = isSingleChapterBook(bookCode);
   const verseMap = new Map<number, ScriptureEntry[]>();
 
   scriptureEntries.forEach((entry) => {
@@ -229,7 +233,7 @@ export function buildChapterVerseScriptureMap(
       entry.referencePart,
       chapterNumber,
       chapterMaxVerse,
-      isSingleChapterBook
+      isSingleChapter
     );
 
     ranges.forEach((range) => {

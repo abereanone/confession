@@ -1,4 +1,5 @@
 import { normalizeReference } from "../lib/bible/normalizeRef";
+import { isSingleChapterBook } from "../lib/scriptureRanges";
 
 function normalizeLookupKey(reference) {
   return normalizeReference(reference || "")
@@ -11,15 +12,30 @@ function normalizeLookupKey(reference) {
 
 function parseReferenceRange(reference) {
   const normalized = normalizeLookupKey(reference);
-  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+):(\d+)(?:-(\d+))?$/i);
+  const match =
+    normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+):(\d+)(?:-(\d+))?$/i) ??
+    normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)(?:-(\d+))?$/i);
   if (!match) {
     return null;
   }
 
   const bookCode = String(match[1] || "");
-  const chapter = Number.parseInt(String(match[2] || ""), 10);
-  const verseStart = Number.parseInt(String(match[3] || ""), 10);
-  const verseEnd = Number.parseInt(String(match[4] || match[3] || ""), 10);
+  const isBareSingleChapterReference = !String(match[0] || "").includes(":");
+  if (isBareSingleChapterReference && !isSingleChapterBook(bookCode)) {
+    return null;
+  }
+
+  const chapter = isBareSingleChapterReference ? 1 : Number.parseInt(String(match[2] || ""), 10);
+  const verseStart = Number.parseInt(
+    isBareSingleChapterReference ? String(match[2] || "") : String(match[3] || ""),
+    10
+  );
+  const verseEnd = Number.parseInt(
+    isBareSingleChapterReference
+      ? String(match[3] || match[2] || "")
+      : String(match[4] || match[3] || ""),
+    10
+  );
   if (
     !bookCode ||
     !Number.isFinite(chapter) ||
@@ -49,6 +65,10 @@ function parseChapterReference(reference) {
   }
 
   const bookCode = String(match[1] || "");
+  if (isSingleChapterBook(bookCode)) {
+    return null;
+  }
+
   const chapter = Number.parseInt(String(match[2] || ""), 10);
   const chapterEnd = Number.parseInt(String(match[3] || match[2] || ""), 10);
   if (

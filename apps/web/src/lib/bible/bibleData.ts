@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BOOKS_BY_CODE, BIBLE_BOOKS } from "./books";
 import { normalizeReference } from "./normalizeRef";
+import { isSingleChapterBook } from "../scriptureRanges";
 
 type RawVerse = {
   chapter?: number;
@@ -173,7 +174,7 @@ async function resolveBiblePath(config: BibleSourceConfig): Promise<string> {
   const fallbackPaths = [
     configPath,
     path.join(projectRoot, "bsb-data-pipeline", "bsb.json"),
-    path.resolve(projectRoot, "..", "catechize.ing", "bsb-data-pipeline", "bsb.json"),
+    path.resolve(projectRoot, "bsb-data-pipeline", "bsb.json"),
   ].filter(Boolean);
 
   for (const targetPath of fallbackPaths) {
@@ -196,7 +197,6 @@ async function resolveCitedBiblePath(config: BibleSourceConfig): Promise<string 
   const fallbackPaths = [
     configPath,
     path.join(projectRoot, "shared", "data", "bible-cited.json"),
-    path.resolve(projectRoot, "..", "catechize.ing", "src", "generated", "bible-cited.json"),
   ].filter(Boolean);
 
   for (const targetPath of fallbackPaths) {
@@ -347,18 +347,27 @@ export async function resolveBibleReference(
   rawReference: string
 ): Promise<ResolvedReference | null> {
   const normalized = normalizeLookupKey(rawReference).replace(/[;,].*$/g, "").trim();
-  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)(?::(\d+(?:-\d+)?))?$/i);
+  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)(?::(\d+(?:-\d+)?))?(?:-(\d+))?$/i);
 
   if (!match) {
     return null;
   }
 
   const bookCode = normalizeBookCode(match[1] ?? "");
-  const chapter = Number.parseInt(String(match[2] ?? ""), 10);
-  const verseChunk = String(match[3] ?? "").trim();
+  const firstNumber = Number.parseInt(String(match[2] ?? ""), 10);
+  const explicitVerseChunk = String(match[3] ?? "").trim();
+  const bareRangeEnd = String(match[4] ?? "").trim();
+  const isBareSingleChapterReference =
+    Boolean(bookCode) && isSingleChapterBook(bookCode) && !explicitVerseChunk;
+  const chapter = isBareSingleChapterReference ? 1 : firstNumber;
+  const verseChunk = isBareSingleChapterReference ? String(firstNumber) : explicitVerseChunk;
   const verse = verseChunk ? Number.parseInt(verseChunk.split("-")[0] ?? "", 10) : null;
 
   if (!bookCode || !Number.isFinite(chapter) || chapter < 1) {
+    return null;
+  }
+
+  if (bareRangeEnd && !isBareSingleChapterReference) {
     return null;
   }
 
@@ -417,12 +426,22 @@ export async function getVerseLookup(
       continue;
     }
 
-    // Check for range (e.g., "1Co 2:10-12")
-    const rangeMatch = reference.match(/:(\d+)-(\d+)$/);
+    // Check for range (e.g., "1Co 2:10-12" or "3Jn 8-10")
+    const rangeMatch = normalizeLookupKey(reference).match(
+      /^([1-3]?[a-z]{2,3})\s+(?:(\d+):)?(\d+)-(\d+)$/
+    );
     if (rangeMatch) {
-      const start = parseInt(rangeMatch[1], 10);
-      const end = parseInt(rangeMatch[2], 10);
-      const baseRef = reference.replace(/-\d+$/, ""); // e.g., "1Co 2:10"
+      const bookCode = normalizeBookCode(rangeMatch[1] ?? "");
+      const hasExplicitChapter = Boolean(rangeMatch[2]);
+      const start = parseInt(String(rangeMatch[3] ?? ""), 10);
+      const end = parseInt(String(rangeMatch[4] ?? ""), 10);
+      if (!bookCode || (!hasExplicitChapter && !isSingleChapterBook(bookCode))) {
+        continue;
+      }
+
+      const baseRef = hasExplicitChapter
+        ? `${bookCode} ${rangeMatch[2]}:${start}`
+        : `${bookCode} ${start}`;
       const resolved = await resolveBibleReference(baseRef);
       if (resolved) {
         const data = await getLoadedBibleData();
