@@ -17,18 +17,25 @@ function getVerseFromLookup(reference) {
 
 function parseChapterReference(reference) {
   const normalized = normalizeLookupKey(reference);
-  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)$/i);
+  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)(?:-(\d+))?$/i);
   if (!match) {
     return null;
   }
 
   const bookCode = String(match[1] || "");
   const chapter = Number.parseInt(String(match[2] || ""), 10);
-  if (!bookCode || !Number.isFinite(chapter) || chapter < 1) {
+  const chapterEnd = Number.parseInt(String(match[3] || match[2] || ""), 10);
+  if (
+    !bookCode ||
+    !Number.isFinite(chapter) ||
+    !Number.isFinite(chapterEnd) ||
+    chapter < 1 ||
+    chapterEnd < chapter
+  ) {
     return null;
   }
 
-  return { bookCode, chapter };
+  return { bookCode, chapter, chapterEnd };
 }
 
 function getChapterLinkInfo(reference) {

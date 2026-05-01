@@ -30,14 +30,17 @@ const multiVerseRegex = new RegExp(
   "gi"
 );
 const singleVerseSingleChapterRegex = new RegExp(
-  `\\b(${singleChapterBookPattern})\\s+(\\d+(?:[-\\u2013\\u2014]\\d+)?)\\b`,
+  `\\b(${singleChapterBookPattern})\\s+(\\d+(?:[-\\u2013\\u2014]\\d+)?)\\b(?!\\s*:)`,
   "gi"
 );
 const singleVerseRegex = new RegExp(
   `\\b(${bookPattern})\\s+(\\d+):(\\d+(?:[-\\u2013\\u2014]\\d+)?)\\b`,
   "gi"
 );
-const chapterOnlyRegex = new RegExp(`\\b(${bookPattern})\\s+(\\d+)\\b(?!\\s*:)`, "gi");
+const chapterOnlyRegex = new RegExp(
+  `\\b(${bookPattern})\\s+(\\d+(?:[-\\u2013\\u2014]\\d+)?)\\b(?!\\s*:)`,
+  "gi"
+);
 const continuedVerseRegex =
   /([;]\s*)(\d+):(\d+(?:[-\u2013\u2014]\d+)?(?:\s*,\s*\d+(?:[-\u2013\u2014]\d+)?)*)/g;
 

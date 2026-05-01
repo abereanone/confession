@@ -43,18 +43,25 @@ function parseReferenceRange(reference) {
 
 function parseChapterReference(reference) {
   const normalized = normalizeLookupKey(reference);
-  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)$/i);
+  const match = normalized.match(/^([1-3]?[a-z]{2,3})\s+(\d+)(?:-(\d+))?$/i);
   if (!match) {
     return null;
   }
 
   const bookCode = String(match[1] || "");
   const chapter = Number.parseInt(String(match[2] || ""), 10);
-  if (!bookCode || !Number.isFinite(chapter) || chapter < 1) {
+  const chapterEnd = Number.parseInt(String(match[3] || match[2] || ""), 10);
+  if (
+    !bookCode ||
+    !Number.isFinite(chapter) ||
+    !Number.isFinite(chapterEnd) ||
+    chapter < 1 ||
+    chapterEnd < chapter
+  ) {
     return null;
   }
 
-  return { bookCode, chapter };
+  return { bookCode, chapter, chapterEnd };
 }
 
 function rangesOverlap(left, right) {
@@ -89,21 +96,24 @@ function referencesMatch(targetReference, candidateReference) {
   if (targetChapter && candidateRange) {
     return (
       targetChapter.bookCode === candidateRange.bookCode &&
-      targetChapter.chapter === candidateRange.chapter
+      targetChapter.chapter <= candidateRange.chapter &&
+      candidateRange.chapter <= targetChapter.chapterEnd
     );
   }
 
   if (candidateChapter && targetRange) {
     return (
       candidateChapter.bookCode === targetRange.bookCode &&
-      candidateChapter.chapter === targetRange.chapter
+      candidateChapter.chapter <= targetRange.chapter &&
+      targetRange.chapter <= candidateChapter.chapterEnd
     );
   }
 
   if (targetChapter && candidateChapter) {
     return (
       targetChapter.bookCode === candidateChapter.bookCode &&
-      targetChapter.chapter === candidateChapter.chapter
+      targetChapter.chapter <= candidateChapter.chapterEnd &&
+      candidateChapter.chapter <= targetChapter.chapterEnd
     );
   }
 
