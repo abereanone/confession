@@ -3,6 +3,8 @@ apps/*/node_modules
 apps/*/.expo
 apps/*/dist
 apps/*/.astro/
+apps/web/src/data/confessions/
+apps/mobile/src/data/confessions/
 
 * (# Name clash * #)*
 * (# Edit conflict * #)*

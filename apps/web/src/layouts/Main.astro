@@ -6,8 +6,9 @@ const issueReportURL = siteSettings.issueReportUrl;
 const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
 const currentYear = new Date().getFullYear();
 const siteDescription = "Search and read historic Christian confessions with their Scripture references.";
-const logoUrl = "/logo.png?v=2";
-const ogImageUrl = "/ogLogo.png?v=1";
+const logoUrl = "/logo.png";
+const siteUrl = "https://confess.catechize.ing";
+const ogImageUrl = `${siteUrl}/ogLogo.png`;
 ---
 
 <!doctype html>
@@ -19,15 +20,16 @@ const ogImageUrl = "/ogLogo.png?v=1";
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={siteDescription} />
+    <meta property="og:url" content={Astro.url.href} />
     <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:alt" content={`${siteSettings.siteName} social preview`} />
-    <meta property="og:image:width" content="1730" />
-    <meta property="og:image:height" content="909" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={siteDescription} />
     <meta name="twitter:image" content={ogImageUrl} />
-    <link rel="icon" type="image/png" href={logoUrl} />
     <title>{title}</title>
     {siteSettings.analytics.enabled ? (
       <>
