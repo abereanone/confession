@@ -1,10 +1,9 @@
 ---
 import { siteSettings } from "../lib/siteSettings";
+import Footer from "../components/Footer.astro";
 
 const { title = siteSettings.siteName } = Astro.props;
-const issueReportURL = siteSettings.issueReportUrl;
 const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
-const currentYear = new Date().getFullYear();
 const siteDescription = "Search and read historic Christian confessions with their Scripture references.";
 const logoUrl = "/logo.png";
 const siteUrl = "https://confess.catechize.ing";
@@ -114,24 +113,7 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
     <main>
       <slot />
     </main>
-    <footer class="site-footer">
-      <div class="footer-search" aria-label="Footer quick links">
-        <a href="/confessions" class="footer-search-link">Confessions</a>
-        <a href="https://catechize.ing" class="footer-search-link">Catechisms</a>
-        <a href="/scriptures" class="footer-search-link">Scripture Index</a>
-        <a href="/bible/mat/1" class="footer-search-link">Bible Reader</a>
-      </div>
-      <p class="footer-links">
-        <a href="/about">About</a> |
-        <a href="/copyright">Copyright Info</a> |
-        <a href="https://catechize.ing">Catechisms</a> |
-        <a href={issueReportURL} target="_blank" rel="noopener noreferrer">Report an Issue</a>
-      </p>
-      <p class="footer-meta">Freely Given</p>
-      <a href="/" class="footer-brand" aria-label={`${siteSettings.siteName} home`}>
-        <img src={logoUrl} alt="" class="footer-logo" width="220" height="220" />
-      </a>
-    </footer>
+    <Footer />
     <script is:inline>
       (() => {
         const storageKey = "site-theme";
@@ -325,59 +307,4 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
     }
   }
 
-  .site-footer {
-    text-align: center;
-    margin-top: 1.4rem;
-    padding: 1.5rem 1rem 3rem;
-    border-top: 1px solid var(--surface-border);
-    background: var(--surface-bg-muted);
-  }
-
-  .footer-brand {
-    display: inline-flex;
-    justify-content: center;
-    margin-top: 1.25rem;
-  }
-
-  .footer-logo {
-    width: min(70vw, 18rem);
-    height: auto;
-    object-fit: contain;
-  }
-
-  .footer-search {
-    display: inline-flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 0.7rem;
-  }
-
-  .footer-search-link {
-    display: inline-block;
-    padding: 0.45rem 1rem;
-    border-radius: 999px;
-    border: 1px solid var(--surface-border);
-    background: var(--surface-bg-strong);
-    color: var(--color-text);
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .footer-search-link:hover,
-  .footer-search-link:focus-visible {
-    background: var(--surface-bg-hover);
-    border-color: var(--surface-border-strong);
-    text-decoration: none;
-  }
-
-  .footer-links {
-    margin: 0;
-  }
-
-  .footer-meta {
-    margin: 0.35rem 0 0;
-    color: var(--color-muted);
-    font-size: 0.95rem;
-  }
 </style>

@@ -7,6 +7,8 @@ apps/web/src/data/confessions/
 apps/mobile/src/data/confessions/
 
 tree.txt
+dev-server.err.log
+dev-server.log
 
 * (# Name clash * #)*
 * (# Edit conflict * #)*

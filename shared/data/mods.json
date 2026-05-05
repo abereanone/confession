@@ -1,0 +1,128 @@
+[
+  {
+    "book": "mat",
+    "chapter": 17,
+    "verse": 21,
+    "text": "Howbeit this kind goeth not out but by prayer and fasting.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mat",
+    "chapter": 18,
+    "verse": 11,
+    "text": "For the Son of man is come to save that which was lost.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mat",
+    "chapter": 23,
+    "verse": 14,
+    "text": "Woe unto you, scribes and Pharisees, hypocrites! for ye devour widows' houses, and for a pretence make long prayer: therefore ye shall receive the greater damnation.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mrk",
+    "chapter": 7,
+    "verse": 16,
+    "text": "If any man have ears to hear, let him hear.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mrk",
+    "chapter": 9,
+    "verse": 44,
+    "text": "Where their worm dieth not, and the fire is not quenched.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mrk",
+    "chapter": 9,
+    "verse": 46,
+    "text": "Where their worm dieth not, and the fire is not quenched.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mrk",
+    "chapter": 11,
+    "verse": 26,
+    "text": "But if ye do not forgive, neither will your Father which is in heaven forgive your trespasses.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "mrk",
+    "chapter": 15,
+    "verse": 28,
+    "text": "And the scripture was fulfilled, which saith, And he was numbered with the transgressors.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "luk",
+    "chapter": 23,
+    "verse": 17,
+    "text": "(For of necessity he must release one unto them at the feast.)",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "luk",
+    "chapter": 17,
+    "verse": 36,
+    "text": "Two men shall be in the field; the one shall be taken, and the other left.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "jhn",
+    "chapter": 5,
+    "verse": 4,
+    "text": "For an angel went down at a certain season into the pool, and troubled the water: whosoever then first after the troubling of the water stepped in was made whole of whatsoever disease he had.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "act",
+    "chapter": 8,
+    "verse": 37,
+    "text": "And Philip said, If thou believest with all thine heart, thou mayest. And he answered and said, I believe that Jesus Christ is the Son of God.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "act",
+    "chapter": 15,
+    "verse": 34,
+    "text": "Notwithstanding it pleased Silas to abide there still.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "act",
+    "chapter": 24,
+    "verse": 7,
+    "text": "But the chief captain Lysias came upon us, and with great violence took him away out of our hands,",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "act",
+    "chapter": 28,
+    "verse": 29,
+    "text": "And when he had said these words, the Jews departed, and had great reasoning among themselves.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "rom",
+    "chapter": 16,
+    "verse": 24,
+    "text": "The grace of our Lord Jesus Christ be with you all. Amen.",
+    "version": "KJV", "reason": "Verse missing in BSB"
+  },
+  {
+    "book": "eph",
+    "chapter": 4,
+    "verse": 12,
+    "text": "For the perfecting of the saints, for the work of the ministry, for the edifying of the body of Christ:",
+    "version": "KJV", "reason": "Poorly translated in BSB, needed a comma."
+  },
+  {
+    "book": "jas",
+    "chapter": 3,
+    "verse": 9,
+    "text": "With it we bless our Lord and Father, and with it we curse people who are made in the likeness of God.",
+    "version": "ESV", "reason": "The BSB puts a comma after people, which is an interpretation that seems to indicate all people are made in the likeness of God, which is not what the original text says. The original text says that we curse people who are made in the likeness of God, which is a different meaning."
+  }
+]
