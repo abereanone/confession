@@ -1,5 +1,16 @@
 ---
-type VerseLookup = Record<string, { text: string; version: string }>;
+type VerseLookup = Record<
+  string,
+  {
+    text: string;
+    version: string;
+    parts?: Array<{
+      reference?: string;
+      text: string;
+      version: string;
+    }>;
+  }
+>;
 const verseLookup = (Astro.props.verseLookup ?? {}) as VerseLookup;
 const verseLookupJson = JSON.stringify(verseLookup);
 ---

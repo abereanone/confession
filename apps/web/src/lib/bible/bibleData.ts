@@ -10,6 +10,7 @@ type RawVerse = {
   chapter?: number;
   verse?: number;
   text?: string;
+  version?: string;
 };
 
 type RawBibleData = Record<string, RawVerse[][]>;
@@ -36,6 +37,7 @@ export type BibleVerse = {
   chapter: number;
   verse: number;
   text: string;
+  version: string;
   searchText: string;
 };
 
@@ -47,10 +49,18 @@ export type BibleSearchIndexVerse = {
   chapter: number;
   verse: number;
   text: string;
+  version: string;
 };
 
 export type VerseData = {
   reference: string;
+  text: string;
+  version: string;
+  parts?: VerseDataPart[];
+};
+
+export type VerseDataPart = {
+  reference?: string;
   text: string;
   version: string;
 };
@@ -76,6 +86,11 @@ type CitedVerseEntry =
   | {
       text?: string;
       version?: string;
+      parts?: Array<{
+        reference?: string;
+        text?: string;
+        version?: string;
+      }>;
     };
 
 type CitedBibleData = {
@@ -178,13 +193,69 @@ function normalizeVersionLabel(version: string): string {
   return trimmed;
 }
 
-function toCitedVerseData(entry: CitedVerseEntry | undefined): { text: string; version: string } | null {
+function summarizeVersionLabels(versions: string[]): string {
+  const labels = [
+    ...new Set(
+      versions
+        .map((version) => normalizeVersionLabel(version))
+        .filter(Boolean)
+    ),
+  ];
+
+  if (labels.length === 0) {
+    return "BSB";
+  }
+
+  return labels.length === 1 ? labels[0] ?? "BSB" : labels.join("/");
+}
+
+function toCitedVerseData(entry: CitedVerseEntry | undefined): Omit<VerseData, "reference"> | null {
   if (typeof entry === "string") {
     const text = entry.trim();
     return text ? { text, version: "BSB" } : null;
   }
 
-  if (!entry || typeof entry !== "object" || typeof entry.text !== "string") {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const parts = Array.isArray(entry.parts)
+    ? entry.parts
+        .map((part): VerseDataPart | null => {
+          if (!part || typeof part !== "object" || typeof part.text !== "string") {
+            return null;
+          }
+
+          const text = part.text.trim();
+          if (!text) {
+            return null;
+          }
+
+          const reference =
+            typeof part.reference === "string" && part.reference.trim()
+              ? part.reference.trim()
+              : undefined;
+
+          return {
+            reference,
+            text,
+            version: normalizeVersionLabel(
+              typeof part.version === "string" ? part.version : entry.version ?? "BSB"
+            ),
+          };
+        })
+        .filter((part): part is VerseDataPart => Boolean(part))
+    : [];
+
+  if (parts.length > 0) {
+    return {
+      text: parts.map((part) => part.text).join(" "),
+      version: summarizeVersionLabels(parts.map((part) => part.version)),
+      parts,
+    };
+  }
+
+  if (typeof entry.text !== "string") {
     return null;
   }
 
@@ -286,6 +357,21 @@ async function getCitedLookup(): Promise<Map<string, CitedVerseEntry>> {
   return citedLookupPromise;
 }
 
+async function getCitedVerseByReference(rawReference: string): Promise<VerseData | null> {
+  const citedLookup = await getCitedLookup();
+  const citedVerse = toCitedVerseData(citedLookup.get(normalizeCitedLookupKey(rawReference)));
+  if (!citedVerse) {
+    return null;
+  }
+
+  return {
+    reference: String(rawReference ?? "").trim(),
+    text: citedVerse.text,
+    version: citedVerse.version,
+    parts: citedVerse.parts,
+  };
+}
+
 async function loadBibleData(): Promise<LoadedBibleData> {
   const sourceConfig = await readBibleSourceConfig();
   const biblePath = await resolveBiblePath(sourceConfig);
@@ -331,6 +417,9 @@ async function loadBibleData(): Promise<LoadedBibleData> {
           return;
         }
 
+        const version = normalizeVersionLabel(
+          typeof rawVerse?.version === "string" ? rawVerse.version : sourceConfig.provider || "BSB"
+        );
         const reference = `${book.name} ${chapter}:${verse}`;
         const key = `${book.code} ${chapter}:${verse}`;
         const verseEntry: BibleVerse = {
@@ -342,6 +431,7 @@ async function loadBibleData(): Promise<LoadedBibleData> {
           chapter,
           verse,
           text,
+          version,
           searchText: `${reference} ${text}`.toLowerCase(),
         };
 
@@ -409,6 +499,7 @@ export async function getBibleSearchIndex(): Promise<BibleSearchIndexVerse[]> {
     chapter: verse.chapter,
     verse: verse.verse,
     text: verse.text,
+    version: verse.version,
   }));
 }
 
@@ -455,14 +546,9 @@ export async function resolveBibleReference(
 export async function getVerseByReference(
   rawReference: string
 ): Promise<VerseData | null> {
-  const citedLookup = await getCitedLookup();
-  const citedVerse = toCitedVerseData(citedLookup.get(normalizeCitedLookupKey(rawReference)));
+  const citedVerse = await getCitedVerseByReference(rawReference);
   if (citedVerse) {
-    return {
-      reference: String(rawReference ?? "").trim(),
-      text: citedVerse.text,
-      version: citedVerse.version,
-    };
+    return citedVerse;
   }
 
   const resolved = await resolveBibleReference(rawReference);
@@ -480,18 +566,28 @@ export async function getVerseByReference(
   return {
     reference: verse.reference,
     text: verse.text,
-    version: normalizeVersionLabel(data.provider || "BSB"),
+    version: verse.version,
   };
 }
 
 export async function getVerseLookup(
   references: string[]
-): Promise<Record<string, { text: string; version: string }>> {
-  const lookup: Record<string, { text: string; version: string }> = {};
+): Promise<Record<string, Omit<VerseData, "reference">>> {
+  const lookup: Record<string, Omit<VerseData, "reference">> = {};
 
   for (const reference of references) {
     const key = normalizeLookupKey(reference);
     if (!key || lookup[key]) {
+      continue;
+    }
+
+    const citedVerse = await getCitedVerseByReference(reference);
+    if (citedVerse) {
+      lookup[key] = {
+        text: citedVerse.text,
+        version: citedVerse.version,
+        parts: citedVerse.parts,
+      };
       continue;
     }
 
@@ -513,19 +609,27 @@ export async function getVerseLookup(
         : `${bookCode} ${start}`;
       const resolved = await resolveBibleReference(baseRef);
       if (resolved) {
-        const data = await getLoadedBibleData();
-        const verses: string[] = [];
+        const parts: VerseDataPart[] = [];
         for (let v = start; v <= end; v++) {
-          const verseKey = `${resolved.bookCode} ${resolved.chapter}:${v}`;
-          const verse = data.verseMap.get(verseKey);
+          const verseRef = hasExplicitChapter
+            ? `${bookCode} ${resolved.chapter}:${v}`
+            : `${bookCode} ${v}`;
+          const verse = await getVerseByReference(verseRef);
           if (verse) {
-            verses.push(`${v} ${verse.text}`);
+            parts.push({
+              reference: verse.reference,
+              text: `${v} ${verse.text}`,
+              version: verse.version,
+            });
           }
         }
-        if (verses.length > 0) {
+        if (parts.length > 0) {
+          const versions = parts.map((part) => part.version);
+          const version = summarizeVersionLabels(versions);
           lookup[key] = {
-            text: verses.join(" "),
-            version: "BSB",
+            text: parts.map((part) => part.text).join(" "),
+            version,
+            parts: new Set(versions.map((value) => normalizeVersionLabel(value))).size > 1 ? parts : undefined,
           };
         }
       }
@@ -536,6 +640,7 @@ export async function getVerseLookup(
         lookup[key] = {
           text: verse.text,
           version: verse.version,
+          parts: verse.parts,
         };
       }
     }

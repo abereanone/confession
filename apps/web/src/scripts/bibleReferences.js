@@ -74,6 +74,29 @@ function getTooltipText(reference, verse) {
   if (!verse) {
     return "Verse not found.";
   }
+
+  if (Array.isArray(verse.parts) && verse.parts.length > 0) {
+    const partsText = verse.parts
+      .map((part) => {
+        const partReference = String(part?.reference || "").trim();
+        const partText = String(part?.text || "").trim();
+        const version = formatVersionLabel(part?.version);
+        if (!partText) {
+          return "";
+        }
+
+        return partReference
+          ? `${partReference} (${version}) - ${partText}`
+          : `${partText} (${version})`;
+      })
+      .filter(Boolean)
+      .join(" ");
+
+    if (partsText) {
+      return `${reference} - ${partsText}`;
+    }
+  }
+
   return `${reference} - ${verse.text} (${formatVersionLabel(verse.version)})`;
 }
 
