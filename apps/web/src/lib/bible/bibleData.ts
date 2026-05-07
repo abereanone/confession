@@ -39,6 +39,16 @@ export type BibleVerse = {
   searchText: string;
 };
 
+export type BibleSearchIndexVerse = {
+  reference: string;
+  bookCode: string;
+  bookName: string;
+  testament: "ot" | "nt";
+  chapter: number;
+  verse: number;
+  text: string;
+};
+
 export type VerseData = {
   reference: string;
   text: string;
@@ -72,6 +82,11 @@ type CitedBibleData = {
   verses?: Record<string, CitedVerseEntry>;
 };
 
+type BibleSearchTerm = {
+  value: string;
+  phrase: boolean;
+};
+
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRootCandidates = [
   path.resolve(moduleDir, "../../../../.."),
@@ -93,6 +108,47 @@ function normalizeLookupKey(reference: string): string {
     .replace(/\s+/g, " ")
     .replace(/[;,]\s*$/g, "")
     .trim();
+}
+
+function normalizeBibleSearchValue(value: string): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/\u201c|\u201d/g, '"')
+    .replace(/\u2013|\u2014/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseBibleSearchTerms(query: string): BibleSearchTerm[] {
+  const terms: BibleSearchTerm[] = [];
+  const phraseRegex = /"([^"]+)"/g;
+  let remaining = String(query ?? "");
+
+  for (const match of remaining.matchAll(phraseRegex)) {
+    const phrase = normalizeBibleSearchValue(String(match[1] ?? ""));
+    if (phrase) {
+      terms.push({ value: phrase, phrase: true });
+    }
+  }
+
+  remaining = remaining.replace(phraseRegex, " ");
+  remaining
+    .trim()
+    .split(/\s+/)
+    .map((token) => normalizeBibleSearchValue(token))
+    .filter(Boolean)
+    .forEach((token) => terms.push({ value: token, phrase: false }));
+
+  const seen = new Set<string>();
+  return terms.filter((term) => {
+    const key = `${term.phrase ? "phrase" : "word"}:${term.value}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function normalizeCitedLookupKey(reference: string): string {
@@ -343,6 +399,19 @@ export async function getBibleChapter(
   return data.chapterMap.get(`${code}:${chapter}`) ?? [];
 }
 
+export async function getBibleSearchIndex(): Promise<BibleSearchIndexVerse[]> {
+  const data = await getLoadedBibleData();
+  return data.verses.map((verse) => ({
+    reference: verse.reference,
+    bookCode: verse.bookCode,
+    bookName: verse.bookName,
+    testament: verse.testament,
+    chapter: verse.chapter,
+    verse: verse.verse,
+    text: verse.text,
+  }));
+}
+
 export async function resolveBibleReference(
   rawReference: string
 ): Promise<ResolvedReference | null> {
@@ -486,11 +555,10 @@ export async function searchBible(
   }
 
   const data = await getLoadedBibleData();
-  const normalizedQuery = normalizeLookupKey(trimmed);
-  const tokens = normalizedQuery
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean);
+  const terms = parseBibleSearchTerms(trimmed);
+  if (terms.length === 0) {
+    return [];
+  }
 
   const seenKeys = new Set<string>();
   const results: BibleVerse[] = [];
@@ -517,7 +585,8 @@ export async function searchBible(
       continue;
     }
 
-    if (tokens.every((token) => verse.searchText.includes(token))) {
+    const searchText = normalizeBibleSearchValue(`${verse.reference} ${verse.text}`);
+    if (terms.every((term) => searchText.includes(term.value))) {
       results.push(verse);
       seenKeys.add(verse.key);
       if (results.length >= limit) {

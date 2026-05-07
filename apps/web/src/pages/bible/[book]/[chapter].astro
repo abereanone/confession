@@ -5,10 +5,10 @@ import {
   getBibleChapter,
   listBibleBooks,
   resolveBibleReference,
-  searchBible,
 } from "../../../lib/bible/bibleData";
 import { listScriptures } from "../../../lib/scriptures";
 import { buildChapterVerseScriptureMap } from "../../../lib/scriptureRanges";
+import { listBsbChanges } from "../../../lib/bible/bsbChanges";
 
 export async function getStaticPaths() {
   const books = await listBibleBooks();
@@ -36,7 +36,6 @@ let selectedBookName = "";
 let selectedChapter = 1;
 let chapterCount = 1;
 let chapterVerses: Awaited<ReturnType<typeof getBibleChapter>> = [];
-let searchResults: Awaited<ReturnType<typeof searchBible>> = [];
 let targetVerse = 0;
 let selectedBookIndex = -1;
 
@@ -72,14 +71,6 @@ if (books.length > 0) {
   }
 }
 
-if (query) {
-  searchResults = await searchBible(
-    query,
-    250,
-    selectedScope === "all" ? undefined : { testament: selectedScope }
-  );
-}
-
 let previousTarget: { bookCode: string; chapter: number } | null = null;
 let nextTarget: { bookCode: string; chapter: number } | null = null;
 
@@ -111,6 +102,10 @@ const nextChapterHref = nextTarget
   ? `/bible/${nextTarget.bookCode}/${nextTarget.chapter}${scopeSuffix}`
   : "";
 const chapterFootnotesByVerse = new Map<number, { href: string; referenceCount: number }>();
+const chapterChangesByVerse = new Map<
+  number,
+  Awaited<ReturnType<typeof listBsbChanges>>
+>();
 let chapterFootnoteCount = 0;
 
 if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
@@ -130,6 +125,15 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
     });
   });
   chapterFootnoteCount = chapterFootnotesByVerse.size;
+
+  const allChanges = await listBsbChanges();
+  allChanges
+    .filter((change) => change.bookCode === selectedBookCode && change.chapter === selectedChapter)
+    .forEach((change) => {
+      const existing = chapterChangesByVerse.get(change.verse) ?? [];
+      existing.push(change);
+      chapterChangesByVerse.set(change.verse, existing);
+    });
 }
 
 const bookCatalogJson = JSON.stringify(books);
@@ -192,7 +196,7 @@ const bookCatalogJson = JSON.stringify(books);
         </select>
       </form>
 
-      <form method="get" action="/bible" class="control-group control-group-query">
+      <form method="get" action="/bible" class="control-group control-group-query" data-lookup-form>
         <label for="lookup">Jump or search</label>
         <input
           id="lookup"
@@ -203,10 +207,26 @@ const bookCatalogJson = JSON.stringify(books);
           data-lookup-input
         />
         <input type="hidden" name="scope" value={selectedScope} data-scope-input />
-        <button type="submit">Go</button>
+        <button type="submit" data-lookup-submit>Go</button>
       </form>
     </div>
   </section>
+
+    <section class="card-panel section-spacer" data-search-section hidden>
+      <div class="search-results-header">
+        <div>
+          <h2>Search Results</h2>
+          <p class="meta" data-search-meta></p>
+        </div>
+        <div class="search-results-actions">
+          <button type="button" data-clear-search>Clear Search</button>
+          <button type="button" data-clear-results>Clear Results</button>
+        </div>
+      </div>
+
+      <ul class="search-results" data-search-results></ul>
+      <p data-search-empty hidden><em>No verses matched that search.</em></p>
+    </section>
 
   <section class="card-panel section-spacer">
     <header class="chapter-header">
@@ -232,12 +252,44 @@ const bookCatalogJson = JSON.stringify(books);
       <ol class="verse-list">
         {chapterVerses.map((verse) => {
           const footnote = chapterFootnotesByVerse.get(verse.verse);
+          const changes = chapterChangesByVerse.get(verse.verse) ?? [];
           return (
             <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
               <a href={`#verse-${verse.verse}`} class="verse-ref">
                 {verse.verse}
               </a>
-              <span>{verse.text}</span>
+              <span class="verse-text" data-verse-text>{verse.text}</span>
+              {changes.length > 0 ? (
+                <span class="verse-change" data-verse-change>
+                  <button
+                    type="button"
+                    class="verse-change-pill"
+                    aria-label={`${changes.length} BSB transformation${changes.length === 1 ? "" : "s"} for ${verse.reference}`}
+                    aria-describedby={`verse-change-${verse.verse}`}
+                  >
+                    ?
+                  </button>
+                  <span class="verse-change-tooltip" id={`verse-change-${verse.verse}`} role="tooltip">
+                    <span class="verse-change-tooltip-title">
+                      {changes.length === 1 ? "BSB transformation" : `${changes.length} BSB transformations`}
+                    </span>
+                    {changes.map((change) => (
+                      <span class="verse-change-entry">
+                        <span class="verse-change-type">{change.typeLabel}</span>
+                        {change.reason ? <span class="verse-change-reason">{change.reason}</span> : null}
+                        <span class="verse-change-row">
+                          <span class="verse-change-label">Before</span>
+                          <span>{change.before}</span>
+                        </span>
+                        <span class="verse-change-row">
+                          <span class="verse-change-label">After</span>
+                          <span>{change.after}</span>
+                        </span>
+                      </span>
+                    ))}
+                  </span>
+                </span>
+              ) : null}
               {footnote ? (
                 <span class="verse-footnotes" data-verse-footnotes>
                   <a
@@ -268,31 +320,6 @@ const bookCatalogJson = JSON.stringify(books);
     </div>
   </section>
 
-  {query ? (
-    <section class="card-panel section-spacer">
-      <h2>Search Results</h2>
-      <p class="meta">{searchResults.length} results shown for "{query}"</p>
-
-      {searchResults.length > 0 ? (
-        <ul class="search-results">
-          {searchResults.map((result) => (
-            <li>
-              <a
-                class="search-result-card"
-                href={`/bible/${result.bookCode}/${result.chapter}${scopeSuffix}#verse-${result.verse}`}
-              >
-                <span class="search-result-reference">{result.reference}</span>
-                <span class="search-result-text">{result.text}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-      <p><em>No verses matched that search.</em></p>
-      )}
-    </section>
-  ) : null}
-
   <script is:inline define:vars={{ bookCatalogJson }}>
     (() => {
       const bookCatalog = JSON.parse(bookCatalogJson);
@@ -302,7 +329,158 @@ const bookCatalogJson = JSON.stringify(books);
       const scopePills = Array.from(document.querySelectorAll("[data-scope-pill]"));
       const scopeInputs = Array.from(document.querySelectorAll("[data-scope-input]"));
       const readerNavLinks = Array.from(document.querySelectorAll("[data-reader-nav]"));
+      const lookupForm = document.querySelector("[data-lookup-form]");
+      const lookupInput = document.querySelector("[data-lookup-input]");
+      const lookupSubmit = document.querySelector("[data-lookup-submit]");
+      const searchSection = document.querySelector("[data-search-section]");
+      const searchMeta = document.querySelector("[data-search-meta]");
+      const searchResultsList = document.querySelector("[data-search-results]");
+      const searchEmpty = document.querySelector("[data-search-empty]");
+      const clearSearchButton = document.querySelector("[data-clear-search]");
+      const clearResultsButton = document.querySelector("[data-clear-results]");
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
+      let bibleSearchIndexPromise = null;
+
+      const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const normalizeForSearch = (value) =>
+        String(value || "")
+          .toLowerCase()
+          .replace(/\u2018|\u2019/g, "'")
+          .replace(/\u201c|\u201d/g, '"')
+          .replace(/\u2013|\u2014/g, "-")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const parseSearchTerms = (rawQuery) => {
+        const terms = [];
+        const query = String(rawQuery ?? "");
+        const phraseRegex = /"([^"]+)"/g;
+        let remaining = query;
+
+        for (const match of query.matchAll(phraseRegex)) {
+          const phrase = normalizeForSearch(match[1] || "");
+          if (phrase) {
+            terms.push({ value: phrase, phrase: true });
+          }
+          remaining = remaining.replace(String(match[0] || ""), " ");
+        }
+
+        remaining
+          .trim()
+          .split(/\s+/)
+          .map((token) => normalizeForSearch(token))
+          .filter(Boolean)
+          .forEach((token) => terms.push({ value: token, phrase: false }));
+
+        const seen = new Set();
+        return terms.filter((term) => {
+          const key = `${term.phrase ? "phrase" : "word"}:${term.value}`;
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        });
+      };
+
+      const getHighlightRegex = (terms) => {
+        const pattern = terms
+          .map((term) => {
+            const escaped = escapeRegExp(term.value);
+            return term.phrase ? escaped.replace(/\s+/g, "\\s+") : escaped;
+          })
+          .sort((a, b) => b.length - a.length)
+          .join("|");
+
+        return pattern ? new RegExp(pattern, "gi") : null;
+      };
+
+      const appendHighlightedText = (target, text, regex) => {
+        const source = String(text || "");
+        if (!regex) {
+          target.append(document.createTextNode(source));
+          return;
+        }
+
+        regex.lastIndex = 0;
+        let cursor = 0;
+        for (const match of source.matchAll(regex)) {
+          const index = match.index ?? 0;
+          const hit = match[0] || "";
+          if (!hit) {
+            continue;
+          }
+          if (index > cursor) {
+            target.append(document.createTextNode(source.slice(cursor, index)));
+          }
+          const mark = document.createElement("mark");
+          mark.className = "search-hit";
+          mark.textContent = hit;
+          target.append(mark);
+          cursor = index + hit.length;
+        }
+        if (cursor < source.length) {
+          target.append(document.createTextNode(source.slice(cursor)));
+        }
+      };
+
+      const clearHighlights = (rootNode) => {
+        if (!(rootNode instanceof Element)) {
+          return;
+        }
+        for (const mark of Array.from(rootNode.querySelectorAll("mark.search-hit"))) {
+          const parent = mark.parentNode;
+          if (!parent) {
+            continue;
+          }
+          parent.replaceChild(document.createTextNode(mark.textContent || ""), mark);
+          parent.normalize();
+        }
+      };
+
+      const highlightElementText = (element, regex) => {
+        if (!(element instanceof HTMLElement)) {
+          return;
+        }
+        clearHighlights(element);
+        const textNodes = [];
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => {
+            const value = node.nodeValue || "";
+            if (!value.trim()) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            regex.lastIndex = 0;
+            return regex.test(value) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          },
+        });
+
+        while (walker.nextNode()) {
+          textNodes.push(walker.currentNode);
+        }
+
+        for (const node of textNodes) {
+          const text = node.nodeValue || "";
+          const fragment = document.createDocumentFragment();
+          appendHighlightedText(fragment, text, regex);
+          node.parentNode?.replaceChild(fragment, node);
+        }
+      };
+
+      const getBibleSearchIndex = async () => {
+        if (!bibleSearchIndexPromise) {
+          bibleSearchIndexPromise = fetch("/bible-search.json")
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`Bible search index failed with ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((payload) => (Array.isArray(payload?.verses) ? payload.verses : []));
+        }
+        return bibleSearchIndexPromise;
+      };
 
       const parseScope = (value) => {
         if (value === "ot" || value === "nt") {
@@ -471,6 +649,193 @@ const bookCatalogJson = JSON.stringify(books);
         link.addEventListener("click", requestReaderScroll);
       }
 
+      const buildResultHref = (verse, query, scope) => {
+        const params = new URLSearchParams();
+        if (query) {
+          params.set("q", query);
+        }
+        if (scope !== "all") {
+          params.set("scope", scope);
+        }
+        const queryString = params.toString();
+        return `/bible/${encodeURIComponent(verse.bookCode)}/${verse.chapter}${
+          queryString ? `?${queryString}` : ""
+        }#verse-${verse.verse}`;
+      };
+
+      const verseMatchesSearch = (verse, terms, scope) => {
+        if (scope !== "all" && verse.testament !== scope) {
+          return false;
+        }
+
+        const haystack = normalizeForSearch(`${verse.reference} ${verse.text}`);
+        return terms.every((term) => haystack.includes(term.value));
+      };
+
+      const renderSearchResults = (results, rawQuery, scope, regex) => {
+        if (!(searchSection instanceof HTMLElement)) {
+          return;
+        }
+
+        searchSection.hidden = false;
+
+        if (searchMeta instanceof HTMLElement) {
+          const capped = results.length >= 250 ? "First 250" : String(results.length);
+          searchMeta.textContent = `${capped} result${results.length === 1 ? "" : "s"} shown for "${rawQuery}"`;
+        }
+
+        if (searchResultsList instanceof HTMLElement) {
+          searchResultsList.textContent = "";
+          for (const result of results) {
+            const item = document.createElement("li");
+            const link = document.createElement("a");
+            link.className = "search-result-card";
+            link.href = buildResultHref(result, rawQuery, scope);
+
+            const reference = document.createElement("span");
+            reference.className = "search-result-reference";
+            appendHighlightedText(reference, result.reference, regex);
+
+            const text = document.createElement("span");
+            text.className = "search-result-text";
+            appendHighlightedText(text, result.text, regex);
+
+            link.append(reference, text);
+            item.append(link);
+            searchResultsList.append(item);
+          }
+        }
+
+        if (searchEmpty instanceof HTMLElement) {
+          searchEmpty.hidden = results.length > 0;
+        }
+      };
+
+      const highlightCurrentChapterSearchHits = (terms) => {
+        const regex = getHighlightRegex(terms);
+        for (const verseText of Array.from(document.querySelectorAll("[data-verse-text]"))) {
+          if (!(verseText instanceof HTMLElement)) {
+            continue;
+          }
+          clearHighlights(verseText);
+          if (regex) {
+            highlightElementText(verseText, regex);
+          }
+        }
+      };
+
+      const hideSearchResults = () => {
+        if (searchSection instanceof HTMLElement) {
+          searchSection.hidden = true;
+        }
+        if (searchResultsList instanceof HTMLElement) {
+          searchResultsList.textContent = "";
+        }
+        if (searchMeta instanceof HTMLElement) {
+          searchMeta.textContent = "";
+        }
+        if (searchEmpty instanceof HTMLElement) {
+          searchEmpty.hidden = true;
+        }
+      };
+
+      const clearSearch = () => {
+        if (lookupInput instanceof HTMLInputElement) {
+          lookupInput.value = "";
+          lookupInput.focus();
+        }
+
+        hideSearchResults();
+        highlightCurrentChapterSearchHits([]);
+
+        const params = new URLSearchParams(window.location.search);
+        params.delete("q");
+        params.delete("lookup");
+
+        const queryString = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          `${window.location.pathname}${queryString ? `?${queryString}` : ""}${window.location.hash}`
+        );
+      };
+
+      const runBibleSearchFromUrl = async () => {
+        const params = new URLSearchParams(window.location.search);
+        const rawQuery = String(params.get("q") || "").trim();
+        if (lookupInput instanceof HTMLInputElement) {
+          lookupInput.value = rawQuery || String(params.get("ref") || "").trim();
+        }
+
+        if (!rawQuery) {
+          if (searchSection instanceof HTMLElement) {
+            searchSection.hidden = true;
+          }
+          highlightCurrentChapterSearchHits([]);
+          return;
+        }
+
+        const terms = parseSearchTerms(rawQuery);
+        if (terms.length === 0) {
+          return;
+        }
+
+        const scope = getActiveScope();
+        const regex = getHighlightRegex(terms);
+        highlightCurrentChapterSearchHits(terms);
+
+        try {
+          const index = await getBibleSearchIndex();
+          const results = [];
+          for (const verse of index) {
+            if (verseMatchesSearch(verse, terms, scope)) {
+              results.push(verse);
+              if (results.length >= 250) {
+                break;
+              }
+            }
+          }
+          renderSearchResults(results, rawQuery, scope, regex);
+        } catch {
+          if (searchSection instanceof HTMLElement) {
+            searchSection.hidden = false;
+          }
+          if (searchMeta instanceof HTMLElement) {
+            searchMeta.textContent = `Search index could not be loaded for "${rawQuery}".`;
+          }
+          if (searchResultsList instanceof HTMLElement) {
+            searchResultsList.textContent = "";
+          }
+          if (searchEmpty instanceof HTMLElement) {
+            searchEmpty.hidden = true;
+          }
+        }
+      };
+
+      if (
+        lookupForm instanceof HTMLFormElement &&
+        lookupInput instanceof HTMLInputElement &&
+        lookupSubmit instanceof HTMLButtonElement
+      ) {
+        lookupInput.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
+            return;
+          }
+          event.preventDefault();
+          lookupForm.requestSubmit(lookupSubmit);
+        });
+      }
+
+      if (clearSearchButton instanceof HTMLButtonElement) {
+        clearSearchButton.addEventListener("click", clearSearch);
+      }
+
+      if (clearResultsButton instanceof HTMLButtonElement) {
+        clearResultsButton.addEventListener("click", () => {
+          hideSearchResults();
+        });
+      }
+
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
         const refValue = String(params.get("ref") || "").trim();
@@ -587,6 +952,8 @@ const bookCatalogJson = JSON.stringify(books);
       if (verseTarget.source === "none" && shouldScrollToChapter()) {
         settleChapterHeaderIntoView();
       }
+
+      runBibleSearchFromUrl();
     })();
   </script>
 </Main>
@@ -783,6 +1150,114 @@ const bookCatalogJson = JSON.stringify(books);
     vertical-align: text-top;
   }
 
+  .verse-change {
+    position: relative;
+    display: inline-flex;
+    margin-left: 0.4rem;
+    vertical-align: text-top;
+    line-height: 1;
+  }
+
+  .verse-change-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    border: 1px solid var(--surface-border-strong);
+    border-radius: 999px;
+    background: var(--surface-bg-strong);
+    color: var(--color-text);
+    font-size: 0.64rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: help;
+  }
+
+  .verse-change-pill:hover,
+  .verse-change-pill:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
+  }
+
+  .verse-change-tooltip {
+    position: absolute;
+    z-index: 20;
+    display: none;
+    left: 50%;
+    bottom: calc(100% + 0.45rem);
+    width: min(34rem, calc(100vw - 2rem));
+    max-height: min(30rem, 70vh);
+    overflow: auto;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--surface-border-strong);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--color-text);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    font-size: 0.86rem;
+    line-height: 1.35;
+    transform: translate(-50%, 0.2rem);
+  }
+
+  .verse-change:hover .verse-change-tooltip,
+  .verse-change:focus-within .verse-change-tooltip {
+    display: block;
+    transform: translate(-50%, 0);
+  }
+
+  .verse-change-tooltip-title,
+  .verse-change-entry,
+  .verse-change-row {
+    display: grid;
+  }
+
+  .verse-change-tooltip-title {
+    margin-bottom: 0.45rem;
+    color: var(--color-heading);
+    font-weight: 800;
+  }
+
+  .verse-change-entry {
+    gap: 0.35rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .verse-change-entry:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .verse-change-entry + .verse-change-entry {
+    margin-top: 0.65rem;
+  }
+
+  .verse-change-type {
+    color: var(--color-heading);
+    font-weight: 800;
+  }
+
+  .verse-change-reason {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .verse-change-row {
+    gap: 0.12rem;
+  }
+
+  .verse-change-label {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
   .verse-footnote-pill {
     display: inline-flex;
     align-items: center;
@@ -805,6 +1280,10 @@ const bookCatalogJson = JSON.stringify(books);
     display: none !important;
   }
 
+  :global(html[data-reader-mode="read"] [data-verse-change]) {
+    display: none !important;
+  }
+
   :global(html[data-reader-mode="read"] [data-chapter-footnotes-controls]) {
     display: none !important;
   }
@@ -814,6 +1293,47 @@ const bookCatalogJson = JSON.stringify(books);
     border-color: var(--color-link);
     background: var(--surface-bg-hover);
     text-decoration: none;
+  }
+
+  .search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .search-results-header h2,
+  .search-results-header .meta {
+    margin-top: 0;
+  }
+
+  .search-results-actions {
+    display: inline-flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .search-results-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .search-results-actions button:hover,
+  .search-results-actions button:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
   }
 
   .search-results {
@@ -827,7 +1347,7 @@ const bookCatalogJson = JSON.stringify(books);
   .search-result-card {
     display: block;
     border: 1px solid var(--surface-border);
-    border-radius: 10px;
+    border-radius: 8px;
     background: var(--surface-bg-muted);
     padding: 0.6rem 0.7rem;
     color: var(--color-text);
@@ -849,5 +1369,12 @@ const bookCatalogJson = JSON.stringify(books);
   .search-result-text {
     display: block;
     margin: 0.35rem 0 0;
+  }
+
+  :global(mark.search-hit) {
+    border-radius: 0.18em;
+    background: rgba(255, 232, 107, 0.82);
+    color: inherit;
+    padding: 0 0.08em;
   }
 </style>
