@@ -40,6 +40,13 @@ const chapterOnlyRegex = new RegExp(
 );
 const continuedVerseRegex =
   /([;]\s*)(\d+):(\d+(?:[-\u2013\u2014]\d+)?(?:\s*,\s*\d+(?:[-\u2013\u2014]\d+)?)*)/g;
+const continuedChapterRegex =
+  /([;]\s*)(\d+(?:[-\u2013\u2014]\d+)?)(?=\s*(?:[;,]|$))/g;
+
+function parseChapterOnlyRef(ref: string): { book: string } | null {
+  const match = ref.match(/^(.+?)\s+\d+(?:[-\u2013\u2014]\d+)?$/);
+  return match ? { book: match[1] ?? "" } : null;
+}
 
 function linkContinuedVerseList(book: string, separator: string, chapter: string, verseList: string): string {
   const [firstVerse = "", ...rest] = verseList.split(/\s*,\s*/);
@@ -52,6 +59,11 @@ function linkContinuedVerseList(book: string, separator: string, chapter: string
   });
 
   return output;
+}
+
+function linkContinuedChapter(book: string, separator: string, chapter: string): string {
+  const ref = `${book} ${chapter}`;
+  return `${separator}<span class="bible-ref" data-ref="${ref}">${chapter}</span>`;
 }
 
 export function autoLinkBibleRefs(html: string): string {
@@ -127,29 +139,45 @@ export function autoLinkBibleRefs(html: string): string {
     }
   );
 
-  const withContinuedVerses = withSingles.replace(
+  const withContinuedRefs = withSingles.replace(
     /((?:<span class="bible-ref" data-ref="([^"]+)">[^<]+<\/span>)(?:[^<]|<(?!span class="bible-ref"))*)/g,
     (segment) => {
       let lastBook: string | null = null;
+      let chapterOnlyBook: string | null = null;
 
       const seedMatch = segment.match(/data-ref="([^"]+)"/);
       if (seedMatch) {
         const ref = seedMatch[1] ?? "";
         const bookMatch = ref.match(/^(.+?)\s+\d+:\d+/);
         lastBook = bookMatch?.[1] ?? null;
+        chapterOnlyBook = parseChapterOnlyRef(ref)?.book ?? null;
       }
 
-      return segment.replace(continuedVerseRegex, (match, separator: string, chapter: string, verseList: string) => {
-        if (!lastBook) {
-          return match;
-        }
+      const withContinuedChapters = segment.replace(
+        continuedChapterRegex,
+        (match, separator: string, chapter: string) => {
+          if (!chapterOnlyBook) {
+            return match;
+          }
 
-        return linkContinuedVerseList(lastBook, separator, chapter, verseList);
-      });
+          return linkContinuedChapter(chapterOnlyBook, separator, chapter);
+        }
+      );
+
+      return withContinuedChapters.replace(
+        continuedVerseRegex,
+        (match, separator: string, chapter: string, verseList: string) => {
+          if (!lastBook) {
+            return match;
+          }
+
+          return linkContinuedVerseList(lastBook, separator, chapter, verseList);
+        }
+      );
     }
   );
 
-  return withContinuedVerses.replace(/__BIBLE_MULTI__(\d+)__/g, (match, index) => {
+  return withContinuedRefs.replace(/__BIBLE_MULTI__(\d+)__/g, (match, index) => {
     const idx = Number(index);
     return Number.isNaN(idx) ? match : placeholders[idx] ?? match;
   });

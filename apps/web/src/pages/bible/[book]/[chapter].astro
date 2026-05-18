@@ -557,6 +557,11 @@ const bookCatalogJson = JSON.stringify(books);
         feedbackTimers.set(button, timer);
       };
 
+      const getHeaderOffset = () => {
+        const header = document.querySelector(".top");
+        return header instanceof HTMLElement ? Math.ceil(header.getBoundingClientRect().height) : 0;
+      };
+
       const copyText = async (value) => {
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(value);
@@ -997,14 +1002,13 @@ const bookCatalogJson = JSON.stringify(books);
 
         target.classList.add("is-target", "is-target-flash");
 
-        const header = document.querySelector(".top");
-        const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0;
-        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerBottom - 12;
+        const headerOffset = getHeaderOffset();
+        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerOffset - 18;
 
         const rect = target.getBoundingClientRect();
         const absoluteTop = window.scrollY + rect.top;
         const absoluteBottom = window.scrollY + rect.bottom;
-        const visibleTop = window.scrollY + headerBottom + 8;
+        const visibleTop = window.scrollY + headerOffset + 12;
         const visibleBottom = window.scrollY + window.innerHeight - 16;
         const isVisible = absoluteTop >= visibleTop && absoluteBottom <= visibleBottom;
 
@@ -1025,9 +1029,7 @@ const bookCatalogJson = JSON.stringify(books);
         if (!(chapterHeader instanceof HTMLElement)) {
           return;
         }
-        const header = document.querySelector(".top");
-        const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0;
-        const chapterTop = window.scrollY + chapterHeader.getBoundingClientRect().top - headerBottom - 12;
+        const chapterTop = window.scrollY + chapterHeader.getBoundingClientRect().top - getHeaderOffset() - 18;
         window.scrollTo({
           top: Math.max(chapterTop, 0),
           behavior: "auto",
@@ -1056,7 +1058,7 @@ const bookCatalogJson = JSON.stringify(books);
           window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
           settleChapterHeaderIntoView();
         }
-        highlightVerse(verseTarget.verse, false);
+        highlightVerse(verseTarget.verse, true);
       } else {
         highlightVerse(verseTarget.verse, verseTarget.source === "hash");
       }
@@ -1219,19 +1221,55 @@ const bookCatalogJson = JSON.stringify(books);
     padding: 0.1rem 0.45rem;
     line-height: 1.22;
     border-radius: 8px;
-    scroll-margin-top: 6.5rem;
+    scroll-margin-top: 7.5rem;
   }
 
   .verse-item.is-target {
     background: rgba(255, 232, 107, 0.72);
     border: 1px solid rgba(232, 179, 35, 0.58);
     box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.26);
+    color: #1f1a00;
   }
 
   .verse-item:target {
     background: rgba(255, 232, 107, 0.72);
     border: 1px solid rgba(232, 179, 35, 0.58);
     box-shadow: 0 0 0 2px rgba(232, 179, 35, 0.26);
+    color: #1f1a00;
+  }
+
+  .verse-item.is-target .verse-ref,
+  .verse-item.is-target .verse-text,
+  .verse-item.is-target .verse-action,
+  .verse-item.is-target .verse-footnote-pill,
+  .verse-item.is-target .verse-change-pill,
+  .verse-item:target .verse-ref,
+  .verse-item:target .verse-text,
+  .verse-item:target .verse-action,
+  .verse-item:target .verse-footnote-pill,
+  .verse-item:target .verse-change-pill {
+    color: #1f1a00;
+  }
+
+  .verse-item.is-target .verse-action,
+  .verse-item.is-target .verse-footnote-pill,
+  .verse-item.is-target .verse-change-pill,
+  .verse-item:target .verse-action,
+  .verse-item:target .verse-footnote-pill,
+  .verse-item:target .verse-change-pill {
+    border-color: rgba(94, 70, 0, 0.52);
+    background: rgba(255, 255, 255, 0.42);
+  }
+
+  .verse-item.is-target .verse-action:hover,
+  .verse-item.is-target .verse-action:focus-visible,
+  .verse-item.is-target .verse-footnote-pill:hover,
+  .verse-item.is-target .verse-footnote-pill:focus-visible,
+  .verse-item:target .verse-action:hover,
+  .verse-item:target .verse-action:focus-visible,
+  .verse-item:target .verse-footnote-pill:hover,
+  .verse-item:target .verse-footnote-pill:focus-visible {
+    background: rgba(255, 255, 255, 0.64);
   }
 
   .verse-item.is-target-flash {
