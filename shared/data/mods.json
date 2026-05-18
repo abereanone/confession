@@ -124,5 +124,12 @@
     "verse": 9,
     "text": "With it we bless our Lord and Father, and with it we curse people who are made in the likeness of God.",
     "version": "ESV", "reason": "The BSB puts a comma after people, which is an interpretation that seems to indicate all people are made in the likeness of God, which is not what the original text says. The original text says that we curse people who are made in the likeness of God, which is a different meaning."
+  },
+  {
+    "book": "1jn",
+    "chapter": 5,
+    "verse": 1,
+    "text": "Whosoever believeth that Jesus is the Christ is born of God: and every one that loveth him that begat loveth him also that is begotten of him.",
+    "version": "KJV", "reason": "preferred language of KJV, BSB OK too"
   }
 ]

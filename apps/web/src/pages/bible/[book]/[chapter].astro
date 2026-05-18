@@ -259,6 +259,30 @@ const bookCatalogJson = JSON.stringify(books);
                 {verse.verse}
               </a>
               <span class="verse-text" data-verse-text>{verse.text}</span>
+              <span class="verse-actions" data-verse-actions>
+                <button
+                  type="button"
+                  class="verse-action"
+                  data-copy-verse
+                  data-reference={verse.reference}
+                  data-verse-number={verse.verse}
+                  data-verse-copy-text={verse.text}
+                  aria-label={`Copy ${verse.reference}`}
+                >
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  class="verse-action"
+                  data-share-verse
+                  data-reference={verse.reference}
+                  data-verse-number={verse.verse}
+                  data-verse-copy-text={verse.text}
+                  aria-label={`Share ${verse.reference}`}
+                >
+                  Share
+                </button>
+              </span>
               {changes.length > 0 ? (
                 <span class="verse-change" data-verse-change>
                   <button
@@ -340,6 +364,7 @@ const bookCatalogJson = JSON.stringify(books);
       const clearResultsButton = document.querySelector("[data-clear-results]");
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
       let bibleSearchIndexPromise = null;
+      const feedbackTimers = new WeakMap();
 
       const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -498,6 +523,83 @@ const bookCatalogJson = JSON.stringify(books);
 
       const buildChapterUrl = (bookCode, chapter, scope) =>
         `/bible/${encodeURIComponent(bookCode)}/${chapter}${getScopeSuffix(scope)}`;
+
+      const getVerseShareUrl = (button) => {
+        const verseNumber = String(button.dataset.verseNumber || "").trim();
+        const url = new URL(window.location.pathname, window.location.origin);
+        if (verseNumber) {
+          url.hash = `verse-${verseNumber}`;
+        }
+        return url.toString();
+      };
+
+      const getVerseShareText = (button) => {
+        const reference = String(button.dataset.reference || "").trim();
+        const text = String(button.dataset.verseCopyText || "").trim();
+        return [reference, text].filter(Boolean).join(" - ");
+      };
+
+      const setVerseActionFeedback = (button, label) => {
+        const previousTimer = feedbackTimers.get(button);
+        if (previousTimer) {
+          window.clearTimeout(previousTimer);
+        }
+
+        if (!button.dataset.defaultLabel) {
+          button.dataset.defaultLabel = button.textContent || "";
+        }
+
+        button.textContent = label;
+        const timer = window.setTimeout(() => {
+          button.textContent = button.dataset.defaultLabel || "";
+          feedbackTimers.delete(button);
+        }, 1400);
+        feedbackTimers.set(button, timer);
+      };
+
+      const copyText = async (value) => {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+          return;
+        }
+
+        const textArea = document.createElement("textarea");
+        textArea.value = value;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+
+        try {
+          document.execCommand("copy");
+        } finally {
+          textArea.remove();
+        }
+      };
+
+      const handleVerseAction = async (button) => {
+        const text = getVerseShareText(button);
+        const url = getVerseShareUrl(button);
+        const copyValue = [text, url].filter(Boolean).join("\n");
+
+        try {
+          if (button.hasAttribute("data-share-verse") && navigator.share) {
+            await navigator.share({
+              title: String(button.dataset.reference || "Bible verse"),
+              text,
+              url,
+            });
+            setVerseActionFeedback(button, "Shared");
+            return;
+          }
+
+          await copyText(copyValue);
+          setVerseActionFeedback(button, "Copied");
+        } catch {
+          setVerseActionFeedback(button, "Failed");
+        }
+      };
 
       const requestReaderScroll = () => {
         try {
@@ -836,6 +938,16 @@ const bookCatalogJson = JSON.stringify(books);
         });
       }
 
+      document.addEventListener("click", (event) => {
+        const button = event.target?.closest?.("[data-copy-verse], [data-share-verse]");
+        if (!(button instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        event.preventDefault();
+        handleVerseAction(button);
+      });
+
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
         const refValue = String(params.get("ref") || "").trim();
@@ -1140,6 +1252,38 @@ const bookCatalogJson = JSON.stringify(books);
     min-width: 1.6rem;
     font-weight: 700;
     margin-right: 0.45rem;
+  }
+
+  .verse-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+    margin-left: 0.45rem;
+    vertical-align: text-top;
+  }
+
+  .verse-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.15rem;
+    min-height: 1.2rem;
+    padding: 0.06rem 0.42rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .verse-action:hover,
+  .verse-action:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
   }
 
   .verse-footnotes {
