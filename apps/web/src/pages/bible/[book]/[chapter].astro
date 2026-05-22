@@ -255,34 +255,19 @@ const bookCatalogJson = JSON.stringify(books);
           const changes = chapterChangesByVerse.get(verse.verse) ?? [];
           return (
             <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
-              <a href={`#verse-${verse.verse}`} class="verse-ref">
+              <a
+                href={`#verse-${verse.verse}`}
+                class="verse-ref"
+                data-share-verse
+                data-reference={verse.reference}
+                data-verse-number={verse.verse}
+                data-verse-copy-text={verse.text}
+                aria-label={`Share ${verse.reference}`}
+                title={`Share ${verse.reference}`}
+              >
                 {verse.verse}
               </a>
               <span class="verse-text" data-verse-text>{verse.text}</span>
-              <span class="verse-actions" data-verse-actions>
-                <button
-                  type="button"
-                  class="verse-action"
-                  data-copy-verse
-                  data-reference={verse.reference}
-                  data-verse-number={verse.verse}
-                  data-verse-copy-text={verse.text}
-                  aria-label={`Copy ${verse.reference}`}
-                >
-                  Copy
-                </button>
-                <button
-                  type="button"
-                  class="verse-action"
-                  data-share-verse
-                  data-reference={verse.reference}
-                  data-verse-number={verse.verse}
-                  data-verse-copy-text={verse.text}
-                  aria-label={`Share ${verse.reference}`}
-                >
-                  Share
-                </button>
-              </span>
               {changes.length > 0 ? (
                 <span class="verse-change" data-verse-change>
                   <button
@@ -539,22 +524,44 @@ const bookCatalogJson = JSON.stringify(books);
         return [reference, text].filter(Boolean).join(" - ");
       };
 
-      const setVerseActionFeedback = (button, label) => {
-        const previousTimer = feedbackTimers.get(button);
+      const setVerseActionFeedback = (trigger, label) => {
+        const previousTimer = feedbackTimers.get(trigger);
         if (previousTimer) {
           window.clearTimeout(previousTimer);
         }
 
-        if (!button.dataset.defaultLabel) {
-          button.dataset.defaultLabel = button.textContent || "";
+        if (trigger.classList.contains("verse-ref")) {
+          if (!trigger.dataset.defaultAriaLabel) {
+            trigger.dataset.defaultAriaLabel = trigger.getAttribute("aria-label") || "";
+          }
+          if (!trigger.dataset.defaultTitle) {
+            trigger.dataset.defaultTitle = trigger.getAttribute("title") || "";
+          }
+
+          trigger.dataset.status = label;
+          trigger.setAttribute("aria-label", `${label}: ${trigger.dataset.defaultAriaLabel || "verse"}`);
+          trigger.setAttribute("title", label);
+
+          const timer = window.setTimeout(() => {
+            delete trigger.dataset.status;
+            trigger.setAttribute("aria-label", trigger.dataset.defaultAriaLabel || "");
+            trigger.setAttribute("title", trigger.dataset.defaultTitle || "");
+            feedbackTimers.delete(trigger);
+          }, 1400);
+          feedbackTimers.set(trigger, timer);
+          return;
         }
 
-        button.textContent = label;
+        if (!trigger.dataset.defaultLabel) {
+          trigger.dataset.defaultLabel = trigger.textContent || "";
+        }
+
+        trigger.textContent = label;
         const timer = window.setTimeout(() => {
-          button.textContent = button.dataset.defaultLabel || "";
-          feedbackTimers.delete(button);
+          trigger.textContent = trigger.dataset.defaultLabel || "";
+          feedbackTimers.delete(trigger);
         }, 1400);
-        feedbackTimers.set(button, timer);
+        feedbackTimers.set(trigger, timer);
       };
 
       const getHeaderOffset = () => {
@@ -583,26 +590,34 @@ const bookCatalogJson = JSON.stringify(books);
         }
       };
 
-      const handleVerseAction = async (button) => {
-        const text = getVerseShareText(button);
-        const url = getVerseShareUrl(button);
+      const handleVerseAction = async (trigger) => {
+        const text = getVerseShareText(trigger);
+        const url = getVerseShareUrl(trigger);
         const copyValue = [text, url].filter(Boolean).join("\n");
+        let copied = false;
 
         try {
-          if (button.hasAttribute("data-share-verse") && navigator.share) {
-            await navigator.share({
-              title: String(button.dataset.reference || "Bible verse"),
-              text,
-              url,
-            });
-            setVerseActionFeedback(button, "Shared");
-            return;
-          }
-
           await copyText(copyValue);
-          setVerseActionFeedback(button, "Copied");
+          setVerseActionFeedback(trigger, "Copied!");
+          copied = true;
         } catch {
-          setVerseActionFeedback(button, "Failed");
+          setVerseActionFeedback(trigger, "Failed");
+        }
+
+        if (!navigator.share) {
+          return;
+        }
+
+        try {
+          await navigator.share({
+            title: String(trigger.dataset.reference || "Bible verse"),
+            text,
+            url,
+          });
+        } catch {
+          if (!copied) {
+            setVerseActionFeedback(trigger, "Failed");
+          }
         }
       };
 
@@ -944,13 +959,27 @@ const bookCatalogJson = JSON.stringify(books);
       }
 
       document.addEventListener("click", (event) => {
-        const button = event.target?.closest?.("[data-copy-verse], [data-share-verse]");
-        if (!(button instanceof HTMLButtonElement)) {
+        const trigger = event.target?.closest?.("[data-share-verse]");
+        if (!(trigger instanceof HTMLElement)) {
           return;
         }
 
         event.preventDefault();
-        handleVerseAction(button);
+        handleVerseAction(trigger);
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== " " && event.key !== "Spacebar") {
+          return;
+        }
+
+        const trigger = event.target?.closest?.("[data-share-verse]");
+        if (!(trigger instanceof HTMLElement)) {
+          return;
+        }
+
+        event.preventDefault();
+        handleVerseAction(trigger);
       });
 
       const parseVerseTarget = () => {
@@ -990,6 +1019,28 @@ const bookCatalogJson = JSON.stringify(books);
         return { verse: NaN, source: "none" };
       };
 
+      const isVerseTopVisible = (target) => {
+        const rect = target.getBoundingClientRect();
+        const visibleTop = getHeaderOffset() + 12;
+        const visibleBottom = window.innerHeight - 16;
+        return rect.top >= visibleTop && rect.top < visibleBottom;
+      };
+
+      const scrollVerseBelowHeader = (target, behavior = "smooth") => {
+        const rect = target.getBoundingClientRect();
+        const targetTop = window.scrollY + rect.top - getHeaderOffset() - 18;
+        window.scrollTo({
+          top: Math.max(targetTop, 0),
+          behavior,
+        });
+      };
+
+      const scrollVerseIntoViewIfNeeded = (target, behavior = "smooth") => {
+        if (!isVerseTopVisible(target)) {
+          scrollVerseBelowHeader(target, behavior);
+        }
+      };
+
       const highlightVerse = (verseNumber, shouldScroll = true) => {
         if (!Number.isFinite(verseNumber) || verseNumber < 1) {
           return;
@@ -1002,26 +1053,30 @@ const bookCatalogJson = JSON.stringify(books);
 
         target.classList.add("is-target", "is-target-flash");
 
-        const headerOffset = getHeaderOffset();
-        const targetTop = window.scrollY + target.getBoundingClientRect().top - headerOffset - 18;
-
-        const rect = target.getBoundingClientRect();
-        const absoluteTop = window.scrollY + rect.top;
-        const absoluteBottom = window.scrollY + rect.bottom;
-        const visibleTop = window.scrollY + headerOffset + 12;
-        const visibleBottom = window.scrollY + window.innerHeight - 16;
-        const isVisible = absoluteTop >= visibleTop && absoluteBottom <= visibleBottom;
-
-        if (shouldScroll && !isVisible) {
-          window.scrollTo({
-            top: Math.max(targetTop, 0),
-            behavior: "smooth",
-          });
+        if (shouldScroll) {
+          scrollVerseIntoViewIfNeeded(target);
         }
 
         window.setTimeout(() => {
           target.classList.remove("is-target-flash");
         }, 1400);
+      };
+
+      const settleVerseIntoView = (verseNumber) => {
+        if (!Number.isFinite(verseNumber) || verseNumber < 1) {
+          return;
+        }
+
+        const scrollIfNeeded = () => {
+          const target = document.getElementById(`verse-${verseNumber}`);
+          if (target instanceof HTMLElement) {
+            scrollVerseIntoViewIfNeeded(target, "auto");
+          }
+        };
+
+        window.requestAnimationFrame(scrollIfNeeded);
+        window.setTimeout(scrollIfNeeded, 80);
+        window.setTimeout(scrollIfNeeded, 220);
       };
 
       const scrollChapterHeaderIntoView = () => {
@@ -1061,6 +1116,9 @@ const bookCatalogJson = JSON.stringify(books);
         highlightVerse(verseTarget.verse, true);
       } else {
         highlightVerse(verseTarget.verse, verseTarget.source === "hash");
+      }
+      if (verseTarget.source === "hash") {
+        settleVerseIntoView(verseTarget.verse);
       }
 
       if (verseTarget.source === "none" && shouldScrollToChapter()) {
@@ -1240,33 +1298,25 @@ const bookCatalogJson = JSON.stringify(books);
 
   .verse-item.is-target .verse-ref,
   .verse-item.is-target .verse-text,
-  .verse-item.is-target .verse-action,
   .verse-item.is-target .verse-footnote-pill,
   .verse-item.is-target .verse-change-pill,
   .verse-item:target .verse-ref,
   .verse-item:target .verse-text,
-  .verse-item:target .verse-action,
   .verse-item:target .verse-footnote-pill,
   .verse-item:target .verse-change-pill {
     color: #1f1a00;
   }
 
-  .verse-item.is-target .verse-action,
   .verse-item.is-target .verse-footnote-pill,
   .verse-item.is-target .verse-change-pill,
-  .verse-item:target .verse-action,
   .verse-item:target .verse-footnote-pill,
   .verse-item:target .verse-change-pill {
     border-color: rgba(94, 70, 0, 0.52);
     background: rgba(255, 255, 255, 0.42);
   }
 
-  .verse-item.is-target .verse-action:hover,
-  .verse-item.is-target .verse-action:focus-visible,
   .verse-item.is-target .verse-footnote-pill:hover,
   .verse-item.is-target .verse-footnote-pill:focus-visible,
-  .verse-item:target .verse-action:hover,
-  .verse-item:target .verse-action:focus-visible,
   .verse-item:target .verse-footnote-pill:hover,
   .verse-item:target .verse-footnote-pill:focus-visible {
     background: rgba(255, 255, 255, 0.64);
@@ -1290,23 +1340,16 @@ const bookCatalogJson = JSON.stringify(books);
     min-width: 1.6rem;
     font-weight: 700;
     margin-right: 0.45rem;
+    cursor: pointer;
   }
 
-  .verse-actions {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.28rem;
-    margin-left: 0.45rem;
-    vertical-align: text-top;
-  }
-
-  .verse-action {
+  .verse-ref[data-status]::after {
+    content: attr(data-status);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 3.15rem;
-    min-height: 1.2rem;
-    padding: 0.06rem 0.42rem;
+    margin-left: 0.35rem;
+    padding: 0.08rem 0.38rem;
     border: 1px solid var(--surface-border);
     border-radius: 999px;
     background: var(--surface-bg-muted);
@@ -1314,14 +1357,9 @@ const bookCatalogJson = JSON.stringify(books);
     font-size: 0.68rem;
     font-weight: 700;
     line-height: 1;
-    cursor: pointer;
-  }
-
-  .verse-action:hover,
-  .verse-action:focus-visible {
-    border-color: var(--color-link);
-    background: var(--surface-bg-hover);
-    outline: none;
+    pointer-events: none;
+    white-space: nowrap;
+    vertical-align: 0.08rem;
   }
 
   .verse-footnotes {
