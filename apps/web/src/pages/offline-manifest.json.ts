@@ -6,10 +6,12 @@ import { listConfessions } from "../lib/confessions";
 // so the client can fetch it cheaply before bulk-caching via the Cache API.
 export const GET: APIRoute = async () => {
   const books = await listBibleBooks();
-  const bible: string[] = [];
+  const bibleOt: string[] = [];
+  const bibleNt: string[] = [];
   for (const book of books) {
+    const target = book.testament === "nt" ? bibleNt : bibleOt;
     for (let chapter = 1; chapter <= book.chapterCount; chapter += 1) {
-      bible.push(`/bible/${book.code}/${chapter}`);
+      target.push(`/bible/${book.code}/${chapter}`);
     }
   }
 
@@ -19,7 +21,7 @@ export const GET: APIRoute = async () => {
     confessions.push(`/confessions/${confession.slug}/about`);
   }
 
-  return new Response(JSON.stringify({ confessions, bible }), {
+  return new Response(JSON.stringify({ confessions, bibleOt, bibleNt }), {
     headers: {
       "content-type": "application/json",
       "cache-control": "public, max-age=3600",

@@ -21,9 +21,15 @@
       <button type="button" class="install-action install-action-primary" data-install-button hidden>
         Add to Mobile
       </button>
-      <div class="install-ios" data-install-ios hidden>
-        On iPhone or iPad: tap the <strong>Share</strong> button, then
-        <strong>Add to Home Screen</strong>.
+      <div class="install-hint" data-install-ios hidden>
+        On iPhone or iPad, open this page in <strong>Safari</strong>, tap the
+        <strong>Share</strong> button, then <strong>Add to Home Screen</strong>.
+        <span class="install-hint-note">Other iOS browsers (Chrome, DuckDuckGo, Firefox) can't install apps.</span>
+      </div>
+      <div class="install-hint" data-install-fallback hidden>
+        To install, open this site in <strong>Chrome</strong>, <strong>Edge</strong>, or another
+        Chromium-based browser. DuckDuckGo and Firefox don't support installing web apps — but you
+        can still download content for offline reading below.
       </div>
       <p class="install-done" data-install-done hidden>✓ Installed on this device</p>
     </section>
@@ -37,7 +43,10 @@
           <span class="download-name">Confessions</span>
           <span class="download-size">~2 MB</span>
         </div>
-        <button type="button" class="install-action" data-download="confessions">Download</button>
+        <div class="download-actions">
+          <button type="button" class="install-action" data-download="confessions">Download</button>
+          <button type="button" class="install-remove" data-remove="confessions" hidden>Remove</button>
+        </div>
       </div>
       <div class="download-progress" data-progress="confessions" hidden>
         <div class="download-bar"><span data-bar></span></div>
@@ -46,12 +55,30 @@
 
       <div class="download-row">
         <div class="download-info">
-          <span class="download-name">Bible (BSB)</span>
-          <span class="download-size">~70 MB · 1,190 chapters</span>
+          <span class="download-name">Bible — Old Testament</span>
+          <span class="download-size">~54 MB · 929 chapters</span>
         </div>
-        <button type="button" class="install-action" data-download="bible">Download</button>
+        <div class="download-actions">
+          <button type="button" class="install-action" data-download="bibleOt">Download</button>
+          <button type="button" class="install-remove" data-remove="bibleOt" hidden>Remove</button>
+        </div>
       </div>
-      <div class="download-progress" data-progress="bible" hidden>
+      <div class="download-progress" data-progress="bibleOt" hidden>
+        <div class="download-bar"><span data-bar></span></div>
+        <span class="download-status" data-status></span>
+      </div>
+
+      <div class="download-row">
+        <div class="download-info">
+          <span class="download-name">Bible — New Testament</span>
+          <span class="download-size">~14 MB · 260 chapters</span>
+        </div>
+        <div class="download-actions">
+          <button type="button" class="install-action" data-download="bibleNt">Download</button>
+          <button type="button" class="install-remove" data-remove="bibleNt" hidden>Remove</button>
+        </div>
+      </div>
+      <div class="download-progress" data-progress="bibleNt" hidden>
         <div class="download-bar"><span data-bar></span></div>
         <span class="download-status" data-status></span>
       </div>
@@ -77,11 +104,13 @@
     const dialog = root.querySelector("[data-install-dialog]");
     const installButton = root.querySelector("[data-install-button]");
     const installIos = root.querySelector("[data-install-ios]");
+    const installFallback = root.querySelector("[data-install-fallback]");
     const installDone = root.querySelector("[data-install-done]");
     const installText = root.querySelector("[data-install-text]");
 
     if (openButton && dialog) {
       openButton.addEventListener("click", () => {
+        updateInstallUi();
         if (typeof dialog.showModal === "function") {
           dialog.showModal();
         } else {
@@ -101,16 +130,32 @@
       (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
       window.navigator.standalone === true;
 
-    const isIos = () => /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    const isIos = () =>
+      /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+      (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
 
     let deferredPrompt = null;
+
+    // Show the right install guidance per browser:
+    // - native prompt (Chromium) -> the button
+    // - iOS -> Safari "Add to Home Screen" steps
+    // - everything else (DuckDuckGo, Firefox, desktop Safari) -> a plain-language fallback
+    const updateInstallUi = () => {
+      const installed = isStandalone();
+      const canPrompt = Boolean(deferredPrompt);
+      const ios = isIos();
+
+      if (installButton) installButton.hidden = installed || !canPrompt;
+      if (installIos) installIos.hidden = installed || canPrompt || !ios;
+      if (installFallback) installFallback.hidden = installed || canPrompt || ios;
+      if (installDone) installDone.hidden = !installed;
+      if (installText) installText.hidden = installed;
+    };
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       deferredPrompt = event;
-      if (installButton) {
-        installButton.hidden = false;
-      }
+      updateInstallUi();
     });
 
     if (installButton) {
@@ -125,25 +170,16 @@
           // ignore
         }
         deferredPrompt = null;
-        installButton.hidden = true;
+        updateInstallUi();
       });
     }
 
     window.addEventListener("appinstalled", () => {
-      if (installButton) {
-        installButton.hidden = true;
-      }
-      if (installDone) {
-        installDone.hidden = false;
-      }
+      deferredPrompt = null;
+      updateInstallUi();
     });
 
-    if (isStandalone()) {
-      if (installDone) installDone.hidden = false;
-      if (installText) installText.hidden = true;
-    } else if (isIos() && installIos) {
-      installIos.hidden = false;
-    }
+    updateInstallUi();
 
     // --- Download for offline ---
     const cacheUrls = async (urls, onProgress) => {
@@ -170,8 +206,19 @@
       await Promise.all(Array.from({ length: concurrency }, () => worker()));
     };
 
+    const getManifestUrls = async (group) => {
+      const manifest = await fetch("/offline-manifest.json").then((response) => {
+        if (!response.ok) {
+          throw new Error(`manifest ${response.status}`);
+        }
+        return response.json();
+      });
+      return Array.isArray(manifest[group]) ? manifest[group] : [];
+    };
+
     const setupDownload = (group) => {
       const button = root.querySelector(`[data-download="${group}"]`);
+      const removeButton = root.querySelector(`[data-remove="${group}"]`);
       const progress = root.querySelector(`[data-progress="${group}"]`);
       const bar = progress ? progress.querySelector("[data-bar]") : null;
       const status = progress ? progress.querySelector("[data-status]") : null;
@@ -181,15 +228,35 @@
         return;
       }
 
-      let alreadySaved = false;
-      try {
-        alreadySaved = window.localStorage.getItem(savedKey) === "1";
-      } catch {
-        alreadySaved = false;
-      }
-      if (alreadySaved) {
-        button.textContent = "Update";
-      }
+      const readSaved = () => {
+        try {
+          return window.localStorage.getItem(savedKey) === "1";
+        } catch {
+          return false;
+        }
+      };
+
+      const writeSaved = (value) => {
+        try {
+          if (value) {
+            window.localStorage.setItem(savedKey, "1");
+          } else {
+            window.localStorage.removeItem(savedKey);
+          }
+        } catch {
+          // ignore
+        }
+      };
+
+      const reflectSavedState = () => {
+        const saved = readSaved();
+        button.textContent = saved ? "Update" : "Download";
+        if (removeButton) {
+          removeButton.hidden = !saved;
+        }
+      };
+
+      reflectSavedState();
 
       button.addEventListener("click", async () => {
         if (!("caches" in window)) {
@@ -199,6 +266,7 @@
         }
 
         button.disabled = true;
+        if (removeButton) removeButton.disabled = true;
         const originalLabel = button.textContent;
         button.textContent = "Downloading…";
         if (progress) progress.hidden = false;
@@ -206,13 +274,7 @@
         if (status) status.textContent = "Preparing…";
 
         try {
-          const manifest = await fetch("/offline-manifest.json").then((response) => {
-            if (!response.ok) {
-              throw new Error(`manifest ${response.status}`);
-            }
-            return response.json();
-          });
-          const urls = Array.isArray(manifest[group]) ? manifest[group] : [];
+          const urls = await getManifestUrls(group);
 
           await cacheUrls(urls, (current, total) => {
             const pct = total ? Math.round((current / total) * 100) : 100;
@@ -220,24 +282,50 @@
             if (status) status.textContent = `${current} / ${total} pages saved`;
           });
 
-          try {
-            window.localStorage.setItem(savedKey, "1");
-          } catch {
-            // ignore
-          }
-          button.disabled = false;
-          button.textContent = "Update";
+          writeSaved(true);
           if (status) status.textContent = `Saved ${urls.length} pages for offline reading.`;
         } catch {
-          button.disabled = false;
           button.textContent = originalLabel || "Retry";
           if (status) status.textContent = "Download failed — check your connection and retry.";
+        } finally {
+          button.disabled = false;
+          if (removeButton) removeButton.disabled = false;
+          reflectSavedState();
         }
       });
+
+      if (removeButton) {
+        removeButton.addEventListener("click", async () => {
+          if (!("caches" in window)) {
+            return;
+          }
+
+          removeButton.disabled = true;
+          button.disabled = true;
+          if (progress) progress.hidden = false;
+          if (bar) bar.style.width = "0%";
+          if (status) status.textContent = "Removing…";
+
+          try {
+            const urls = await getManifestUrls(group);
+            const cache = await caches.open(OFFLINE_CACHE);
+            await Promise.all(urls.map((url) => cache.delete(url).catch(() => {})));
+            writeSaved(false);
+            if (status) status.textContent = "Removed from offline storage.";
+          } catch {
+            if (status) status.textContent = "Couldn't remove — please try again.";
+          } finally {
+            button.disabled = false;
+            removeButton.disabled = false;
+            reflectSavedState();
+          }
+        });
+      }
     };
 
     setupDownload("confessions");
-    setupDownload("bible");
+    setupDownload("bibleOt");
+    setupDownload("bibleNt");
   })();
 </script>
 
@@ -344,13 +432,20 @@
     cursor: default;
   }
 
-  .install-ios {
+  .install-hint {
     font-size: 0.9rem;
     color: var(--color-text);
     background: var(--surface-bg-muted);
     border: 1px solid var(--surface-border);
     border-radius: 10px;
     padding: 0.6rem 0.75rem;
+  }
+
+  .install-hint-note {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--color-muted);
   }
 
   .install-done {
@@ -371,6 +466,35 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+
+  .download-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+  }
+
+  .install-remove {
+    background: transparent;
+    color: var(--color-muted);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.4rem 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .install-remove:hover:not(:disabled),
+  .install-remove:focus-visible {
+    color: var(--color-text);
+    border-color: var(--color-link);
+    outline: none;
+  }
+
+  .install-remove:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 
   .download-name {
