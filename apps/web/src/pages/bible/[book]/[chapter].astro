@@ -329,6 +329,36 @@ const bookCatalogJson = JSON.stringify(books);
     </div>
   </section>
 
+  <div
+    class="verse-actionbar"
+    data-verse-actionbar
+    hidden
+    role="region"
+    aria-label="Verse selection actions"
+  >
+    <div class="verse-actionbar-inner">
+      <div class="verse-actionbar-info">
+        <span class="verse-actionbar-reference" data-actionbar-reference></span>
+        <span class="verse-actionbar-hint" data-actionbar-hint></span>
+      </div>
+      <div class="verse-actionbar-buttons">
+        <button type="button" class="verse-actionbar-button" data-actionbar-range aria-pressed="false">
+          Range
+        </button>
+        <button type="button" class="verse-actionbar-button" data-actionbar-copy>Copy</button>
+        <button type="button" class="verse-actionbar-button" data-actionbar-share hidden>Share</button>
+        <button
+          type="button"
+          class="verse-actionbar-button verse-actionbar-clear"
+          data-actionbar-clear
+          aria-label="Clear selection"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script is:inline define:vars={{ bookCatalogJson }}>
     (() => {
       const bookCatalog = JSON.parse(bookCatalogJson);
@@ -590,34 +620,172 @@ const bookCatalogJson = JSON.stringify(books);
         }
       };
 
-      const handleVerseAction = async (trigger) => {
-        const text = getVerseShareText(trigger);
-        const url = getVerseShareUrl(trigger);
-        const copyValue = [text, url].filter(Boolean).join("\n");
-        let copied = false;
+      // --- Verse selection & range sharing ---
+      const actionBar = document.querySelector("[data-verse-actionbar]");
+      const actionBarReference = document.querySelector("[data-actionbar-reference]");
+      const actionBarHint = document.querySelector("[data-actionbar-hint]");
+      const rangeButton = document.querySelector("[data-actionbar-range]");
+      const copyButton = document.querySelector("[data-actionbar-copy]");
+      const shareButton = document.querySelector("[data-actionbar-share]");
+      const clearButton = document.querySelector("[data-actionbar-clear]");
 
-        try {
-          await copyText(copyValue);
-          setVerseActionFeedback(trigger, "Copied!");
-          copied = true;
-        } catch {
-          setVerseActionFeedback(trigger, "Failed");
+      let anchorVerse = Number.NaN;
+      let endVerse = Number.NaN;
+      let rangeArmed = false;
+
+      const getVerseButton = (verseNumber) =>
+        document.querySelector(`[data-share-verse][data-verse-number="${verseNumber}"]`);
+
+      const getSelectionBounds = () => {
+        if (!Number.isFinite(anchorVerse)) {
+          return null;
+        }
+        if (!Number.isFinite(endVerse)) {
+          return { start: anchorVerse, end: anchorVerse };
+        }
+        return { start: Math.min(anchorVerse, endVerse), end: Math.max(anchorVerse, endVerse) };
+      };
+
+      const buildSelectionReference = (start, end) => {
+        const startButton = getVerseButton(start);
+        const reference = String(startButton?.dataset.reference || "").trim();
+        if (start === end) {
+          return reference;
+        }
+        const match = reference.match(/^(.*:)(\d+)\s*$/);
+        if (match) {
+          return `${match[1]}${start}–${end}`;
+        }
+        return reference ? `${reference}–${end}` : "";
+      };
+
+      const collectRangeVerses = (start, end) => {
+        const verses = [];
+        for (let verseNumber = start; verseNumber <= end; verseNumber += 1) {
+          const button = getVerseButton(verseNumber);
+          if (!button) {
+            continue;
+          }
+          verses.push({
+            number: verseNumber,
+            text: String(button.dataset.verseCopyText || "").trim(),
+          });
+        }
+        return verses;
+      };
+
+      const buildSelectionShareText = (bounds) => {
+        const startButton = getVerseButton(bounds.start);
+        if (bounds.start === bounds.end) {
+          return startButton ? getVerseShareText(startButton) : "";
+        }
+        const header = buildSelectionReference(bounds.start, bounds.end);
+        const body = collectRangeVerses(bounds.start, bounds.end)
+          .map((verse) => `${verse.number} ${verse.text}`.trim())
+          .join("\n");
+        return [header, body].filter(Boolean).join("\n");
+      };
+
+      const buildSelectionShareUrl = (bounds) => {
+        const startButton = getVerseButton(bounds.start);
+        return startButton ? getVerseShareUrl(startButton) : window.location.href;
+      };
+
+      const renderSelection = () => {
+        for (const item of Array.from(document.querySelectorAll(".verse-item.is-selected"))) {
+          item.classList.remove("is-selected");
         }
 
-        if (!navigator.share) {
+        const bounds = getSelectionBounds();
+        if (!bounds) {
+          if (actionBar instanceof HTMLElement) {
+            actionBar.hidden = true;
+          }
+          return;
+        }
+
+        for (let verseNumber = bounds.start; verseNumber <= bounds.end; verseNumber += 1) {
+          document.getElementById(`verse-${verseNumber}`)?.classList.add("is-selected");
+        }
+
+        if (actionBar instanceof HTMLElement) {
+          actionBar.hidden = false;
+        }
+        if (actionBarReference instanceof HTMLElement) {
+          actionBarReference.textContent = buildSelectionReference(bounds.start, bounds.end);
+        }
+        if (actionBarHint instanceof HTMLElement) {
+          const count = bounds.end - bounds.start + 1;
+          actionBarHint.textContent = rangeArmed
+            ? "Tap a verse to set the other end of the range"
+            : count > 1
+              ? `${count} verses selected`
+              : "Tap “Range,” then tap another verse to select a passage";
+        }
+        if (rangeButton instanceof HTMLButtonElement) {
+          rangeButton.setAttribute("aria-pressed", rangeArmed ? "true" : "false");
+        }
+      };
+
+      const clearSelection = () => {
+        anchorVerse = Number.NaN;
+        endVerse = Number.NaN;
+        rangeArmed = false;
+        renderSelection();
+      };
+
+      const onVerseTap = (button) => {
+        const verseNumber = Number.parseInt(String(button.dataset.verseNumber || ""), 10);
+        if (!Number.isFinite(verseNumber)) {
+          return;
+        }
+
+        if (rangeArmed && Number.isFinite(anchorVerse)) {
+          endVerse = verseNumber;
+          rangeArmed = false;
+        } else if (
+          Number.isFinite(anchorVerse) &&
+          !Number.isFinite(endVerse) &&
+          verseNumber === anchorVerse
+        ) {
+          clearSelection();
+          return;
+        } else {
+          anchorVerse = verseNumber;
+          endVerse = Number.NaN;
+          rangeArmed = false;
+        }
+
+        renderSelection();
+      };
+
+      const handleSelectionAction = async (kind, feedbackTarget) => {
+        const bounds = getSelectionBounds();
+        if (!bounds) {
+          return;
+        }
+        const text = buildSelectionShareText(bounds);
+        const url = buildSelectionShareUrl(bounds);
+        const copyValue = [text, url].filter(Boolean).join("\n");
+
+        if (kind === "share" && navigator.share) {
+          try {
+            await navigator.share({
+              title: buildSelectionReference(bounds.start, bounds.end) || "Bible passage",
+              text,
+              url,
+            });
+          } catch {
+            // user dismissed share sheet or it failed; leave selection intact
+          }
           return;
         }
 
         try {
-          await navigator.share({
-            title: String(trigger.dataset.reference || "Bible verse"),
-            text,
-            url,
-          });
+          await copyText(copyValue);
+          setVerseActionFeedback(feedbackTarget, "Copied!");
         } catch {
-          if (!copied) {
-            setVerseActionFeedback(trigger, "Failed");
-          }
+          setVerseActionFeedback(feedbackTarget, "Failed");
         }
       };
 
@@ -965,11 +1133,16 @@ const bookCatalogJson = JSON.stringify(books);
         }
 
         event.preventDefault();
-        handleVerseAction(trigger);
+        onVerseTap(trigger);
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.key !== " " && event.key !== "Spacebar") {
+        if (event.key === "Escape" && getSelectionBounds()) {
+          clearSelection();
+          return;
+        }
+
+        if (event.key !== " " && event.key !== "Spacebar" && event.key !== "Enter") {
           return;
         }
 
@@ -979,8 +1152,43 @@ const bookCatalogJson = JSON.stringify(books);
         }
 
         event.preventDefault();
-        handleVerseAction(trigger);
+        onVerseTap(trigger);
       });
+
+      if (shareButton instanceof HTMLElement && navigator.share) {
+        shareButton.hidden = false;
+      }
+
+      if (rangeButton instanceof HTMLButtonElement) {
+        rangeButton.addEventListener("click", () => {
+          if (!Number.isFinite(anchorVerse)) {
+            return;
+          }
+          rangeArmed = !rangeArmed;
+          if (rangeArmed) {
+            endVerse = Number.NaN;
+          }
+          renderSelection();
+        });
+      }
+
+      if (copyButton instanceof HTMLButtonElement) {
+        copyButton.addEventListener("click", () => {
+          handleSelectionAction("copy", copyButton);
+        });
+      }
+
+      if (shareButton instanceof HTMLButtonElement) {
+        shareButton.addEventListener("click", () => {
+          handleSelectionAction("share", shareButton);
+        });
+      }
+
+      if (clearButton instanceof HTMLButtonElement) {
+        clearButton.addEventListener("click", () => {
+          clearSelection();
+        });
+      }
 
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
@@ -1322,6 +1530,12 @@ const bookCatalogJson = JSON.stringify(books);
     background: rgba(255, 255, 255, 0.64);
   }
 
+  .verse-item.is-selected {
+    background: color-mix(in srgb, var(--color-link) 16%, var(--surface-bg));
+    border: 1px solid var(--color-link);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-link) 28%, transparent);
+  }
+
   .verse-item.is-target-flash {
     animation: verse-target-pulse 1.2s ease-out 1;
   }
@@ -1596,5 +1810,94 @@ const bookCatalogJson = JSON.stringify(books);
     background: rgba(255, 232, 107, 0.82);
     color: inherit;
     padding: 0 0.08em;
+  }
+
+  .verse-actionbar {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    z-index: 50;
+    width: min(40rem, calc(100vw - 1.5rem));
+  }
+
+  .verse-actionbar[hidden] {
+    display: none;
+  }
+
+  .verse-actionbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.7rem 0.6rem 0.9rem;
+    border: 1px solid var(--surface-border-strong);
+    border-radius: 12px;
+    background: var(--card-bg);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  }
+
+  .verse-actionbar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .verse-actionbar-reference {
+    font-weight: 800;
+    color: var(--color-heading);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .verse-actionbar-hint {
+    font-size: 0.76rem;
+    color: var(--color-muted);
+  }
+
+  .verse-actionbar-buttons {
+    display: inline-flex;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+  }
+
+  .verse-actionbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .verse-actionbar-button:hover,
+  .verse-actionbar-button:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
+  }
+
+  .verse-actionbar-button[aria-pressed="true"] {
+    border-color: var(--color-link);
+    background: color-mix(in srgb, var(--color-link) 16%, var(--surface-bg));
+  }
+
+  .verse-actionbar-clear {
+    min-width: 2.1rem;
+    padding: 0.4rem;
+  }
+
+  @media (max-width: 32rem) {
+    .verse-actionbar-button {
+      padding: 0.4rem 0.6rem;
+    }
   }
 </style>
