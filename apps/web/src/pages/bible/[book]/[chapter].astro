@@ -691,6 +691,50 @@ const bookCatalogJson = JSON.stringify(books);
         return startButton ? getVerseShareUrl(startButton) : window.location.href;
       };
 
+      const positionActionBar = () => {
+        if (!(actionBar instanceof HTMLElement) || actionBar.hidden) {
+          return;
+        }
+        const anchorNumber = Number.isFinite(endVerse) ? endVerse : anchorVerse;
+        const anchorItem = document.getElementById(`verse-${anchorNumber}`);
+        if (!(anchorItem instanceof HTMLElement)) {
+          return;
+        }
+
+        const margin = 8;
+        const gap = 8;
+        const headerOffset = getHeaderOffset();
+        const itemRect = anchorItem.getBoundingClientRect();
+        const barWidth = actionBar.offsetWidth;
+        const barHeight = actionBar.offsetHeight;
+
+        // Vertical: prefer just below the verse line; flip above near the bottom edge.
+        let top = itemRect.bottom + gap;
+        if (top + barHeight > window.innerHeight - margin) {
+          const above = itemRect.top - gap - barHeight;
+          top =
+            above >= headerOffset + margin
+              ? above
+              : Math.max(headerOffset + margin, window.innerHeight - margin - barHeight);
+        }
+
+        // Horizontal: start past the verse-number gutter so numbers stay visible/tappable.
+        const refEl = anchorItem.querySelector(".verse-ref");
+        let left =
+          refEl instanceof HTMLElement
+            ? refEl.getBoundingClientRect().right + 6
+            : itemRect.left + 24;
+        if (left + barWidth > window.innerWidth - margin) {
+          left = window.innerWidth - margin - barWidth;
+        }
+        if (left < margin) {
+          left = margin;
+        }
+
+        actionBar.style.top = `${Math.round(top)}px`;
+        actionBar.style.left = `${Math.round(left)}px`;
+      };
+
       const renderSelection = () => {
         for (const item of Array.from(document.querySelectorAll(".verse-item.is-selected"))) {
           item.classList.remove("is-selected");
@@ -725,6 +769,8 @@ const bookCatalogJson = JSON.stringify(books);
         if (rangeButton instanceof HTMLButtonElement) {
           rangeButton.setAttribute("aria-pressed", rangeArmed ? "true" : "false");
         }
+
+        positionActionBar();
       };
 
       const clearSelection = () => {
@@ -1189,6 +1235,9 @@ const bookCatalogJson = JSON.stringify(books);
           clearSelection();
         });
       }
+
+      window.addEventListener("scroll", positionActionBar, { passive: true });
+      window.addEventListener("resize", positionActionBar);
 
       const parseVerseTarget = () => {
         const params = new URLSearchParams(window.location.search);
@@ -1814,26 +1863,39 @@ const bookCatalogJson = JSON.stringify(books);
 
   .verse-actionbar {
     position: fixed;
-    left: 50%;
-    bottom: 1rem;
-    transform: translateX(-50%);
-    z-index: 50;
-    width: min(40rem, calc(100vw - 1.5rem));
+    top: 0;
+    left: 0;
+    z-index: 1500;
+    width: max-content;
+    max-width: min(30rem, calc(100vw - 1rem));
+    animation: verse-actionbar-rise 0.14s ease-out 1;
   }
 
   .verse-actionbar[hidden] {
     display: none;
   }
 
+  @keyframes verse-actionbar-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .verse-actionbar-inner {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.7rem 0.6rem 0.9rem;
-    border: 1px solid var(--surface-border-strong);
-    border-radius: 12px;
-    background: var(--card-bg);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    gap: 0.85rem;
+    padding: 0.65rem 0.7rem 0.65rem 1rem;
+    border: 1px solid var(--tooltip-border);
+    border-radius: 14px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow-tooltip);
   }
 
   .verse-actionbar-info {
@@ -1846,7 +1908,8 @@ const bookCatalogJson = JSON.stringify(books);
 
   .verse-actionbar-reference {
     font-weight: 800;
-    color: var(--color-heading);
+    font-size: 1.02rem;
+    color: var(--tooltip-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1854,7 +1917,7 @@ const bookCatalogJson = JSON.stringify(books);
 
   .verse-actionbar-hint {
     font-size: 0.76rem;
-    color: var(--color-muted);
+    color: color-mix(in srgb, var(--tooltip-text) 65%, transparent);
   }
 
   .verse-actionbar-buttons {
@@ -1868,11 +1931,11 @@ const bookCatalogJson = JSON.stringify(books);
     align-items: center;
     justify-content: center;
     min-height: 2.1rem;
-    padding: 0.4rem 0.85rem;
-    border: 1px solid var(--surface-border);
+    padding: 0.4rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--tooltip-text) 28%, transparent);
     border-radius: 999px;
-    background: var(--surface-bg-muted);
-    color: var(--color-text);
+    background: color-mix(in srgb, var(--tooltip-text) 7%, transparent);
+    color: var(--tooltip-text);
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
@@ -1880,14 +1943,15 @@ const bookCatalogJson = JSON.stringify(books);
 
   .verse-actionbar-button:hover,
   .verse-actionbar-button:focus-visible {
-    border-color: var(--color-link);
-    background: var(--surface-bg-hover);
+    border-color: color-mix(in srgb, var(--tooltip-text) 55%, transparent);
+    background: color-mix(in srgb, var(--tooltip-text) 16%, transparent);
     outline: none;
   }
 
   .verse-actionbar-button[aria-pressed="true"] {
     border-color: var(--color-link);
-    background: color-mix(in srgb, var(--color-link) 16%, var(--surface-bg));
+    background: color-mix(in srgb, var(--color-link) 32%, var(--tooltip-bg));
+    color: var(--tooltip-text);
   }
 
   .verse-actionbar-clear {
@@ -1897,7 +1961,7 @@ const bookCatalogJson = JSON.stringify(books);
 
   @media (max-width: 32rem) {
     .verse-actionbar-button {
-      padding: 0.4rem 0.6rem;
+      padding: 0.4rem 0.65rem;
     }
   }
 </style>
