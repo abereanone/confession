@@ -359,9 +359,17 @@ const bookCatalogJson = JSON.stringify(books);
     </div>
   </div>
 
-  <script is:inline define:vars={{ bookCatalogJson }}>
+  <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
+
+  <script>
     (() => {
-      const bookCatalog = JSON.parse(bookCatalogJson);
+      const catalogElement = document.getElementById("book-catalog-data");
+      let bookCatalog = [];
+      try {
+        bookCatalog = JSON.parse(catalogElement?.dataset.bookCatalog || "[]");
+      } catch {
+        bookCatalog = [];
+      }
       const chapterForm = document.querySelector("[data-chapter-form]");
       const bookSelect = document.querySelector("[data-book-select]");
       const chapterSelect = document.querySelector("[data-chapter-select]");

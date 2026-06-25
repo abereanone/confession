@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline · Confessions Hub</title>
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #e6eee6;
+        --text: #1f2d22;
+        --muted: #5f7363;
+        --accent: #2f5a37;
+        --card: rgba(244, 249, 244, 0.98);
+        --border: rgba(73, 104, 78, 0.2);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1712;
+          --text: #dce7dc;
+          --muted: #95a697;
+          --accent: #8fbc8a;
+          --card: rgba(18, 30, 21, 0.96);
+          --border: rgba(120, 157, 123, 0.24);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Source Sans 3", system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      .panel {
+        max-width: 28rem;
+        width: 100%;
+        text-align: center;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2rem 1.5rem;
+        box-shadow: 0 16px 28px rgba(0, 0, 0, 0.16);
+      }
+      img {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 1rem;
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.4rem;
+        color: var(--text);
+      }
+      p {
+        margin: 0 0 1.25rem;
+        color: var(--muted);
+      }
+      button {
+        font: inherit;
+        font-weight: 700;
+        color: #fff;
+        background: var(--accent);
+        border: none;
+        border-radius: 999px;
+        padding: 0.6rem 1.4rem;
+        cursor: pointer;
+      }
+      button:hover,
+      button:focus-visible {
+        opacity: 0.9;
+        outline: none;
+      }
+      .hint {
+        margin-top: 1.25rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel">
+      <img src="/android-chrome-192x192.png" alt="Confessions Hub" />
+      <h1>You're offline</h1>
+      <p>
+        This page isn't saved for offline reading yet. Pages and chapters you've
+        already opened are available without a connection.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+      <p class="hint">Reconnect to load new pages, then they'll be available offline too.</p>
+    </main>
+  </body>
+</html>

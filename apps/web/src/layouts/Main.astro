@@ -1,6 +1,7 @@
 ---
 import { siteSettings } from "../lib/siteSettings";
 import Footer from "../components/Footer.astro";
+import AppInstall from "../components/AppInstall.astro";
 
 const { title = siteSettings.siteName } = Astro.props;
 const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
@@ -8,6 +9,8 @@ const siteDescription = "Search and read historic Christian confessions with the
 const logoUrl = "/logo.png";
 const siteUrl = "https://confess.catechize.ing";
 const ogImageUrl = `${siteUrl}/ogLogo.png`;
+// Register the service worker only in built output, so dev HMR isn't intercepted.
+const enablePwa = import.meta.env.PROD;
 ---
 
 <!doctype html>
@@ -34,7 +37,22 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="icon" href="/favicon.ico" />
+    <meta name="theme-color" content="#e6eee6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1712" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Confessions Hub" />
     <title>{title}</title>
+    {enablePwa ? (
+      <script is:inline>
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+          });
+        }
+      </script>
+    ) : null}
     {siteSettings.analytics.enabled ? (
       <>
         <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}></script>
@@ -102,6 +120,7 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
         <a href="/bible/gen/1">Bible</a>
       </nav>
       <div class="header-controls">
+        <AppInstall />
         <button type="button" class="reader-toggle" data-reader-toggle aria-label="Toggle reading mode">
           <span data-reader-toggle-label>Reading Mode</span>
         </button>

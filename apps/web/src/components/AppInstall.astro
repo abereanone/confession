@@ -1,0 +1,416 @@
+---
+// Install ("Add to Mobile") + offline-download controls, shown in the header.
+---
+<div class="app-install" data-app-install>
+  <button type="button" class="install-trigger" data-install-open aria-haspopup="dialog">
+    Install / Offline
+  </button>
+
+  <dialog class="install-dialog" data-install-dialog aria-label="Install and offline options">
+    <form method="dialog" class="install-close-row">
+      <button type="submit" class="install-close" aria-label="Close">✕</button>
+    </form>
+
+    <h2 class="install-title">Get Confessions Hub</h2>
+
+    <section class="install-section">
+      <h3>Add to your device</h3>
+      <p class="install-text" data-install-text>
+        Install the app for a full-screen, offline-ready experience.
+      </p>
+      <button type="button" class="install-action install-action-primary" data-install-button hidden>
+        Add to Mobile
+      </button>
+      <div class="install-ios" data-install-ios hidden>
+        On iPhone or iPad: tap the <strong>Share</strong> button, then
+        <strong>Add to Home Screen</strong>.
+      </div>
+      <p class="install-done" data-install-done hidden>✓ Installed on this device</p>
+    </section>
+
+    <section class="install-section">
+      <h3>Download for offline reading</h3>
+      <p class="install-text">Save content so you can read it with no connection.</p>
+
+      <div class="download-row">
+        <div class="download-info">
+          <span class="download-name">Confessions</span>
+          <span class="download-size">~2 MB</span>
+        </div>
+        <button type="button" class="install-action" data-download="confessions">Download</button>
+      </div>
+      <div class="download-progress" data-progress="confessions" hidden>
+        <div class="download-bar"><span data-bar></span></div>
+        <span class="download-status" data-status></span>
+      </div>
+
+      <div class="download-row">
+        <div class="download-info">
+          <span class="download-name">Bible (BSB)</span>
+          <span class="download-size">~70 MB · 1,190 chapters</span>
+        </div>
+        <button type="button" class="install-action" data-download="bible">Download</button>
+      </div>
+      <div class="download-progress" data-progress="bible" hidden>
+        <div class="download-bar"><span data-bar></span></div>
+        <span class="download-status" data-status></span>
+      </div>
+
+      <p class="install-note">
+        Chapters you open are saved automatically too — this just grabs everything at once.
+      </p>
+    </section>
+  </dialog>
+</div>
+
+<script>
+  (() => {
+    // Must match the service worker's OFFLINE cache name (sw.js).
+    const OFFLINE_CACHE = "confessions-offline-v1";
+
+    const root = document.querySelector("[data-app-install]");
+    if (!root) {
+      return;
+    }
+
+    const openButton = root.querySelector("[data-install-open]");
+    const dialog = root.querySelector("[data-install-dialog]");
+    const installButton = root.querySelector("[data-install-button]");
+    const installIos = root.querySelector("[data-install-ios]");
+    const installDone = root.querySelector("[data-install-done]");
+    const installText = root.querySelector("[data-install-text]");
+
+    if (openButton && dialog) {
+      openButton.addEventListener("click", () => {
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+      });
+      dialog.addEventListener("click", (event) => {
+        // Click on the backdrop (the dialog element itself) closes it.
+        if (event.target === dialog) {
+          dialog.close();
+        }
+      });
+    }
+
+    // --- Install ("Add to Mobile") ---
+    const isStandalone = () =>
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+
+    const isIos = () => /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      if (installButton) {
+        installButton.hidden = false;
+      }
+    });
+
+    if (installButton) {
+      installButton.addEventListener("click", async () => {
+        if (!deferredPrompt) {
+          return;
+        }
+        deferredPrompt.prompt();
+        try {
+          await deferredPrompt.userChoice;
+        } catch {
+          // ignore
+        }
+        deferredPrompt = null;
+        installButton.hidden = true;
+      });
+    }
+
+    window.addEventListener("appinstalled", () => {
+      if (installButton) {
+        installButton.hidden = true;
+      }
+      if (installDone) {
+        installDone.hidden = false;
+      }
+    });
+
+    if (isStandalone()) {
+      if (installDone) installDone.hidden = false;
+      if (installText) installText.hidden = true;
+    } else if (isIos() && installIos) {
+      installIos.hidden = false;
+    }
+
+    // --- Download for offline ---
+    const cacheUrls = async (urls, onProgress) => {
+      const cache = await caches.open(OFFLINE_CACHE);
+      const total = urls.length;
+      let done = 0;
+      let cursor = 0;
+      const concurrency = Math.min(8, total) || 1;
+
+      const worker = async () => {
+        while (cursor < total) {
+          const url = urls[cursor];
+          cursor += 1;
+          try {
+            await cache.add(url);
+          } catch {
+            // Skip pages that fail; one miss shouldn't abort the whole download.
+          }
+          done += 1;
+          onProgress(done, total);
+        }
+      };
+
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
+    };
+
+    const setupDownload = (group) => {
+      const button = root.querySelector(`[data-download="${group}"]`);
+      const progress = root.querySelector(`[data-progress="${group}"]`);
+      const bar = progress ? progress.querySelector("[data-bar]") : null;
+      const status = progress ? progress.querySelector("[data-status]") : null;
+      const savedKey = `offline-${group}-saved-v1`;
+
+      if (!button) {
+        return;
+      }
+
+      let alreadySaved = false;
+      try {
+        alreadySaved = window.localStorage.getItem(savedKey) === "1";
+      } catch {
+        alreadySaved = false;
+      }
+      if (alreadySaved) {
+        button.textContent = "Update";
+      }
+
+      button.addEventListener("click", async () => {
+        if (!("caches" in window)) {
+          if (progress) progress.hidden = false;
+          if (status) status.textContent = "Offline storage isn't supported in this browser.";
+          return;
+        }
+
+        button.disabled = true;
+        const originalLabel = button.textContent;
+        button.textContent = "Downloading…";
+        if (progress) progress.hidden = false;
+        if (bar) bar.style.width = "0%";
+        if (status) status.textContent = "Preparing…";
+
+        try {
+          const manifest = await fetch("/offline-manifest.json").then((response) => {
+            if (!response.ok) {
+              throw new Error(`manifest ${response.status}`);
+            }
+            return response.json();
+          });
+          const urls = Array.isArray(manifest[group]) ? manifest[group] : [];
+
+          await cacheUrls(urls, (current, total) => {
+            const pct = total ? Math.round((current / total) * 100) : 100;
+            if (bar) bar.style.width = `${pct}%`;
+            if (status) status.textContent = `${current} / ${total} pages saved`;
+          });
+
+          try {
+            window.localStorage.setItem(savedKey, "1");
+          } catch {
+            // ignore
+          }
+          button.disabled = false;
+          button.textContent = "Update";
+          if (status) status.textContent = `Saved ${urls.length} pages for offline reading.`;
+        } catch {
+          button.disabled = false;
+          button.textContent = originalLabel || "Retry";
+          if (status) status.textContent = "Download failed — check your connection and retry.";
+        }
+      });
+    };
+
+    setupDownload("confessions");
+    setupDownload("bible");
+  })();
+</script>
+
+<style>
+  .app-install {
+    display: inline-flex;
+  }
+
+  .install-trigger {
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .install-trigger:hover,
+  .install-trigger:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
+  }
+
+  .install-dialog {
+    width: min(30rem, calc(100vw - 1.5rem));
+    border: 1px solid var(--surface-border-strong);
+    border-radius: 16px;
+    background: var(--card-bg);
+    color: var(--color-text);
+    padding: 1.25rem 1.25rem 1.5rem;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.32);
+  }
+
+  .install-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .install-close-row {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+  }
+
+  .install-close {
+    background: transparent;
+    border: none;
+    color: var(--color-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.25rem;
+    cursor: pointer;
+  }
+
+  .install-close:hover,
+  .install-close:focus-visible {
+    color: var(--color-text);
+    outline: none;
+  }
+
+  .install-title {
+    margin: 0 0 0.75rem;
+  }
+
+  .install-section {
+    padding-top: 1rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .install-section h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+  }
+
+  .install-text {
+    margin: 0 0 0.75rem;
+    color: var(--color-muted);
+  }
+
+  .install-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.2rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--button-border);
+    background: var(--button-bg);
+    color: var(--button-text);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .install-action:hover:not(:disabled),
+  .install-action:focus-visible {
+    background: var(--button-bg-hover);
+    outline: none;
+  }
+
+  .install-action:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+
+  .install-ios {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    background: var(--surface-bg-muted);
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .install-done {
+    margin: 0;
+    font-weight: 700;
+    color: var(--color-link);
+  }
+
+  .download-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.6rem;
+  }
+
+  .download-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .download-name {
+    font-weight: 700;
+  }
+
+  .download-size {
+    font-size: 0.8rem;
+    color: var(--color-muted);
+  }
+
+  .download-progress {
+    margin-top: 0.45rem;
+  }
+
+  .download-bar {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--surface-bg-strong);
+    overflow: hidden;
+  }
+
+  .download-bar span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--color-link);
+    transition: width 0.15s ease-out;
+  }
+
+  .download-status {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+  }
+
+  .install-note {
+    margin: 0.9rem 0 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+  }
+</style>
