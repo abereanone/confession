@@ -2,7 +2,7 @@
 import { siteSettings } from "../lib/siteSettings";
 
 const issueReportURL = siteSettings.issueReportUrl;
-const logoUrl = "/logo.png";
+const logoUrl = "/lockup.svg";
 ---
 
 <footer class="site-footer">
@@ -21,7 +21,7 @@ const logoUrl = "/logo.png";
   </p>
   <p class="footer-meta">Freely Given</p>
   <a href="/" class="footer-brand" aria-label={`${siteSettings.siteName} home`}>
-    <img src={logoUrl} alt="" class="footer-logo" width="220" height="220" />
+    <img src={logoUrl} alt={siteSettings.siteName} class="footer-logo" width="1080" height="380" />
   </a>
 </footer>
 
@@ -41,7 +41,7 @@ const logoUrl = "/logo.png";
   }
 
   .footer-logo {
-    width: min(70vw, 18rem);
+    width: min(92vw, 34rem);
     height: auto;
     object-fit: contain;
   }

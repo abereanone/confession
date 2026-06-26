@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "gen:logo": "node scripts/gen-logo.cjs"
   },
   "dependencies": {
     "astro": "^5.18.1"

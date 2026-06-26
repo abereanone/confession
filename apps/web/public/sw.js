@@ -1,7 +1,7 @@
 /* Confessions Hub service worker — install + offline support. */
 // Bump SHELL_VERSION whenever the precached app shell changes; the old
 // precache/runtime caches are then discarded and rebuilt on activate.
-const SHELL_VERSION = "v2";
+const SHELL_VERSION = "v4";
 const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
 const RUNTIME = `confessions-runtime-${SHELL_VERSION}`;
 // Bulk "download for offline" content lives here (written by the page via the
@@ -19,7 +19,9 @@ const PRECACHE_URLS = [
   "/bible/gen/1",
   "/offline.html",
   "/styles/theme.css",
-  "/logo.png",
+  "/logo.svg",
+  "/lockup.svg",
+  "/favicon.svg",
   "/site.webmanifest",
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",

@@ -6,7 +6,7 @@ import AppInstall from "../components/AppInstall.astro";
 const { title = siteSettings.siteName } = Astro.props;
 const gaMeasurementId = siteSettings.analytics.googleAnalyticsMeasurementId;
 const siteDescription = "Search and read historic Christian confessions with their Scripture references.";
-const logoUrl = "/logo.png";
+const logoUrl = "/logo.svg";
 const siteUrl = "https://confess.catechize.ing";
 const ogImageUrl = `${siteUrl}/ogLogo.png`;
 // Register the service worker only in built output, so dev HMR isn't intercepted.
@@ -33,6 +33,7 @@ const enablePwa = import.meta.env.PROD;
     <meta name="twitter:description" content={siteDescription} />
     <meta name="twitter:image" content={ogImageUrl} />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
