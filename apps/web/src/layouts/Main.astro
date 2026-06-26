@@ -228,9 +228,66 @@ const enablePwa = import.meta.env.PROD;
           applyReaderMode(nextMode);
         };
 
+        const showReaderNotice = (message) => {
+          let notice = document.querySelector("[data-reader-notice]");
+          if (!(notice instanceof HTMLElement)) {
+            notice = document.createElement("div");
+            notice.setAttribute("data-reader-notice", "");
+            notice.className = "reader-notice";
+            notice.setAttribute("role", "status");
+            notice.setAttribute("aria-live", "polite");
+            document.body.appendChild(notice);
+          }
+          notice.textContent = message;
+          // Force a reflow so re-triggering replays the transition.
+          void notice.offsetWidth;
+          notice.classList.add("is-visible");
+          window.clearTimeout(Number(notice.dataset.hideTimer || 0));
+          notice.dataset.hideTimer = String(
+            window.setTimeout(() => notice.classList.remove("is-visible"), 6000)
+          );
+        };
+
+        // A Scripture reference link (?ref=...) cannot be highlighted in Reading
+        // Mode because proof texts are hidden there. Override to Study Mode for
+        // this view—without clobbering the saved preference—and let the reader know.
+        // Only act once per arrival: switching the reader toggle re-renders the
+        // confession (firing astro:page-load), so without this guard a manual
+        // switch back to Reading Mode would immediately be forced to Study again.
+        let lastReferenceHref = "";
+        const forceStudyModeForReference = () => {
+          try {
+            const href = window.location.href;
+            if (href === lastReferenceHref) {
+              return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            if (!params.get("ref")) {
+              return;
+            }
+            if (!document.querySelector("[data-confession]")) {
+              return;
+            }
+            // Mark this page view handled before switching modes so the resulting
+            // re-render does not re-trigger the override.
+            lastReferenceHref = href;
+            if (root.dataset.readerMode !== "read") {
+              return;
+            }
+            applyReaderMode("study", false);
+            showReaderNotice(
+              "View changed from Reading to Study Mode since you clicked a Scripture reference."
+            );
+          } catch {
+            // ignore
+          }
+        };
+
         const init = () => {
           applyTheme(readStoredTheme() || root.dataset.theme || "light", false);
           applyReaderMode(readStoredReaderMode(), false);
+          forceStudyModeForReference();
+          document.addEventListener("astro:page-load", forceStudyModeForReference);
           document.addEventListener("click", (event) => {
             const target = event.target instanceof Element ? event.target : null;
             if (!target) {

@@ -298,3 +298,38 @@ a.confession-link:focus-visible {
   --confession-accent-bg: rgba(93, 148, 109, 0.14);
   --confession-accent-text: #254d30;
 }
+
+.reader-notice {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 2000;
+  max-width: min(92vw, 30rem);
+  padding: 0.75rem 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border: 1px solid var(--tooltip-border);
+  box-shadow: var(--shadow-tooltip);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 1rem);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.reader-notice.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-notice {
+    transition: opacity 0.25s ease;
+    transform: translate(-50%, 0);
+  }
+}
