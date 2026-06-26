@@ -79,6 +79,13 @@
         opacity: 0.9;
         outline: none;
       }
+      .home-link {
+        margin: 1rem 0 0;
+      }
+      .home-link a {
+        color: var(--accent);
+        font-weight: 600;
+      }
       .hint {
         margin-top: 1.25rem;
         font-size: 0.85rem;
@@ -95,6 +102,7 @@
         already opened are available without a connection.
       </p>
       <button type="button" onclick="location.reload()">Try again</button>
+      <p class="home-link"><a href="/">Go to the homepage</a></p>
       <p class="hint">Reconnect to load new pages, then they'll be available offline too.</p>
     </main>
   </body>

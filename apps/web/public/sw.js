@@ -1,17 +1,25 @@
 /* Confessions Hub service worker — install + offline support. */
-const VERSION = "v1";
-const PRECACHE = `confessions-precache-${VERSION}`;
-const RUNTIME = `confessions-runtime-${VERSION}`;
+// Bump SHELL_VERSION whenever the precached app shell changes; the old
+// precache/runtime caches are then discarded and rebuilt on activate.
+const SHELL_VERSION = "v2";
+const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
+const RUNTIME = `confessions-runtime-${SHELL_VERSION}`;
 // Bulk "download for offline" content lives here (written by the page via the
-// Cache API). Keep this name in sync with AppInstall.astro's OFFLINE_CACHE.
-const OFFLINE = `confessions-offline-${VERSION}`;
+// Cache API). This is deliberately versioned separately from the app shell so
+// bumping SHELL_VERSION never wipes a user's downloaded confessions/Bible.
+// Keep this name in sync with AppInstall.astro's OFFLINE_CACHE.
+const OFFLINE = "confessions-offline-v1";
 const KEEP_CACHES = [PRECACHE, RUNTIME, OFFLINE];
 
 /* App shell: cached on install so the app opens offline even on first launch. */
 const PRECACHE_URLS = [
   "/",
+  "/confessions",
+  "/scriptures",
+  "/bible/gen/1",
   "/offline.html",
   "/styles/theme.css",
+  "/logo.png",
   "/site.webmanifest",
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",
@@ -75,8 +83,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pages: network-first so online readers always get fresh content,
-  // falling back to the cached page, then a friendly offline page.
+  // Pages: network-first so online readers always get fresh content. Offline,
+  // fall back to the exact cached page, then the precached homepage (so users
+  // always land on a working, navigable app shell), then a friendly notice.
   if (isHtmlRequest(request)) {
     event.respondWith(
       fetch(request)
@@ -85,11 +94,17 @@ self.addEventListener("fetch", (event) => {
           caches.open(RUNTIME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() =>
-          caches
-            .match(request)
-            .then((cached) => cached || caches.match("/offline.html"))
-        )
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) {
+            return cached;
+          }
+          const home = await caches.match("/");
+          if (home) {
+            return home;
+          }
+          return caches.match("/offline.html");
+        })
     );
     return;
   }
