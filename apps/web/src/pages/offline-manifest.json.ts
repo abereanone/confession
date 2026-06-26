@@ -1,9 +1,13 @@
 import type { APIRoute } from "astro";
-import { listBibleBooks } from "../lib/bible/bibleData";
+import { createHash } from "node:crypto";
+import { getBibleSearchIndex, listBibleBooks } from "../lib/bible/bibleData";
 import { listConfessions } from "../lib/confessions";
 
-// Lists the pages each offline-download group should cache. Kept small (URLs only)
-// so the client can fetch it cheaply before bulk-caching via the Cache API.
+const fingerprint = (value: string): string =>
+  createHash("sha1").update(value).digest("hex").slice(0, 16);
+
+// Lists the pages each offline-download group should cache, plus a content
+// fingerprint per group so the client can tell when a saved copy is out of date.
 export const GET: APIRoute = async () => {
   const books = await listBibleBooks();
   const bibleOt: string[] = [];
@@ -21,10 +25,25 @@ export const GET: APIRoute = async () => {
     confessions.push(`/confessions/${confession.slug}/about`);
   }
 
-  return new Response(JSON.stringify({ confessions, bibleOt, bibleNt }), {
+  // Fingerprint from the underlying content so any text/reference edit changes it.
+  const searchIndex = await getBibleSearchIndex();
+  const otParts: string[] = [];
+  const ntParts: string[] = [];
+  for (const verse of searchIndex) {
+    (verse.testament === "nt" ? ntParts : otParts).push(`${verse.reference}\t${verse.text}`);
+  }
+
+  const versions = {
+    confessions: fingerprint(JSON.stringify(listConfessions())),
+    bibleOt: fingerprint(otParts.join("\n")),
+    bibleNt: fingerprint(ntParts.join("\n")),
+  };
+
+  return new Response(JSON.stringify({ confessions, bibleOt, bibleNt, versions }), {
     headers: {
       "content-type": "application/json",
-      "cache-control": "public, max-age=3600",
+      // Always revalidate so the update check sees fresh fingerprints.
+      "cache-control": "no-cache",
     },
   });
 };

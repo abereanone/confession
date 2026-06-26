@@ -111,6 +111,7 @@
     if (openButton && dialog) {
       openButton.addEventListener("click", () => {
         updateInstallUi();
+        checkAllUpdates();
         if (typeof dialog.showModal === "function") {
           dialog.showModal();
         } else {
@@ -206,14 +207,18 @@
       await Promise.all(Array.from({ length: concurrency }, () => worker()));
     };
 
-    const getManifestUrls = async (group) => {
-      const manifest = await fetch("/offline-manifest.json").then((response) => {
-        if (!response.ok) {
-          throw new Error(`manifest ${response.status}`);
-        }
-        return response.json();
-      });
-      return Array.isArray(manifest[group]) ? manifest[group] : [];
+    // Fetch the manifest fresh each time the dialog opens so update checks are current.
+    let manifestPromise = null;
+    const getManifest = () => {
+      if (!manifestPromise) {
+        manifestPromise = fetch("/offline-manifest.json", { cache: "no-store" }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`manifest ${response.status}`);
+          }
+          return response.json();
+        });
+      }
+      return manifestPromise;
     };
 
     const setupDownload = (group) => {
@@ -223,40 +228,65 @@
       const bar = progress ? progress.querySelector("[data-bar]") : null;
       const status = progress ? progress.querySelector("[data-status]") : null;
       const savedKey = `offline-${group}-saved-v1`;
+      const versionKey = `offline-${group}-version-v1`;
 
       if (!button) {
-        return;
+        return null;
       }
 
-      const readSaved = () => {
+      const read = (key) => {
         try {
-          return window.localStorage.getItem(savedKey) === "1";
+          return window.localStorage.getItem(key) || "";
         } catch {
-          return false;
+          return "";
         }
       };
-
-      const writeSaved = (value) => {
+      const write = (key, value) => {
         try {
           if (value) {
-            window.localStorage.setItem(savedKey, "1");
+            window.localStorage.setItem(key, value);
           } else {
-            window.localStorage.removeItem(savedKey);
+            window.localStorage.removeItem(key);
           }
         } catch {
           // ignore
         }
       };
 
-      const reflectSavedState = () => {
-        const saved = readSaved();
-        button.textContent = saved ? "Update" : "Download";
+      const isSaved = () => read(savedKey) === "1";
+
+      // Three states: not saved -> "Download", saved & current -> "Downloaded",
+      // saved & content changed -> "Update".
+      const reflectState = (updateAvailable) => {
+        const saved = isSaved();
+        button.textContent = !saved ? "Download" : updateAvailable ? "Update" : "Downloaded";
+        button.classList.toggle("has-update", Boolean(saved && updateAvailable));
         if (removeButton) {
           removeButton.hidden = !saved;
         }
       };
 
-      reflectSavedState();
+      reflectState(false);
+
+      const checkUpdate = async () => {
+        if (!isSaved()) {
+          reflectState(false);
+          return;
+        }
+        try {
+          const manifest = await getManifest();
+          const current = manifest.versions ? manifest.versions[group] : "";
+          const stored = read(versionKey);
+          const updateAvailable = Boolean(current) && stored !== current;
+          reflectState(updateAvailable);
+          if (updateAvailable && progress && status) {
+            progress.hidden = false;
+            status.textContent = "Update available — tap Update to refresh.";
+          }
+        } catch {
+          // Offline or manifest unavailable: leave the saved label as-is.
+        }
+      };
 
       button.addEventListener("click", async () => {
         if (!("caches" in window)) {
@@ -267,14 +297,15 @@
 
         button.disabled = true;
         if (removeButton) removeButton.disabled = true;
-        const originalLabel = button.textContent;
         button.textContent = "Downloading…";
+        button.classList.remove("has-update");
         if (progress) progress.hidden = false;
         if (bar) bar.style.width = "0%";
         if (status) status.textContent = "Preparing…";
 
         try {
-          const urls = await getManifestUrls(group);
+          const manifest = await getManifest();
+          const urls = Array.isArray(manifest[group]) ? manifest[group] : [];
 
           await cacheUrls(urls, (current, total) => {
             const pct = total ? Math.round((current / total) * 100) : 100;
@@ -282,15 +313,16 @@
             if (status) status.textContent = `${current} / ${total} pages saved`;
           });
 
-          writeSaved(true);
+          write(savedKey, "1");
+          write(versionKey, manifest.versions ? manifest.versions[group] || "" : "");
+          reflectState(false);
           if (status) status.textContent = `Saved ${urls.length} pages for offline reading.`;
         } catch {
-          button.textContent = originalLabel || "Retry";
           if (status) status.textContent = "Download failed — check your connection and retry.";
+          reflectState(false);
         } finally {
           button.disabled = false;
           if (removeButton) removeButton.disabled = false;
-          reflectSavedState();
         }
       });
 
@@ -307,25 +339,38 @@
           if (status) status.textContent = "Removing…";
 
           try {
-            const urls = await getManifestUrls(group);
+            const manifest = await getManifest();
+            const urls = Array.isArray(manifest[group]) ? manifest[group] : [];
             const cache = await caches.open(OFFLINE_CACHE);
             await Promise.all(urls.map((url) => cache.delete(url).catch(() => {})));
-            writeSaved(false);
+            write(savedKey, "");
+            write(versionKey, "");
             if (status) status.textContent = "Removed from offline storage.";
           } catch {
             if (status) status.textContent = "Couldn't remove — please try again.";
           } finally {
             button.disabled = false;
             removeButton.disabled = false;
-            reflectSavedState();
+            reflectState(false);
           }
         });
       }
+
+      return { checkUpdate };
     };
 
-    setupDownload("confessions");
-    setupDownload("bibleOt");
-    setupDownload("bibleNt");
+    const downloads = [
+      setupDownload("confessions"),
+      setupDownload("bibleOt"),
+      setupDownload("bibleNt"),
+    ].filter(Boolean);
+
+    const checkAllUpdates = () => {
+      manifestPromise = null; // force a fresh manifest fetch
+      downloads.forEach((entry) => entry.checkUpdate());
+    };
+
+    checkAllUpdates();
   })();
 </script>
 
@@ -430,6 +475,11 @@
   .install-action:disabled {
     opacity: 0.65;
     cursor: default;
+  }
+
+  .install-action.has-update {
+    border-color: var(--color-link);
+    background: color-mix(in srgb, var(--color-link) 30%, var(--button-bg));
   }
 
   .install-hint {

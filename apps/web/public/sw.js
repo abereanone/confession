@@ -60,6 +60,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Offline manifest: always prefer the network so update checks see fresh
+  // fingerprints, but keep a cached copy for offline removal/checks.
+  if (url.pathname === "/offline-manifest.json") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
   // Pages: network-first so online readers always get fresh content,
   // falling back to the cached page, then a friendly offline page.
   if (isHtmlRequest(request)) {
