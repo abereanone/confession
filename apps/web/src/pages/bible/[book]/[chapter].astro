@@ -250,9 +250,7 @@ const chapterAudioUrl =
         <span class="chapter-audio-label">
           Listen to {selectedBookName} {selectedChapter}
         </span>
-        <audio class="chapter-audio-player" controls preload="none" src={chapterAudioUrl}>
-          <a href={chapterAudioUrl}>Download the audio</a>
-        </audio>
+        <sermon-player class="chapter-audio-player" src={chapterAudioUrl}></sermon-player>
         <a class="chapter-audio-link" href={chapterAudioUrl} target="_blank" rel="noopener">
           Open MP3
         </a>
@@ -380,6 +378,7 @@ const chapterAudioUrl =
 
   <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
 
+  <script src="/sermon-player.js" is:inline defer></script>
   <script>
     (() => {
       const catalogElement = document.getElementById("book-catalog-data");
@@ -1523,7 +1522,10 @@ const chapterAudioUrl =
   .chapter-audio-player {
     flex: 1 1 18rem;
     min-width: 14rem;
-    height: 2.4rem;
+    --sp-accent: var(--color-link);
+    --sp-track: var(--surface-border);
+    --sp-muted: var(--color-muted);
+    --sp-fg: var(--color-text);
   }
 
   .chapter-audio-link {
