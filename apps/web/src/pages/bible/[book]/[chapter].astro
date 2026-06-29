@@ -9,6 +9,7 @@ import {
 import { listScriptures } from "../../../lib/scriptures";
 import { buildChapterVerseScriptureMap } from "../../../lib/scriptureRanges";
 import { listBsbChanges } from "../../../lib/bible/bsbChanges";
+import { getChapterAudioUrl, CHAPTER_AUDIO_READER } from "../../../lib/bible/audio";
 
 export async function getStaticPaths() {
   const books = await listBibleBooks();
@@ -137,6 +138,10 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
 }
 
 const bookCatalogJson = JSON.stringify(books);
+const chapterAudioUrl =
+  selectedBookCode && selectedChapter > 0
+    ? getChapterAudioUrl(selectedBookCode, selectedChapter)
+    : null;
 ---
 
 <Main title="Bible Reader">
@@ -240,6 +245,20 @@ const bookCatalogJson = JSON.stringify(books);
         {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
       </div>
     </header>
+    {chapterAudioUrl ? (
+      <div class="chapter-audio">
+        <span class="chapter-audio-label">
+          Listen to {selectedBookName} {selectedChapter}
+        </span>
+        <audio class="chapter-audio-player" controls preload="none" src={chapterAudioUrl}>
+          <a href={chapterAudioUrl}>Download the audio</a>
+        </audio>
+        <a class="chapter-audio-link" href={chapterAudioUrl} target="_blank" rel="noopener">
+          Open MP3
+        </a>
+        <span class="chapter-audio-credit">Read by {CHAPTER_AUDIO_READER} · BSB</span>
+      </div>
+    ) : null}
     {chapterFootnoteCount > 0 ? (
       <div class="chapter-footnotes-controls" data-chapter-footnotes-controls>
         <p class="meta">
@@ -1483,6 +1502,59 @@ const bookCatalogJson = JSON.stringify(books);
 
   .chapter-header h2 {
     margin: 0;
+  }
+
+  .chapter-audio {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.7rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+  }
+
+  .chapter-audio-label {
+    font-weight: 700;
+  }
+
+  .chapter-audio-player {
+    flex: 1 1 18rem;
+    min-width: 14rem;
+    height: 2.4rem;
+  }
+
+  .chapter-audio-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.9rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border-strong);
+    background: var(--surface-bg-strong);
+    color: var(--color-text);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    line-height: 1;
+  }
+
+  .chapter-audio-link:hover,
+  .chapter-audio-link:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .chapter-audio-credit {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
   }
 
   .chapter-footnotes-controls {
