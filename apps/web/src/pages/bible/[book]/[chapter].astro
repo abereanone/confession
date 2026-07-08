@@ -176,18 +176,17 @@ const chapterAudioUrl =
       </div>
 
       <form method="get" action="/bible" class="control-group" data-chapter-form>
-        <label for="book">Book</label>
-        <select id="book" name="book" data-book-select>
+        <select id="book" name="book" aria-label="Book" data-book-select>
           {books.map((book) => (
             <option value={book.code} selected={book.code === selectedBookCode}>
               {book.name}
             </option>
           ))}
         </select>
-        <label for="chapter">Chapter</label>
         <select
           id="chapter"
           name="chapter"
+          aria-label="Chapter"
           data-chapter-select
         >
           {Array.from({ length: chapterCount }, (_value, index) => {
@@ -1936,10 +1935,14 @@ const chapterAudioUrl =
     margin: 0.35rem 0 0;
   }
 
+  :global(.search-result-reference) {
+    margin-right: 0.4rem;
+  }
+
   :global(mark.search-hit) {
     border-radius: 0.18em;
     background: rgba(255, 232, 107, 0.82);
-    color: inherit;
+    color: #1f1a00;
     padding: 0 0.08em;
   }
 
