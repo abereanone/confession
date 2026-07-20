@@ -732,15 +732,24 @@ const chapterAudioUrl =
         const itemRect = anchorItem.getBoundingClientRect();
         const barWidth = actionBar.offsetWidth;
         const barHeight = actionBar.offsetHeight;
+        const isCompact = window.matchMedia("(max-width: 32rem)").matches;
 
-        // Vertical: prefer just below the verse line; flip above near the bottom edge.
-        let top = itemRect.bottom + gap;
-        if (top + barHeight > window.innerHeight - margin) {
-          const above = itemRect.top - gap - barHeight;
-          top =
-            above >= headerOffset + margin
-              ? above
-              : Math.max(headerOffset + margin, window.innerHeight - margin - barHeight);
+        let top;
+        if (isCompact) {
+          // Narrow screens: overlay the selected verse's own first line instead of
+          // sitting below it, so the next verse stays visible while picking a range.
+          top = Math.min(itemRect.top, window.innerHeight - margin - barHeight);
+          top = Math.max(top, headerOffset + margin);
+        } else {
+          // Vertical: prefer just below the verse line; flip above near the bottom edge.
+          top = itemRect.bottom + gap;
+          if (top + barHeight > window.innerHeight - margin) {
+            const above = itemRect.top - gap - barHeight;
+            top =
+              above >= headerOffset + margin
+                ? above
+                : Math.max(headerOffset + margin, window.innerHeight - margin - barHeight);
+          }
         }
 
         // Horizontal: start past the verse-number gutter so numbers stay visible/tappable.
@@ -779,6 +788,7 @@ const chapterAudioUrl =
 
         if (actionBar instanceof HTMLElement) {
           actionBar.hidden = false;
+          actionBar.dataset.armed = rangeArmed ? "true" : "false";
         }
         if (actionBarReference instanceof HTMLElement) {
           actionBarReference.textContent = buildSelectionReference(bounds.start, bounds.end);
@@ -2045,8 +2055,40 @@ const chapterAudioUrl =
   }
 
   @media (max-width: 32rem) {
+    /* Compact enough to sit beside the verse number without covering the next verse. */
+    .verse-actionbar {
+      max-width: calc(100vw - 4rem);
+    }
+
+    .verse-actionbar-inner {
+      gap: 0.5rem;
+      padding: 0.35rem 0.4rem 0.35rem 0.6rem;
+      border-radius: 12px;
+    }
+
+    .verse-actionbar-reference {
+      font-size: 0.9rem;
+    }
+
+    /* Only the range prompt is worth the extra height on small screens. */
+    .verse-actionbar-hint {
+      display: none;
+    }
+
+    .verse-actionbar[data-armed="true"] .verse-actionbar-hint {
+      display: block;
+      font-size: 0.7rem;
+    }
+
     .verse-actionbar-button {
-      padding: 0.4rem 0.65rem;
+      min-height: 1.9rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.88rem;
+    }
+
+    .verse-actionbar-clear {
+      min-width: 1.9rem;
+      padding: 0.35rem;
     }
   }
 </style>
