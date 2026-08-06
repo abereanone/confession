@@ -353,20 +353,20 @@ const chapterAudioUrl =
     aria-label="Verse selection actions"
   >
     <div class="verse-actionbar-inner">
-      <div class="verse-actionbar-info">
-        <span class="verse-actionbar-reference" data-actionbar-reference></span>
-        <span class="verse-actionbar-hint" data-actionbar-hint></span>
-      </div>
       <div class="verse-actionbar-buttons">
         <button
           type="button"
-          class="verse-actionbar-button"
+          class="verse-actionbar-switch"
           data-actionbar-link
-          aria-pressed="true"
+          role="switch"
+          aria-checked="true"
           aria-label="Include verse link when copying or sharing"
           title="Include verse link when copying or sharing"
         >
-          Link
+          <span class="verse-actionbar-switch-track" aria-hidden="true">
+            <span class="verse-actionbar-switch-thumb"></span>
+          </span>
+          <span>Link</span>
         </button>
         <button type="button" class="verse-actionbar-button" data-actionbar-range aria-pressed="false">
           Range
@@ -658,8 +658,6 @@ const chapterAudioUrl =
 
       // --- Verse selection & range sharing ---
       const actionBar = document.querySelector("[data-verse-actionbar]");
-      const actionBarReference = document.querySelector("[data-actionbar-reference]");
-      const actionBarHint = document.querySelector("[data-actionbar-hint]");
       const rangeButton = document.querySelector("[data-actionbar-range]");
       const linkButton = document.querySelector("[data-actionbar-link]");
       const copyButton = document.querySelector("[data-actionbar-copy]");
@@ -819,24 +817,12 @@ const chapterAudioUrl =
 
         if (actionBar instanceof HTMLElement) {
           actionBar.hidden = false;
-          actionBar.dataset.armed = rangeArmed ? "true" : "false";
-        }
-        if (actionBarReference instanceof HTMLElement) {
-          actionBarReference.textContent = buildSelectionReference(bounds.start, bounds.end);
-        }
-        if (actionBarHint instanceof HTMLElement) {
-          const count = bounds.end - bounds.start + 1;
-          actionBarHint.textContent = rangeArmed
-            ? "Tap a verse to set the other end of the range"
-            : count > 1
-              ? `${count} verses selected`
-              : "Tap “Range,” then tap another verse to select a passage";
         }
         if (rangeButton instanceof HTMLButtonElement) {
           rangeButton.setAttribute("aria-pressed", rangeArmed ? "true" : "false");
         }
         if (linkButton instanceof HTMLButtonElement) {
-          linkButton.setAttribute("aria-pressed", includeLink ? "true" : "false");
+          linkButton.setAttribute("aria-checked", includeLink ? "true" : "false");
         }
 
         positionActionBar();
@@ -2031,35 +2017,12 @@ const chapterAudioUrl =
   .verse-actionbar-inner {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.65rem 0.7rem 0.65rem 1rem;
+    padding: 0.5rem;
     border: 1px solid var(--tooltip-border);
     border-radius: 14px;
     background: var(--tooltip-bg);
     color: var(--tooltip-text);
     box-shadow: var(--shadow-tooltip);
-  }
-
-  .verse-actionbar-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .verse-actionbar-reference {
-    font-weight: 800;
-    font-size: 1.02rem;
-    color: var(--tooltip-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .verse-actionbar-hint {
-    font-size: 0.76rem;
-    color: color-mix(in srgb, var(--tooltip-text) 65%, transparent);
   }
 
   .verse-actionbar-buttons {
@@ -2101,6 +2064,72 @@ const chapterAudioUrl =
     padding: 0.4rem;
   }
 
+  /* Slider switch: an on/off preference rather than a momentary action, so it
+     reads differently from the Range/Copy/Share buttons beside it. */
+  .verse-actionbar-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--tooltip-text) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tooltip-text) 7%, transparent);
+    color: var(--tooltip-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .verse-actionbar-switch:hover,
+  .verse-actionbar-switch:focus-visible {
+    border-color: color-mix(in srgb, var(--tooltip-text) 55%, transparent);
+    background: color-mix(in srgb, var(--tooltip-text) 16%, transparent);
+    outline: none;
+  }
+
+  .verse-actionbar-switch-track {
+    position: relative;
+    flex: 0 0 auto;
+    width: 1.75rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tooltip-text) 32%, transparent);
+    transition: background 0.15s ease-out;
+  }
+
+  .verse-actionbar-switch-thumb {
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--tooltip-text);
+    transition: transform 0.15s ease-out;
+  }
+
+  .verse-actionbar-switch[aria-checked="true"] {
+    border-color: var(--color-link);
+  }
+
+  .verse-actionbar-switch[aria-checked="true"] .verse-actionbar-switch-track {
+    background: var(--color-link);
+  }
+
+  .verse-actionbar-switch[aria-checked="true"] .verse-actionbar-switch-thumb {
+    transform: translateX(0.75rem);
+    background: var(--tooltip-bg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .verse-actionbar-switch-track,
+    .verse-actionbar-switch-thumb {
+      transition: none;
+    }
+  }
+
   @media (max-width: 32rem) {
     /* Compact enough to sit beside the verse number without covering the next verse. */
     .verse-actionbar {
@@ -2108,37 +2137,21 @@ const chapterAudioUrl =
     }
 
     .verse-actionbar-inner {
-      gap: 0.5rem;
-      padding: 0.35rem 0.4rem 0.35rem 0.6rem;
+      padding: 0.35rem;
       border-radius: 12px;
-      /* Five controls plus the reference overflow a ~360px viewport; let the
-         button row drop to its own line instead of spilling out of the bar. */
-      flex-wrap: wrap;
-    }
-
-    .verse-actionbar-buttons {
-      flex: 1 1 auto;
-      justify-content: flex-end;
-    }
-
-    .verse-actionbar-reference {
-      font-size: 0.9rem;
-    }
-
-    /* Only the range prompt is worth the extra height on small screens. */
-    .verse-actionbar-hint {
-      display: none;
-    }
-
-    .verse-actionbar[data-armed="true"] .verse-actionbar-hint {
-      display: block;
-      font-size: 0.7rem;
     }
 
     .verse-actionbar-button {
       min-height: 1.9rem;
       padding: 0.35rem 0.65rem;
       font-size: 0.88rem;
+    }
+
+    .verse-actionbar-switch {
+      min-height: 1.9rem;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.88rem;
+      gap: 0.3rem;
     }
 
     .verse-actionbar-clear {
