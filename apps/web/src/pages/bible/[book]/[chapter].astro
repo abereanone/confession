@@ -358,6 +358,16 @@ const chapterAudioUrl =
         <span class="verse-actionbar-hint" data-actionbar-hint></span>
       </div>
       <div class="verse-actionbar-buttons">
+        <button
+          type="button"
+          class="verse-actionbar-button"
+          data-actionbar-link
+          aria-pressed="true"
+          aria-label="Include verse link when copying or sharing"
+          title="Include verse link when copying or sharing"
+        >
+          Link
+        </button>
         <button type="button" class="verse-actionbar-button" data-actionbar-range aria-pressed="false">
           Range
         </button>
@@ -403,6 +413,7 @@ const chapterAudioUrl =
       const clearSearchButton = document.querySelector("[data-clear-search]");
       const clearResultsButton = document.querySelector("[data-clear-results]");
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
+      const includeLinkStorageKey = "bible-copy-include-link";
       let bibleSearchIndexPromise = null;
       const feedbackTimers = new WeakMap();
 
@@ -650,13 +661,33 @@ const chapterAudioUrl =
       const actionBarReference = document.querySelector("[data-actionbar-reference]");
       const actionBarHint = document.querySelector("[data-actionbar-hint]");
       const rangeButton = document.querySelector("[data-actionbar-range]");
+      const linkButton = document.querySelector("[data-actionbar-link]");
       const copyButton = document.querySelector("[data-actionbar-copy]");
       const shareButton = document.querySelector("[data-actionbar-share]");
       const clearButton = document.querySelector("[data-actionbar-clear]");
 
+      // Including the verse link is a sticky preference rather than a per-copy
+      // choice: people are consistent about wanting it (texting) or not (notes).
+      const readIncludeLink = () => {
+        try {
+          return window.localStorage.getItem(includeLinkStorageKey) !== "0";
+        } catch {
+          return true;
+        }
+      };
+
+      const writeIncludeLink = (value) => {
+        try {
+          window.localStorage.setItem(includeLinkStorageKey, value ? "1" : "0");
+        } catch {
+          // preference is best-effort; keep the toggle working for this session
+        }
+      };
+
       let anchorVerse = Number.NaN;
       let endVerse = Number.NaN;
       let rangeArmed = false;
+      let includeLink = readIncludeLink();
 
       const getVerseButton = (verseNumber) =>
         document.querySelector(`[data-share-verse][data-verse-number="${verseNumber}"]`);
@@ -804,6 +835,9 @@ const chapterAudioUrl =
         if (rangeButton instanceof HTMLButtonElement) {
           rangeButton.setAttribute("aria-pressed", rangeArmed ? "true" : "false");
         }
+        if (linkButton instanceof HTMLButtonElement) {
+          linkButton.setAttribute("aria-pressed", includeLink ? "true" : "false");
+        }
 
         positionActionBar();
       };
@@ -846,16 +880,21 @@ const chapterAudioUrl =
           return;
         }
         const text = buildSelectionShareText(bounds);
-        const url = buildSelectionShareUrl(bounds);
+        const url = includeLink ? buildSelectionShareUrl(bounds) : "";
         const copyValue = [text, url].filter(Boolean).join("\n");
 
         if (kind === "share" && navigator.share) {
           try {
-            await navigator.share({
+            // Omit `url` entirely when the link is off — an empty string still
+            // shows up as a blank attachment in some share sheets.
+            const payload = {
               title: buildSelectionReference(bounds.start, bounds.end) || "Bible passage",
               text,
-              url,
-            });
+            };
+            if (url) {
+              payload.url = url;
+            }
+            await navigator.share(payload);
           } catch {
             // user dismissed share sheet or it failed; leave selection intact
           }
@@ -1238,6 +1277,14 @@ const chapterAudioUrl =
 
       if (shareButton instanceof HTMLElement && navigator.share) {
         shareButton.hidden = false;
+      }
+
+      if (linkButton instanceof HTMLButtonElement) {
+        linkButton.addEventListener("click", () => {
+          includeLink = !includeLink;
+          writeIncludeLink(includeLink);
+          renderSelection();
+        });
       }
 
       if (rangeButton instanceof HTMLButtonElement) {
@@ -2064,6 +2111,14 @@ const chapterAudioUrl =
       gap: 0.5rem;
       padding: 0.35rem 0.4rem 0.35rem 0.6rem;
       border-radius: 12px;
+      /* Five controls plus the reference overflow a ~360px viewport; let the
+         button row drop to its own line instead of spilling out of the bar. */
+      flex-wrap: wrap;
+    }
+
+    .verse-actionbar-buttons {
+      flex: 1 1 auto;
+      justify-content: flex-end;
     }
 
     .verse-actionbar-reference {
