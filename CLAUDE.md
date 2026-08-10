@@ -101,8 +101,47 @@ runs past the named verse.
 
 Note that a book-less continuation after a semicolon (`Mat 3:17; 17:5`) is
 legal — `continuedVerseRegex` inherits the book from the previous reference.
-A bare number after a semicolon (`Heb 11; 6`) is *not* the same thing and is
-usually a colon that was corrupted into a semicolon on import.
+Two lookalikes are not:
+
+- **The seed must be a full `Book chapter:verse`.** After a chapter-only ref
+  the continuation has no book to inherit, so `Rom 1; 11:7-8` links `Rom 1`
+  and drops `11:7-8` entirely. Write the book out: `Rom 11:7-8`.
+- **A bare number after a semicolon** (`Heb 11; 6`) is usually a colon that was
+  corrupted into a semicolon on import, not a continuation at all.
+
+Where a 1689 or Savoy citation looks mangled, check the parallel paragraph in
+`westminster-confession.json` — they share proof texts, and Westminster's copy
+is generally intact. That is how `Psa 1; 21` was identified as `Psa 50:21`.
+
+### When the BSB reading does not carry the citation
+
+The confessions cite the text their authors had. Where the BSB reading differs
+enough that the citation stops making its point, override the displayed text in
+`shared/data/bible-cited.json` rather than editing the confession or `bsb.json`.
+Keys are normalized references — lowercase, canonical 3-letter book code
+(`"1jn 5:7"`) — and the `version` label shows the reader where the wording came
+from. The loader reads `shared/data/` directly, so no sync step is needed.
+
+Most of the verses modern critical texts omit (Mat 17:21, Act 8:37, Mrk 9:44 …)
+already carry KJV text inside `bsb.json`. The case that slips through is a verse
+that *exists* in BSB but reads differently: `1 John 5:7` is "For there are three
+that testify:" in BSB, which is useless to the four confessions that cite it as
+a Trinity proof — Belgic 9 even quotes the Johannine Comma verbatim in its prose.
+That one is overridden to the KJV reading.
+
+Before adding an override, check that the divergence actually matters. `1Ti 3:16`
+("He appeared in the flesh" vs "God was manifest in the flesh") looks like a
+candidate but the 1644 cites it for Christ's *manhood*, which the BSB reading
+states perfectly well. Same for `Rev 22:19`, `Rom 8:1` and `Jhn 1:18`.
+
+### Chapter-only citations
+
+A citation naming only a chapter is usually deliberate — the confession is
+pointing at a whole argument (`Job 38-41`, `Rev 2-3`, `Psa 88`, `Heb 8-10`).
+Leave those. It is only worth pinning to a verse when the paragraph **quotes**
+scripture and then cites the chapter, because there the reader wants the line
+that was quoted. Verify against the source edition before changing one:
+2HC 16.12's odd-looking `Isa 4` is exactly what Cochrane's translation prints.
 
 `, etc.` and a trailing `ff.` are the sources' own shorthand; the named verse
 still links, so leave them alone.

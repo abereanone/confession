@@ -1,0 +1,9 @@
+{
+  "_comment": "Cited-reference overrides. Use these where a confession cites a verse in the wording of the text its authors used, and the BSB reading differs enough that the citation stops making sense. Keys are normalized references (lowercase, canonical 3-letter book code). See shared/data/README.md.",
+  "verses": {
+    "1jn 5:7": {
+      "text": "For there are three that bear record in heaven, the Father, the Word, and the Holy Ghost: and these three are one.",
+      "version": "KJV"
+    }
+  }
+}
