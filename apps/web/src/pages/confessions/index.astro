@@ -7,7 +7,27 @@ const confessions = listConfessions();
 
 <Main title="Confessions">
   <h1>Confessions</h1>
-  <p>Choose a confession to browse by chapter/article.</p>
+  <p>Choose a confession to browse by chapter/article, or search across all of them.</p>
+
+  <section class="search-tools card-panel">
+    <div class="tool-control">
+      <label for="confession-search">Search all confessions</label>
+      <input
+        id="confession-search"
+        type="search"
+        placeholder="Search&mdash;Use quotes for exact phrase like &quot;the church&quot;"
+        title="Use quotes for exact phrase like &quot;the church&quot;"
+        autocomplete="off"
+      />
+    </div>
+    <button type="button" id="confession-search-clear" hidden>Clear</button>
+    <p id="confession-search-meta" class="meta"></p>
+  </section>
+
+  <section id="confession-search-results-section" hidden>
+    <ul id="confession-search-results"></ul>
+    <p id="confession-search-empty" hidden><em>No paragraphs matched that search.</em></p>
+  </section>
 
   <ul id="confession-list">
     {confessions.map((item) => (
@@ -21,7 +41,396 @@ const confessions = listConfessions();
   </ul>
 </Main>
 
+<script>
+  // Cross-confession paragraph search. Mirrors the per-confession filter's query
+  // syntax (quoted phrases, all terms must match) but the text is not on the
+  // page, so it comes from a prebuilt index fetched on first use — the same
+  // approach the Bible reader takes with /bible-search.json.
+  import { parseSearchTerms } from "../../lib/searchTerms";
+
+  (() => {
+    const input = document.getElementById("confession-search");
+    const clearButton = document.getElementById("confession-search-clear");
+    const meta = document.getElementById("confession-search-meta");
+    const section = document.getElementById("confession-search-results-section");
+    const list = document.getElementById("confession-search-results");
+    const empty = document.getElementById("confession-search-empty");
+    const confessionList = document.getElementById("confession-list");
+
+    if (!(input instanceof HTMLInputElement) || !(list instanceof HTMLElement)) {
+      return;
+    }
+
+    const RESULT_LIMIT = 200;
+    let indexPromise = null;
+    let debounceTimer = 0;
+
+    const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const getIndex = () => {
+      if (!indexPromise) {
+        indexPromise = fetch("/confessions-search.json")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`index failed with ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((payload) => (Array.isArray(payload?.paragraphs) ? payload.paragraphs : []));
+      }
+      return indexPromise;
+    };
+
+    const buildHighlightRegex = (terms) => {
+      const pattern = terms
+        .map((term) => {
+          const escaped = escapeRegExp(term.value);
+          // A quoted phrase may span a line break in the source text.
+          return term.phrase ? escaped.replace(/\s+/g, "\\s+") : escaped;
+        })
+        .sort((a, b) => b.length - a.length)
+        .join("|");
+      return pattern ? new RegExp(pattern, "gi") : null;
+    };
+
+    const appendHighlighted = (target, text, regex) => {
+      const source = String(text ?? "");
+      if (!regex) {
+        target.append(document.createTextNode(source));
+        return;
+      }
+
+      regex.lastIndex = 0;
+      let cursor = 0;
+      for (const match of source.matchAll(regex)) {
+        const index = match.index ?? 0;
+        const hit = match[0] || "";
+        if (!hit) {
+          continue;
+        }
+        if (index > cursor) {
+          target.append(document.createTextNode(source.slice(cursor, index)));
+        }
+        const mark = document.createElement("mark");
+        mark.className = "search-hit";
+        mark.textContent = hit;
+        target.append(mark);
+        cursor = index + hit.length;
+      }
+      if (cursor < source.length) {
+        target.append(document.createTextNode(source.slice(cursor)));
+      }
+    };
+
+    // Characters of context kept around the first match. Enough to read the
+    // clause the term sits in without spilling past ~3 lines.
+    const EXCERPT_BEFORE = 90;
+    const EXCERPT_AFTER = 210;
+
+    /**
+     * A window of the paragraph centred on its first matching term.
+     *
+     * Showing the opening of the paragraph and clamping it hides the reason the
+     * result is there at all — a paragraph matching on a word 40 lines down
+     * looks like a false positive. Snaps to word boundaries so the excerpt never
+     * starts or ends mid-word.
+     */
+    const buildExcerpt = (text, terms) => {
+      const source = String(text ?? "");
+      const haystack = source.toLowerCase();
+
+      let matchStart = -1;
+      let matchLength = 0;
+      for (const term of terms) {
+        const index = haystack.indexOf(term.value);
+        if (index >= 0 && (matchStart < 0 || index < matchStart)) {
+          matchStart = index;
+          matchLength = term.value.length;
+        }
+      }
+
+      // No term located (shouldn't happen for a result, but stay graceful).
+      if (matchStart < 0) {
+        const clipped = source.slice(0, EXCERPT_BEFORE + EXCERPT_AFTER);
+        return { body: clipped, leading: false, trailing: clipped.length < source.length };
+      }
+
+      let start = Math.max(0, matchStart - EXCERPT_BEFORE);
+      let end = Math.min(source.length, matchStart + matchLength + EXCERPT_AFTER);
+
+      if (start > 0) {
+        const space = source.indexOf(" ", start);
+        if (space >= 0 && space < matchStart) {
+          start = space + 1;
+        }
+      }
+      if (end < source.length) {
+        const space = source.lastIndexOf(" ", end);
+        if (space > matchStart + matchLength) {
+          end = space;
+        }
+      }
+
+      return {
+        body: source.slice(start, end).trim(),
+        leading: start > 0,
+        trailing: end < source.length,
+      };
+    };
+
+    const showList = (visible) => {
+      if (confessionList instanceof HTMLElement) {
+        confessionList.hidden = !visible;
+      }
+    };
+
+    const reset = () => {
+      if (section instanceof HTMLElement) section.hidden = true;
+      if (empty instanceof HTMLElement) empty.hidden = true;
+      if (meta instanceof HTMLElement) meta.textContent = "";
+      if (clearButton instanceof HTMLElement) clearButton.hidden = true;
+      list.textContent = "";
+      showList(true);
+    };
+
+    const render = (results, terms, total, ignored) => {
+      const regex = buildHighlightRegex(terms);
+      list.textContent = "";
+
+      for (const result of results) {
+        const item = document.createElement("li");
+
+        const link = document.createElement("a");
+        link.className = "result-card";
+        link.href = result.href;
+
+        const head = document.createElement("span");
+        head.className = "result-head";
+
+        const badge = document.createElement("span");
+        badge.className = "confession-badge";
+        badge.textContent = result.shortCode;
+
+        const citation = document.createElement("span");
+        citation.className = "result-citation";
+        citation.textContent = result.unitTitle
+          ? `${result.citation} — ${result.unitTitle}`
+          : result.citation;
+
+        head.append(badge, citation);
+
+        const body = document.createElement("span");
+        body.className = "result-text";
+        const excerpt = buildExcerpt(result.text, terms);
+        if (excerpt.leading) {
+          body.append(document.createTextNode("… "));
+        }
+        appendHighlighted(body, excerpt.body, regex);
+        if (excerpt.trailing) {
+          body.append(document.createTextNode(" …"));
+        }
+
+        link.append(head, body);
+        item.append(link);
+        list.append(item);
+      }
+
+      if (section instanceof HTMLElement) section.hidden = false;
+      if (empty instanceof HTMLElement) empty.hidden = results.length > 0;
+      if (meta instanceof HTMLElement) {
+        const shown = results.length;
+        const count =
+          total > shown
+            ? `Showing first ${shown} of ${total} matching paragraphs`
+            : `${shown} matching paragraph${shown === 1 ? "" : "s"}`;
+        // Say so rather than silently changing the query out from under them.
+        const skipped = ignored.length
+          ? ` · ignored ${ignored.map((word) => `"${word}"`).join(", ")} — quote to match exactly`
+          : "";
+        meta.textContent = `${count}${skipped}`;
+      }
+      showList(false);
+    };
+
+    const run = async () => {
+      const raw = input.value.trim();
+      if (clearButton instanceof HTMLElement) {
+        clearButton.hidden = raw.length === 0;
+      }
+
+      if (!raw) {
+        reset();
+        return;
+      }
+
+      const { terms, ignored } = parseSearchTerms(raw);
+      if (terms.length === 0) {
+        reset();
+        return;
+      }
+
+      if (meta instanceof HTMLElement && !indexPromise) {
+        meta.textContent = "Searching…";
+      }
+
+      try {
+        const paragraphs = await getIndex();
+        // Every term must appear, matching the per-confession filter.
+        const matches = paragraphs.filter((entry) => {
+          const haystack = String(entry.text ?? "").toLowerCase();
+          return terms.every((term) => haystack.includes(term.value));
+        });
+        render(matches.slice(0, RESULT_LIMIT), terms, matches.length, ignored);
+      } catch {
+        if (section instanceof HTMLElement) section.hidden = false;
+        if (meta instanceof HTMLElement) {
+          meta.textContent = "Search is unavailable right now.";
+        }
+        list.textContent = "";
+        if (empty instanceof HTMLElement) empty.hidden = true;
+      }
+    };
+
+    input.addEventListener("input", () => {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(run, 180);
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        input.value = "";
+        reset();
+      }
+    });
+
+    if (clearButton instanceof HTMLButtonElement) {
+      clearButton.addEventListener("click", () => {
+        input.value = "";
+        reset();
+        input.focus();
+      });
+    }
+  })();
+</script>
+
 <style>
+  .search-tools {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tool-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1 1 22rem;
+    min-width: 0;
+  }
+
+  .tool-control label {
+    font-weight: 600;
+  }
+
+  .search-tools button {
+    min-height: 2.2rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .search-tools button:hover,
+  .search-tools button:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    outline: none;
+  }
+
+  .search-tools button[hidden] {
+    display: none;
+  }
+
+  .search-tools .meta {
+    margin: 0;
+  }
+
+  #confession-search-results-section[hidden] {
+    display: none;
+  }
+
+  #confession-search-results {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  #confession-search-results li {
+    list-style: none;
+  }
+
+  /* Result cards are built in JavaScript, so they never carry Astro's scoping
+     attribute; scope through the server-rendered list instead. */
+  #confession-search-results :global(.result-card) {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--card-border);
+    border-left: 4px solid var(--confession-accent-border, var(--surface-border-strong));
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  #confession-search-results :global(.result-card:hover),
+  #confession-search-results :global(.result-card:focus-visible) {
+    border-color: var(--confession-accent-border, var(--card-hover-border));
+    text-decoration: none;
+  }
+
+  #confession-search-results :global(.result-head) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  #confession-search-results :global(.result-citation) {
+    font-weight: 700;
+  }
+
+  /* The excerpt is already bounded by character count and centred on the match;
+     the clamp is only a safety net for very long unbroken text. */
+  #confession-search-results :global(.result-text) {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.45;
+  }
+
+  /* There is no global rule for this class, so without it the marks would fall
+     back to the browser's default yellow and ignore the theme. */
+  #confession-search-results :global(mark.search-hit) {
+    border-radius: 0.18em;
+    padding: 0 0.08em;
+    background: rgba(255, 232, 107, 0.82);
+    color: #1f1a00;
+  }
+
+  #confession-list[hidden] {
+    display: none;
+  }
+
   #confession-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));

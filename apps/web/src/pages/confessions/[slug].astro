@@ -189,6 +189,8 @@ const verseLookup = await getVerseLookup([...references]);
 <ConfessionReferenceHighlightScript />
 
 <script>
+  import { parseSearchTerms as parseSharedSearchTerms } from "../../lib/searchTerms";
+
   const confessionPage = document.querySelector(".confession-page");
   const root = document.documentElement;
   const input = document.getElementById("unit-filter");
@@ -203,29 +205,9 @@ const verseLookup = await getVerseLookup([...references]);
   const getParagraphBodies = () =>
     Array.from(document.querySelectorAll(".paragraph-card p:last-child"));
 
-  const parseSearchTerms = (rawQuery) => {
-    const terms = [];
-    const query = String(rawQuery ?? "");
-    const phraseRegex = /"([^"]+)"/g;
-    let remaining = query;
-
-    for (const match of query.matchAll(phraseRegex)) {
-      const phrase = String(match[1] ?? "").trim();
-      if (phrase) {
-        terms.push(phrase);
-      }
-      remaining = remaining.replace(String(match[0] ?? ""), " ");
-    }
-
-    remaining
-      .trim()
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter(Boolean)
-      .forEach((token) => terms.push(token));
-
-    return [...new Set(terms.map((term) => term.toLowerCase()))];
-  };
+  // Shared with the Bible reader and the confession listing, so all three search
+  // boxes take the same query syntax and skip the same trivial words.
+  const parseSearchTerms = (rawQuery) => parseSharedSearchTerms(rawQuery);
 
   const clearHighlights = (root) => {
     const marks = Array.from(root.querySelectorAll("mark.search-hit"));
@@ -284,14 +266,18 @@ const verseLookup = await getVerseLookup([...references]);
       clearHighlights(paragraph);
     });
 
-    const terms = parseSearchTerms(rawQuery);
+    const { terms } = parseSearchTerms(rawQuery);
 
     if (terms.length === 0) {
       return;
     }
 
     const pattern = terms
-      .map((term) => escapeRegExp(term))
+      .map((term) => {
+        const escaped = escapeRegExp(term.value);
+        // A quoted phrase may be broken across lines in the source text.
+        return term.phrase ? escaped.replace(/\s+/g, "\\s+") : escaped;
+      })
       .sort((a, b) => b.length - a.length)
       .join("|");
 
@@ -688,7 +674,7 @@ const verseLookup = await getVerseLookup([...references]);
 
     const applyFilter = () => {
       const rawQuery = input.value.trim();
-      const terms = parseSearchTerms(rawQuery);
+      const { terms, ignored } = parseSearchTerms(rawQuery);
       let visibleParagraphs = 0;
       const visibleUnitIds = new Set<string>();
 
@@ -699,7 +685,7 @@ const verseLookup = await getVerseLookup([...references]);
 
         const paragraphBody = paragraphCard.querySelector("p:last-child");
         const text = (paragraphBody?.textContent ?? "").toLowerCase();
-        const match = terms.length === 0 || terms.every((term) => text.includes(term));
+        const match = terms.length === 0 || terms.every((term) => text.includes(term.value));
         paragraphCard.hidden = !match;
 
         if (match) {
@@ -718,8 +704,12 @@ const verseLookup = await getVerseLookup([...references]);
         unit.hidden = !visibleUnitIds.has(unit.id);
       }
 
+      // Say which words were skipped rather than silently changing the query.
+      const skipped = ignored.length
+        ? ` · ignored ${ignored.map((word) => `"${word}"`).join(", ")} — quote to match exactly`
+        : "";
       meta.textContent = terms.length > 0
-        ? `${visibleParagraphs} of ${totalParagraphs} paragraphs shown`
+        ? `${visibleParagraphs} of ${totalParagraphs} paragraphs shown${skipped}`
         : `${totalParagraphs} paragraphs total`;
       noResults.hidden = terms.length === 0 || visibleParagraphs !== 0;
       highlightMatches(rawQuery);

@@ -449,6 +449,7 @@ const chapterAudioUrl =
       toggleBookmark,
       writePosition,
     } from "../../../lib/bible/readingMarks";
+    import { parseSearchTerms as parseSharedSearchTerms } from "../../../lib/searchTerms";
 
     (() => {
       const catalogElement = document.getElementById("book-catalog-data");
@@ -504,37 +505,10 @@ const chapterAudioUrl =
           .replace(/\s+/g, " ")
           .trim();
 
-      const parseSearchTerms = (rawQuery) => {
-        const terms = [];
-        const query = String(rawQuery ?? "");
-        const phraseRegex = /"([^"]+)"/g;
-        let remaining = query;
-
-        for (const match of query.matchAll(phraseRegex)) {
-          const phrase = normalizeForSearch(match[1] || "");
-          if (phrase) {
-            terms.push({ value: phrase, phrase: true });
-          }
-          remaining = remaining.replace(String(match[0] || ""), " ");
-        }
-
-        remaining
-          .trim()
-          .split(/\s+/)
-          .map((token) => normalizeForSearch(token))
-          .filter(Boolean)
-          .forEach((token) => terms.push({ value: token, phrase: false }));
-
-        const seen = new Set();
-        return terms.filter((term) => {
-          const key = `${term.phrase ? "phrase" : "word"}:${term.value}`;
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-          return true;
-        });
-      };
+      // Shared with the confession search boxes; normalizeForSearch keeps the
+      // terms folded the same way the verse text is.
+      const parseSearchTerms = (rawQuery) =>
+        parseSharedSearchTerms(rawQuery, normalizeForSearch);
 
       const getHighlightRegex = (terms) => {
         const pattern = terms
@@ -1263,7 +1237,7 @@ const chapterAudioUrl =
         return terms.every((term) => haystack.includes(term.value));
       };
 
-      const renderSearchResults = (results, rawQuery, scope, regex) => {
+      const renderSearchResults = (results, rawQuery, scope, regex, ignored = []) => {
         if (!(searchSection instanceof HTMLElement)) {
           return;
         }
@@ -1272,7 +1246,11 @@ const chapterAudioUrl =
 
         if (searchMeta instanceof HTMLElement) {
           const capped = results.length >= 250 ? "First 250" : String(results.length);
-          searchMeta.textContent = `${capped} result${results.length === 1 ? "" : "s"} shown for "${rawQuery}"`;
+          // Say which words were skipped rather than silently changing the query.
+          const skipped = ignored.length
+            ? ` · ignored ${ignored.map((word) => `"${word}"`).join(", ")} — quote to match exactly`
+            : "";
+          searchMeta.textContent = `${capped} result${results.length === 1 ? "" : "s"} shown for "${rawQuery}"${skipped}`;
         }
 
         if (searchResultsList instanceof HTMLElement) {
@@ -1366,7 +1344,7 @@ const chapterAudioUrl =
           return;
         }
 
-        const terms = parseSearchTerms(rawQuery);
+        const { terms, ignored } = parseSearchTerms(rawQuery);
         if (terms.length === 0) {
           return;
         }
@@ -1386,7 +1364,7 @@ const chapterAudioUrl =
               }
             }
           }
-          renderSearchResults(results, rawQuery, scope, regex);
+          renderSearchResults(results, rawQuery, scope, regex, ignored);
         } catch {
           if (searchSection instanceof HTMLElement) {
             searchSection.hidden = false;
