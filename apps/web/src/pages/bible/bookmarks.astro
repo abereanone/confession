@@ -1,0 +1,277 @@
+---
+import Main from "../../layouts/Main.astro";
+---
+
+<Main title="Bookmarks">
+  <h1>Bookmarks</h1>
+
+  <section class="card-panel continue-panel" data-continue hidden>
+    <h2>Continue reading</h2>
+    <ul class="continue-list" data-continue-list></ul>
+  </section>
+
+  <section class="card-panel section-spacer">
+    <ul class="mark-list" data-mark-list hidden></ul>
+    <p class="meta" data-mark-empty>
+      No bookmarks yet — use the ribbon beside a chapter heading in the reader.
+    </p>
+  </section>
+</Main>
+
+<script>
+  import {
+    listBookmarks,
+    listRecentChapters,
+    markHref,
+    removeBookmarkById,
+  } from "../../lib/bible/readingMarks";
+
+  (() => {
+    const continuePanel = document.querySelector("[data-continue]");
+    const continueList = document.querySelector("[data-continue-list]");
+    const markList = document.querySelector("[data-mark-list]");
+    const markEmpty = document.querySelector("[data-mark-empty]");
+
+    const formatSavedAt = (value) => {
+      if (!value) {
+        return "";
+      }
+      try {
+        return new Date(value).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    };
+
+    const renderResume = () => {
+      if (!(continueList instanceof HTMLElement)) {
+        return;
+      }
+
+      const recents = listRecentChapters();
+      continueList.textContent = "";
+
+      for (const recent of recents) {
+        const item = document.createElement("li");
+        item.className = "continue-item";
+
+        const link = document.createElement("a");
+        link.className = "continue-item-link";
+        link.href = markHref(recent, "resume");
+
+        const ref = document.createElement("span");
+        ref.className = "continue-item-ref";
+        ref.textContent = recent.label;
+
+        const go = document.createElement("span");
+        go.className = "continue-item-go";
+        go.setAttribute("aria-hidden", "true");
+        go.textContent = "→";
+
+        link.append(ref, go);
+        item.append(link);
+        continueList.append(item);
+      }
+
+      if (continuePanel instanceof HTMLElement) {
+        continuePanel.hidden = recents.length === 0;
+      }
+    };
+
+    const renderBookmarks = () => {
+      if (!(markList instanceof HTMLElement)) {
+        return;
+      }
+
+      const bookmarks = listBookmarks();
+      markList.textContent = "";
+
+      for (const bookmark of bookmarks) {
+        const item = document.createElement("li");
+        item.className = "mark-item";
+
+        const link = document.createElement("a");
+        link.className = "mark-item-link";
+        link.href = markHref(bookmark, "bookmark");
+
+        const label = document.createElement("span");
+        label.className = "mark-item-ref";
+        label.textContent = bookmark.label;
+
+        const saved = document.createElement("span");
+        saved.className = "mark-item-date";
+        saved.textContent = formatSavedAt(bookmark.at);
+
+        link.append(label, saved);
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "mark-item-remove";
+        remove.dataset.markRemove = bookmark.id;
+        remove.setAttribute("aria-label", `Remove bookmark ${bookmark.label}`);
+        remove.title = `Remove bookmark ${bookmark.label}`;
+        remove.textContent = "✕";
+
+        item.append(link, remove);
+        markList.append(item);
+      }
+
+      markList.hidden = bookmarks.length === 0;
+      if (markEmpty instanceof HTMLElement) {
+        markEmpty.hidden = bookmarks.length > 0;
+      }
+    };
+
+    if (markList instanceof HTMLElement) {
+      markList.addEventListener("click", (event) => {
+        const trigger = event.target instanceof Element ? event.target.closest("[data-mark-remove]") : null;
+        if (!(trigger instanceof HTMLElement)) {
+          return;
+        }
+        removeBookmarkById(String(trigger.dataset.markRemove || ""));
+        renderBookmarks();
+      });
+    }
+
+    renderResume();
+    renderBookmarks();
+  })();
+</script>
+
+<style>
+  .section-spacer {
+    margin-top: 1rem;
+  }
+
+  .continue-panel[hidden] {
+    display: none;
+  }
+
+  .continue-panel h2 {
+    margin-top: 0;
+  }
+
+  .continue-list {
+    list-style: none;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  /* Built in JavaScript, so the rows carry no scoping attribute — see the
+     bookmark list below. */
+  .continue-list :global(.continue-item-link) {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--surface-border);
+    border-left: 4px solid var(--color-link);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .continue-list :global(.continue-item-link:hover),
+  .continue-list :global(.continue-item-link:focus-visible) {
+    border-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .continue-list :global(.continue-item-ref) {
+    font-weight: 700;
+  }
+
+  .continue-list :global(.continue-item-go) {
+    margin-left: auto;
+    color: var(--color-link);
+    font-weight: 800;
+  }
+
+  .mark-list {
+    list-style: none;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .mark-list[hidden] {
+    display: none;
+  }
+
+  /* The rows are built in JavaScript, so they never carry Astro's scoping
+     attribute and plain `.mark-item` rules would not match them. Scope through
+     the server-rendered list instead: the parent stays scoped, the descendants
+     are global. (Same reason the reader marks its search results `:global`.) */
+  .mark-list :global(.mark-item) {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    overflow: hidden;
+  }
+
+  .mark-list :global(.mark-item:hover),
+  .mark-list :global(.mark-item:focus-within) {
+    border-color: var(--color-link);
+  }
+
+  .mark-list :global(.mark-item-link) {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    padding: 0.6rem 0.85rem;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .mark-list :global(.mark-item-link:hover),
+  .mark-list :global(.mark-item-link:focus-visible) {
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .mark-list :global(.mark-item-ref) {
+    font-weight: 700;
+  }
+
+  .mark-list :global(.mark-item-date) {
+    margin-left: auto;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .mark-list :global(.mark-item-remove) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.6rem;
+    padding: 0.5rem;
+    border: 0;
+    border-left: 1px solid var(--surface-border);
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .mark-list :global(.mark-item-remove:hover),
+  .mark-list :global(.mark-item-remove:focus-visible) {
+    background: var(--surface-bg-hover);
+    color: var(--color-text);
+    outline: none;
+  }
+</style>

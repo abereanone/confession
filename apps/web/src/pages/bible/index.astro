@@ -11,6 +11,7 @@ import Main from "../../layouts/Main.astro";
 <script>
   import bookMap from "../../lib/bible/bookMap.json";
   import { normalizeReference } from "../../lib/bible/normalizeRef";
+  import { markHref, readPosition } from "../../lib/bible/readingMarks";
 
   (() => {
     const normalizeToken = (value) =>
@@ -67,6 +68,19 @@ import Main from "../../layouts/Main.astro";
     let query = String(params.get("q") || "").trim();
     let ref = String(params.get("ref") || "").trim();
     const lookup = String(params.get("lookup") || "").trim();
+
+    // A bare /bible resumes the saved reading position; anything that names a
+    // destination (search, reference, explicit book/chapter) wins over it.
+    const asksForDestination =
+      Boolean(query || ref || lookup) || params.has("book") || params.has("chapter");
+    if (!asksForDestination) {
+      const position = readPosition();
+      if (position) {
+        window.location.replace(markHref(position, "resume"));
+        return;
+      }
+    }
+
     const rawScope = String(params.get("scope") || "").trim().toLowerCase();
     const scope = rawScope === "ot" || rawScope === "nt" ? rawScope : "all";
     const rawBook = params.get("book") || "gen";

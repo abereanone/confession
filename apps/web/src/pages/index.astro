@@ -33,13 +33,43 @@ const updatedAt = getUpdatedAt();
         </a>
       </li>
       <li data-tool="bible">
-        <a class="tool-item-link" href="/bible/gen/1">
-          <span>Read the Bible</span>
+        <a class="tool-item-link" href="/bible" data-bible-tool-link>
+          <span data-bible-tool-label>Read the Bible</span>
+          <span class="tool-item-note" data-bible-tool-note hidden></span>
         </a>
       </li>
     </ul>
   </section>
 </Main>
+
+<script>
+  import { markHref, readPosition } from "../lib/bible/readingMarks";
+
+  // Upgrade the reader tile to a resume card once there is somewhere to return
+  // to. Rendered client-side because the position lives in localStorage and the
+  // page is static.
+  (() => {
+    const position = readPosition();
+    if (!position) {
+      return;
+    }
+
+    const link = document.querySelector("[data-bible-tool-link]");
+    const label = document.querySelector("[data-bible-tool-label]");
+    const note = document.querySelector("[data-bible-tool-note]");
+
+    if (link instanceof HTMLAnchorElement) {
+      link.href = markHref(position, "resume");
+    }
+    if (label instanceof HTMLElement) {
+      label.textContent = "Continue reading";
+    }
+    if (note instanceof HTMLElement) {
+      note.textContent = position.label;
+      note.hidden = false;
+    }
+  })();
+</script>
 
 <style>
   .section-spacer {
@@ -95,6 +125,18 @@ const updatedAt = getUpdatedAt();
     border-left-color: var(--tool-accent-border);
     color: var(--tool-accent-text);
     font-weight: 600;
+  }
+
+  .tool-item-note {
+    margin-left: auto;
+    padding-left: 0.5rem;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .tool-item-note[hidden] {
+    display: none;
   }
 
   .tool-item-link:hover,

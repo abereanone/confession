@@ -1,7 +1,7 @@
 /* Confessions Hub service worker — install + offline support. */
 // Bump SHELL_VERSION whenever the precached app shell changes; the old
 // precache/runtime caches are then discarded and rebuilt on activate.
-const SHELL_VERSION = "v4";
+const SHELL_VERSION = "v6";
 const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
 const RUNTIME = `confessions-runtime-${SHELL_VERSION}`;
 // Bulk "download for offline" content lives here (written by the page via the
@@ -16,6 +16,9 @@ const PRECACHE_URLS = [
   "/",
   "/confessions",
   "/scriptures",
+  // The header "Bible" link resumes via /bible, so the shell must open offline.
+  "/bible",
+  "/bible/bookmarks",
   "/bible/gen/1",
   "/offline.html",
   "/styles/theme.css",

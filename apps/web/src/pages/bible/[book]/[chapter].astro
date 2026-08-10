@@ -138,6 +138,13 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
 }
 
 const bookCatalogJson = JSON.stringify(books);
+// Previous/Next already resolve across book boundaries, so handing these to the
+// recents list is what lets a run of chapters collapse to the last one reached.
+const adjacentChaptersJson = JSON.stringify(
+  [previousTarget, nextTarget]
+    .filter((target): target is { bookCode: string; chapter: number } => target !== null)
+    .map((target) => ({ book: target.bookCode, chapter: target.chapter }))
+);
 const chapterAudioUrl =
   selectedBookCode && selectedChapter > 0
     ? getChapterAudioUrl(selectedBookCode, selectedChapter)
@@ -146,6 +153,20 @@ const chapterAudioUrl =
 
 <Main title="Bible Reader">
   <h1>{provider}</h1>
+
+  <a class="resume-bar" data-resume-bar href="/bible" hidden>
+    <span class="resume-bar-text">
+      <span class="resume-bar-label">Continue reading</span>
+      <span class="resume-bar-ref" data-resume-bar-ref></span>
+    </span>
+    <span class="resume-bar-go" aria-hidden="true">→</span>
+  </a>
+
+  <p class="resume-note" data-resume-note hidden role="status">
+    <span class="resume-bar-label">Your place is saved</span>
+    <span class="resume-bar-ref" data-resume-note-ref></span>
+  </p>
+
   <section class="reader-tools card-panel">
     <div class="controls">
       <div class="scope-pills" role="group" aria-label="Book scope">
@@ -235,13 +256,27 @@ const chapterAudioUrl =
   <section class="card-panel section-spacer">
     <header class="chapter-header">
       <h2>{selectedBookName} {selectedChapter}</h2>
-      <div class="chapter-nav">
-        {previousChapterHref ? (
-          <a href={previousChapterHref} data-reader-nav>Previous</a>
-        ) : (
-          <span class="chapter-nav-disabled">Previous</span>
-        )}
-        {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
+      <div class="chapter-header-actions">
+        <button
+          type="button"
+          class="chapter-bookmark"
+          data-chapter-bookmark
+          aria-pressed="false"
+          aria-label={`Bookmark ${selectedBookName} ${selectedChapter}`}
+          title={`Bookmark ${selectedBookName} ${selectedChapter}`}
+        >
+          <svg class="chapter-bookmark-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6.5 3h11a1 1 0 0 1 1 1v16.1a.85.85 0 0 1-1.3.72L12 17.55l-5.2 3.27A.85.85 0 0 1 5.5 20.1V4a1 1 0 0 1 1-1z" />
+          </svg>
+        </button>
+        <div class="chapter-nav">
+          {previousChapterHref ? (
+            <a href={previousChapterHref} data-reader-nav>Previous</a>
+          ) : (
+            <span class="chapter-nav-disabled">Previous</span>
+          )}
+          {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
+        </div>
       </div>
     </header>
     {chapterAudioUrl ? (
@@ -371,6 +406,14 @@ const chapterAudioUrl =
         <button type="button" class="verse-actionbar-button" data-actionbar-range aria-pressed="false">
           Range
         </button>
+        <button
+          type="button"
+          class="verse-actionbar-button"
+          data-actionbar-bookmark
+          aria-pressed="false"
+        >
+          Save
+        </button>
         <button type="button" class="verse-actionbar-button" data-actionbar-copy>Copy</button>
         <button type="button" class="verse-actionbar-button" data-actionbar-share hidden>Share</button>
         <button
@@ -385,10 +428,28 @@ const chapterAudioUrl =
     </div>
   </div>
 
-  <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
+  <div
+    id="book-catalog-data"
+    data-book-catalog={bookCatalogJson}
+    data-adjacent-chapters={adjacentChaptersJson}
+    data-book-code={selectedBookCode}
+    data-book-name={selectedBookName}
+    data-chapter-number={String(selectedChapter)}
+    hidden
+  ></div>
 
   <script src="/sermon-player.js" is:inline defer></script>
   <script>
+    import {
+      findRecentChapter,
+      isSameLocation,
+      listBookmarks,
+      markHref,
+      readPosition,
+      toggleBookmark,
+      writePosition,
+    } from "../../../lib/bible/readingMarks";
+
     (() => {
       const catalogElement = document.getElementById("book-catalog-data");
       let bookCatalog = [];
@@ -397,6 +458,16 @@ const chapterAudioUrl =
       } catch {
         bookCatalog = [];
       }
+      let adjacentChapters = [];
+      try {
+        adjacentChapters = JSON.parse(catalogElement?.dataset.adjacentChapters || "[]");
+      } catch {
+        adjacentChapters = [];
+      }
+      const currentBookCode = String(catalogElement?.dataset.bookCode || "");
+      const currentBookName = String(catalogElement?.dataset.bookName || "");
+      const currentChapterNumber =
+        Number.parseInt(String(catalogElement?.dataset.chapterNumber || "1"), 10) || 1;
       const chapterForm = document.querySelector("[data-chapter-form]");
       const bookSelect = document.querySelector("[data-book-select]");
       const chapterSelect = document.querySelector("[data-chapter-select]");
@@ -412,6 +483,11 @@ const chapterAudioUrl =
       const searchEmpty = document.querySelector("[data-search-empty]");
       const clearSearchButton = document.querySelector("[data-clear-search]");
       const clearResultsButton = document.querySelector("[data-clear-results]");
+      const resumeBar = document.querySelector("[data-resume-bar]");
+      const resumeBarRef = document.querySelector("[data-resume-bar-ref]");
+      const resumeNote = document.querySelector("[data-resume-note]");
+      const resumeNoteRef = document.querySelector("[data-resume-note-ref]");
+      const chapterBookmarkButton = document.querySelector("[data-chapter-bookmark]");
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
       const includeLinkStorageKey = "bible-copy-include-link";
       let bibleSearchIndexPromise = null;
@@ -663,6 +739,7 @@ const chapterAudioUrl =
       const copyButton = document.querySelector("[data-actionbar-copy]");
       const shareButton = document.querySelector("[data-actionbar-share]");
       const clearButton = document.querySelector("[data-actionbar-clear]");
+      const bookmarkButton = document.querySelector("[data-actionbar-bookmark]");
 
       // Including the verse link is a sticky preference rather than a per-copy
       // choice: people are consistent about wanting it (texting) or not (notes).
@@ -745,6 +822,123 @@ const chapterAudioUrl =
         return startButton ? getVerseShareUrl(startButton) : window.location.href;
       };
 
+      // --- Bookmarks ---
+      const formatReference = (verseNumber) =>
+        verseNumber > 0
+          ? `${currentBookName} ${currentChapterNumber}:${verseNumber}`
+          : `${currentBookName} ${currentChapterNumber}`;
+
+      const buildMark = (verseNumber, label) => ({
+        book: currentBookCode,
+        chapter: currentChapterNumber,
+        verse: verseNumber > 0 ? verseNumber : 0,
+        label: label || formatReference(verseNumber),
+      });
+
+      const getChapterMark = () => buildMark(0, "");
+
+      // A range selection bookmarks its opening verse, but keeps the range in the
+      // label so the list reads the way the reader selected it.
+      const getSelectionMark = () => {
+        const bounds = getSelectionBounds();
+        if (!bounds) {
+          return null;
+        }
+        return buildMark(bounds.start, buildSelectionReference(bounds.start, bounds.end));
+      };
+
+      let bookmarks = listBookmarks();
+
+      const isBookmarked = (mark) =>
+        Boolean(mark) && bookmarks.some((entry) => isSameLocation(entry, mark));
+
+      // The bar answers "you were away — here is where you stopped", so it only
+      // belongs on the first reader page of a browsing session. Once this session
+      // has recorded a position the reader is mid-read, and pointing back at the
+      // chapter they just paged away from would be noise rather than help.
+      const sessionReadingKey = "bible-session-reading";
+
+      const hasReadThisSession = () => {
+        try {
+          return window.sessionStorage.getItem(sessionReadingKey) === "1";
+        } catch {
+          return false;
+        }
+      };
+
+      const markSessionReading = () => {
+        try {
+          window.sessionStorage.setItem(sessionReadingKey, "1");
+        } catch {
+          // ignore
+        }
+      };
+
+      const startedSessionFresh = !hasReadThisSession();
+
+      // Snapshotted before this page records anything, so the cue keeps
+      // describing where the reader *was* instead of flipping as they read.
+      const positionAtArrival = readPosition();
+
+      // Two forms, because resuming lands you *on* your saved chapter: a link
+      // when the saved place is elsewhere, and a plain confirmation when you are
+      // already standing on it. Without the second form the cue almost never
+      // appears, since every entry point resumes.
+      const renderResumeBar = () => {
+        const position = positionAtArrival || readPosition();
+        const show = startedSessionFresh && Boolean(position);
+        const here =
+          show &&
+          position.book === currentBookCode &&
+          position.chapter === currentChapterNumber;
+        const elsewhere = show && !here;
+
+        if (resumeBar instanceof HTMLAnchorElement) {
+          resumeBar.hidden = !elsewhere;
+          if (elsewhere) {
+            resumeBar.href = markHref(position, "resume");
+          }
+        }
+        if (resumeBarRef instanceof HTMLElement && elsewhere) {
+          resumeBarRef.textContent = position.label;
+        }
+
+        if (resumeNote instanceof HTMLElement) {
+          resumeNote.hidden = !here;
+        }
+        if (resumeNoteRef instanceof HTMLElement && here) {
+          resumeNoteRef.textContent = position.label;
+        }
+      };
+
+      const renderChapterBookmarkState = () => {
+        if (!(chapterBookmarkButton instanceof HTMLButtonElement)) {
+          return;
+        }
+        const saved = isBookmarked(getChapterMark());
+        const reference = formatReference(0);
+        chapterBookmarkButton.setAttribute("aria-pressed", saved ? "true" : "false");
+        chapterBookmarkButton.setAttribute(
+          "aria-label",
+          saved ? `Remove bookmark ${reference}` : `Bookmark ${reference}`
+        );
+        chapterBookmarkButton.title = saved ? `Bookmarked — ${reference}` : `Bookmark ${reference}`;
+      };
+
+      const renderSelectionBookmarkState = () => {
+        if (!(bookmarkButton instanceof HTMLButtonElement)) {
+          return;
+        }
+        const saved = isBookmarked(getSelectionMark());
+        bookmarkButton.setAttribute("aria-pressed", saved ? "true" : "false");
+        bookmarkButton.textContent = saved ? "Saved" : "Save";
+      };
+
+      const renderMarks = () => {
+        renderChapterBookmarkState();
+        renderSelectionBookmarkState();
+      };
+
       const positionActionBar = () => {
         if (!(actionBar instanceof HTMLElement) || actionBar.hidden) {
           return;
@@ -824,6 +1018,7 @@ const chapterAudioUrl =
         if (linkButton instanceof HTMLButtonElement) {
           linkButton.setAttribute("aria-checked", includeLink ? "true" : "false");
         }
+        renderSelectionBookmarkState();
 
         positionActionBar();
       };
@@ -1304,6 +1499,128 @@ const chapterAudioUrl =
         });
       }
 
+      if (bookmarkButton instanceof HTMLButtonElement) {
+        bookmarkButton.addEventListener("click", () => {
+          const mark = getSelectionMark();
+          if (!mark) {
+            return;
+          }
+          bookmarks = toggleBookmark(mark).bookmarks;
+          renderMarks();
+        });
+      }
+
+      if (chapterBookmarkButton instanceof HTMLButtonElement) {
+        chapterBookmarkButton.addEventListener("click", () => {
+          bookmarks = toggleBookmark(getChapterMark()).bookmarks;
+          renderMarks();
+        });
+      }
+
+      renderMarks();
+      renderResumeBar();
+
+      // --- Reading position ---
+      // A chapter opened deliberately — Previous/Next, the book and chapter
+      // pickers, a typed URL, a resumed position — is where the reader is, and
+      // counts the moment it opens. Reading Matthew 1 to 3 and closing the tab
+      // therefore leaves the position on Matthew 3, even if each chapter was
+      // only on screen for a moment.
+      //
+      // Arrivals that point *into* a chapter are different: a proof-text
+      // reference, a shared verse link or a search hit is somewhere the reader
+      // was sent rather than somewhere they chose, so those only count once
+      // they have actually been scrolled.
+      const positionParams = new URLSearchParams(window.location.search);
+      const wasSentHere =
+        positionParams.has("ref") ||
+        positionParams.has("q") ||
+        /^#verse-\d+$/.test(window.location.hash);
+      const trackingStartedAt = Date.now();
+      let trackingArmed = !wasSentHere;
+      let lastWrittenVerse = 0;
+      let positionFrame = 0;
+
+      // Just past the arrival settle (below), so a resumed chapter records the
+      // verse it landed on rather than the top of the page. The re-render is for
+      // a first-ever visit, where there was no position to describe on load.
+      window.setTimeout(() => {
+        recordPosition();
+        renderResumeBar();
+      }, 400);
+
+      const getTopmostVisibleVerse = () => {
+        const cutoff = getHeaderOffset() + 12;
+        let candidate = 0;
+        for (const item of Array.from(document.querySelectorAll(".verse-item"))) {
+          if (!(item instanceof HTMLElement)) {
+            continue;
+          }
+          const rect = item.getBoundingClientRect();
+          if (rect.bottom <= cutoff) {
+            continue;
+          }
+          if (rect.top >= window.innerHeight) {
+            break;
+          }
+          candidate = Number.parseInt(String(item.id || "").replace("verse-", ""), 10);
+          break;
+        }
+        return Number.isFinite(candidate) && candidate > 0 ? candidate : 0;
+      };
+
+      function recordPosition() {
+        if (!trackingArmed || !currentBookCode) {
+          return;
+        }
+        const verseNumber = getTopmostVisibleVerse();
+        if (verseNumber === lastWrittenVerse) {
+          return;
+        }
+        // Scrolled past the last verse (bottom nav, footer): keep the verse we
+        // already have rather than demoting the position to the chapter top.
+        if (verseNumber === 0 && lastWrittenVerse > 0) {
+          return;
+        }
+        lastWrittenVerse = verseNumber;
+        markSessionReading();
+        writePosition(
+          {
+            book: currentBookCode,
+            chapter: currentChapterNumber,
+            verse: verseNumber,
+            label: formatReference(verseNumber),
+          },
+          adjacentChapters
+        );
+      }
+
+      window.addEventListener(
+        "scroll",
+        () => {
+          // The reader scrolls itself on arrival (verse targets, chapter header);
+          // ignore that window so it cannot masquerade as the reader's own scroll.
+          if (Date.now() - trackingStartedAt > 400) {
+            trackingArmed = true;
+          }
+          if (positionFrame) {
+            return;
+          }
+          positionFrame = window.requestAnimationFrame(() => {
+            positionFrame = 0;
+            recordPosition();
+          });
+        },
+        { passive: true }
+      );
+
+      window.addEventListener("pagehide", recordPosition);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          recordPosition();
+        }
+      });
+
       window.addEventListener("scroll", positionActionBar, { passive: true });
       window.addEventListener("resize", positionActionBar);
 
@@ -1450,6 +1767,31 @@ const chapterAudioUrl =
         settleChapterHeaderIntoView();
       }
 
+      // Resuming: scroll to the stored verse without the target highlight, which
+      // belongs to links someone followed here, and drop ?resume=1 so the URL
+      // stays shareable.
+      if (verseTarget.source === "none") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("resume") === "1") {
+          // Looked up per chapter rather than taking the newest position: any of
+          // the three "continue reading" rows can be opened, and each restores
+          // the verse it was left on.
+          const position = findRecentChapter(currentBookCode, currentChapterNumber);
+          if (position && position.verse > 1) {
+            lastWrittenVerse = position.verse;
+            settleVerseIntoView(position.verse);
+          }
+
+          params.delete("resume");
+          const remaining = params.toString();
+          window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}${remaining ? `?${remaining}` : ""}${window.location.hash}`
+          );
+        }
+      }
+
       runBibleSearchFromUrl();
     })();
   </script>
@@ -1533,6 +1875,76 @@ const chapterAudioUrl =
     min-width: 16rem;
   }
 
+  .resume-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--surface-border);
+    border-left: 4px solid var(--color-link);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .resume-bar[hidden] {
+    display: none;
+  }
+
+  .resume-bar:hover,
+  .resume-bar:focus-visible {
+    border-color: var(--color-link);
+    border-left-color: var(--color-link);
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .resume-bar-text {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .resume-bar-label {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .resume-bar-ref {
+    font-weight: 700;
+  }
+
+  .resume-bar-go {
+    margin-left: auto;
+    color: var(--color-link);
+    font-weight: 800;
+  }
+
+  /* Status, not an action — dashed and unlinked so it never reads as a button. */
+  .resume-note {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px dashed var(--surface-border-strong);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    color: var(--color-muted);
+  }
+
+  .resume-note[hidden] {
+    display: none;
+  }
+
   .chapter-header {
     display: flex;
     justify-content: space-between;
@@ -1543,6 +1955,58 @@ const chapterAudioUrl =
 
   .chapter-header h2 {
     margin: 0;
+  }
+
+  .chapter-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  /* Icon-only: the chapter heading already names the chapter, so a text label
+     would just repeat it beside Previous/Next. */
+  .chapter-bookmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-muted);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .chapter-bookmark:hover,
+  .chapter-bookmark:focus-visible {
+    border-color: var(--color-link);
+    background: var(--surface-bg);
+    color: var(--color-link);
+    outline: none;
+  }
+
+  .chapter-bookmark[aria-pressed="true"] {
+    border-color: var(--color-link);
+    background: color-mix(in srgb, var(--color-link) 14%, var(--surface-bg));
+    color: var(--color-link);
+  }
+
+  .chapter-bookmark-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linejoin: round;
+  }
+
+  /* Filled ribbon reads as "kept" at a glance; the outline reads as "available". */
+  .chapter-bookmark[aria-pressed="true"] .chapter-bookmark-icon {
+    fill: currentColor;
   }
 
   .chapter-audio {
@@ -1951,7 +2415,11 @@ const chapterAudioUrl =
     gap: 0.65rem;
   }
 
-  .search-result-card {
+  /* Result cards are built in JavaScript, so they never carry Astro's scoping
+     attribute — plain `.search-result-card` rules compile to
+     `.search-result-card[data-astro-cid-…]` and match nothing, leaving the
+     results as bare text. Scope through the server-rendered list instead. */
+  .search-results :global(.search-result-card) {
     display: block;
     border: 1px solid var(--surface-border);
     border-radius: 8px;
@@ -1961,25 +2429,21 @@ const chapterAudioUrl =
     text-decoration: none;
   }
 
-  .search-result-card:hover,
-  .search-result-card:focus-visible {
+  .search-results :global(.search-result-card:hover),
+  .search-results :global(.search-result-card:focus-visible) {
     border-color: var(--surface-border-strong);
     background: var(--surface-bg-hover);
     text-decoration: none;
   }
 
-  .search-result-reference {
+  .search-results :global(.search-result-reference) {
     display: block;
     font-weight: 700;
   }
 
-  .search-result-text {
+  .search-results :global(.search-result-text) {
     display: block;
     margin: 0.35rem 0 0;
-  }
-
-  :global(.search-result-reference) {
-    margin-right: 0.4rem;
   }
 
   :global(mark.search-hit) {
@@ -2028,7 +2492,10 @@ const chapterAudioUrl =
   .verse-actionbar-buttons {
     display: inline-flex;
     gap: 0.4rem;
-    flex: 0 0 auto;
+    /* Wraps rather than overflowing: with Save added, six controls no longer fit
+       on one row at narrow widths. */
+    flex-wrap: wrap;
+    flex: 1 1 auto;
   }
 
   .verse-actionbar-button {
