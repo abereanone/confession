@@ -239,6 +239,12 @@ a.confession-link:focus-visible {
   --confession-accent-text: #ffe8ab;
 }
 
+[data-confession="lbcf-1644"] {
+  --confession-accent-border: rgba(240, 152, 74, 0.56);
+  --confession-accent-bg: rgba(240, 152, 74, 0.22);
+  --confession-accent-text: #ffdcb3;
+}
+
 [data-confession="savoy-declaration"] {
   --confession-accent-border: rgba(230, 122, 100, 0.58);
   --confession-accent-bg: rgba(230, 122, 100, 0.22);
@@ -273,6 +279,12 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(178, 132, 26, 0.44);
   --confession-accent-bg: rgba(212, 167, 57, 0.18);
   --confession-accent-text: #63450a;
+}
+
+[data-theme="light"] [data-confession="lbcf-1644"] {
+  --confession-accent-border: rgba(186, 106, 22, 0.44);
+  --confession-accent-bg: rgba(219, 131, 45, 0.16);
+  --confession-accent-text: #6b3908;
 }
 
 [data-theme="light"] [data-confession="savoy-declaration"] {

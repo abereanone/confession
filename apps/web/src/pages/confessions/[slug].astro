@@ -6,6 +6,7 @@ import {
   findConfession,
   getConfessionDisplayUnits,
   listConfessions,
+  usesParagraphNumbers,
 } from "../../lib/confessions";
 import { autoLinkBibleRefs } from "../../lib/bible/autoLinkBibleRefs";
 import { normalizeReference } from "../../lib/bible/normalizeRef";
@@ -28,7 +29,7 @@ const unitId = (number: number) => `unit-${number}`;
 const paragraphId = (unitNumber: number, paragraphNumber: number) =>
   `para-${unitNumber}-${paragraphNumber}`;
 const displayUnits = getConfessionDisplayUnits(confession);
-const showParagraphMeta = confession.slug !== "belgic-confession";
+const showParagraphMeta = usesParagraphNumbers(confession.slug);
 const proofTagPattern = /\{\{proofs:\s*([^}]+?)\s*\}\}/gi;
 
 function hasProofTags(value: string): boolean {

@@ -8,6 +8,7 @@ import {
   type VerseDataPart,
 } from "../../lib/bible/bibleData";
 import { isSingleChapterBook, parseRangesForChapter } from "../../lib/scriptureRanges";
+import { usesParagraphNumbers } from "../../lib/confessions";
 
 export function getStaticPaths() {
   return listScriptures().map((entry) => ({
@@ -169,9 +170,9 @@ const versePreview = await getVersePreview();
             <a
               class="confession-link location-link"
               href={`/confessions/${location.confessionSlug}?ref=${encodeURIComponent(entry.reference)}#${
-                location.confessionSlug === "belgic-confession"
-                  ? `unit-${location.unitNumber}`
-                  : `para-${location.unitNumber}-${location.paragraphNumber}`
+                usesParagraphNumbers(location.confessionSlug)
+                  ? `para-${location.unitNumber}-${location.paragraphNumber}`
+                  : `unit-${location.unitNumber}`
               }`}
             >
               <span class="location-title">
@@ -179,11 +180,11 @@ const versePreview = await getVersePreview();
                 <span>{location.confessionTitle}</span>
               </span>
               <span class="meta location-meta">
-                {location.unitLabel} {location.unitNumber}
-                {location.confessionSlug === "belgic-confession"
-                  ? ""
-                  : `, paragraph ${location.paragraphNumber}`}
-                : {location.unitTitle}
+                {`${location.unitLabel} ${location.unitNumber}${
+                  usesParagraphNumbers(location.confessionSlug)
+                    ? `, paragraph ${location.paragraphNumber}`
+                    : ""
+                }: ${location.unitTitle}`}
               </span>
             </a>
           </li>

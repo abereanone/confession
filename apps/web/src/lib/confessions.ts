@@ -1,6 +1,7 @@
 import manifestJson from "../data/confessions/manifest.json";
 import belgicConfessionJson from "../data/confessions/belgic-confession.json";
 import canonsOfDordtJson from "../data/confessions/canons-of-dordt.json";
+import lbcf1644Json from "../data/confessions/lbcf-1644.json";
 import lbcf1689Json from "../data/confessions/lbcf-1689.json";
 import savoyDeclarationJson from "../data/confessions/savoy-declaration.json";
 import secondHelveticConfessionJson from "../data/confessions/second-helvetic-confession.json";
@@ -35,6 +36,7 @@ const confessionsBySlug = new Map<string, Confession>(
   [
     westminsterConfessionJson,
     lbcf1689Json,
+    lbcf1644Json,
     savoyDeclarationJson,
     belgicConfessionJson,
     secondHelveticConfessionJson,
@@ -59,6 +61,14 @@ export function findConfession(slug: string): Confession | null {
 
 export function getUpdatedAt(): string {
   return manifest.updatedAt;
+}
+
+// Confessions stored as one paragraph per unit, where a "paragraph N" label
+// and a per-paragraph anchor would be noise.
+const singleParagraphSlugs = new Set(["belgic-confession", "lbcf-1644"]);
+
+export function usesParagraphNumbers(slug: string): boolean {
+  return !singleParagraphSlugs.has(slug);
 }
 
 export function getConfessionDisplayUnits(confession: Confession): Unit[] {
@@ -144,6 +154,19 @@ export function getConfessionAbout(confession: Confession): ConfessionAbout {
         "And verily there is one spring and cause of the decay of Religion in our day, which we cannot but touch upon, and earnestly urge a redresse of; and that is the neglect of the worship of God in Families, by those to whom the charge and conduct of them is committed.",
         "May not the grosse ignorance, and instability of many; with the prophaneness of others, be justly charged upon their Parents and Masters; who have not trained them up in the way wherein they ought to walk when they were young? but have neglected those frequent and solemn commands which the Lord hath laid upon them so to catechize, and instruct them, that their tender years might be seasoned with the knowledge of the truth of God as revealed in the Scriptures; and also by their own omission of Prayer, and other duties of Religion in their families, together with the ill example of their loose conversation, have inured them first to a neglect, and then contempt of all Piety and Religion? we know this will not excuse the blindness, or wickedness of any; but certainly it will fall heavy upon those that have thus been the occasion thereof; they indeed dye in their sins; but will not their blood be required of those under whose care they were, who yet permitted them to go on without warning, yea led them into the paths of destruction? and will not the diligence of Christians with respect to the discharge of these duties, in ages past, rise up in judgment against, and condemn many of those who would be esteemed such now?",
         "We shall conclude with our earnest prayer, that the God of all grace, will pour out those measures of his holy Spirit upon us, that the profession of truth may be accompanyed with the sound belief, and diligent practise of it by us; that his name may in all things be glorified, through Jesus Christ our Lord, Amen.",
+      ],
+    };
+  }
+
+  if (confession.slug === "lbcf-1644") {
+    return {
+      title: "About the First London Confession",
+      paragraphs: [
+        "A Confession of Faith of the seven Congregations or Churches of Christ in London, which are commonly (though unjustly) called Anabaptists; published for the vindication of the truth, and information of the ignorant.",
+        "The First London Confession was issued in 1644 by seven Particular Baptist congregations in London, at a time when their churches were widely suspected of the errors of the continental Anabaptists. It is the earliest Calvinistic Baptist confession, and it predates both the Westminster Confession and the Second London Confession of 1689, which later became the fuller Baptist standard.",
+        "Unlike the 1689 confession, which follows the chapter order of Westminster and Savoy, the First London Confession is arranged as 52 short articles, each supported directly by scripture. Its distinctive concerns are the sole mediatorship of Christ, the church as a gathered company of visible saints, baptism by immersion upon profession of faith, and the liberty of conscience under the civil magistrate.",
+        "The text presented here is the Comprehensive Edition (2022) from london1644.info, which is based on the second edition of 1646 and integrates readings from the four London editions of 1644, 1646, 1651, and 1652. The numbered paragraphs within each article follow that edition's own line numbering.",
+        "Scripture proofs are shown as cited by that edition. A small number have been mapped to the versification of the Berean Standard Bible used throughout this site.",
       ],
     };
   }

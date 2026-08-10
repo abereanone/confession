@@ -3,6 +3,7 @@ import Main from "../../../../layouts/Main.astro";
 import { getBibleChapter, listBibleBooks } from "../../../../lib/bible/bibleData";
 import { buildChapterVerseScriptureMap } from "../../../../lib/scriptureRanges";
 import { listScriptures, type ScriptureLocation } from "../../../../lib/scriptures";
+import { usesParagraphNumbers } from "../../../../lib/confessions";
 
 type VerseLocation = ScriptureLocation & {
   referenceCount: number;
@@ -165,9 +166,9 @@ const chapterHref = `/bible/${selectedBookCode}/${selectedChapter}`;
                     href={`/confessions/${location.confessionSlug}?ref=${encodeURIComponent(
                       `${selectedBookName} ${selectedChapter}:${section.verse}`
                     )}#${
-                      location.confessionSlug === "belgic-confession"
-                        ? `unit-${location.unitNumber}`
-                        : `para-${location.unitNumber}-${location.paragraphNumber}`
+                      usesParagraphNumbers(location.confessionSlug)
+                        ? `para-${location.unitNumber}-${location.paragraphNumber}`
+                        : `unit-${location.unitNumber}`
                     }`}
                   >
                     <span class="location-title">
@@ -175,11 +176,11 @@ const chapterHref = `/bible/${selectedBookCode}/${selectedChapter}`;
                       <span>{location.confessionTitle}</span>
                     </span>
                     <span class="meta location-meta">
-                      {location.unitLabel} {location.unitNumber}
-                      {location.confessionSlug === "belgic-confession"
-                        ? ""
-                        : `, paragraph ${location.paragraphNumber}`}
-                      : {location.unitTitle}
+                      {`${location.unitLabel} ${location.unitNumber}${
+                        usesParagraphNumbers(location.confessionSlug)
+                          ? `, paragraph ${location.paragraphNumber}`
+                          : ""
+                      }: ${location.unitTitle}`}
                     </span>
                   </a>
                 </li>
