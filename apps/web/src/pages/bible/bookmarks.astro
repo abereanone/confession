@@ -1,5 +1,13 @@
 ---
 import Main from "../../layouts/Main.astro";
+import { listBibleBooks } from "../../lib/bible/bibleData";
+
+// Just code/name/chapterCount for 66 books — enough to derive the next chapter
+// for any row, including ones saved before this feature existed.
+const books = await listBibleBooks();
+const bookCatalogJson = JSON.stringify(
+  books.map((book) => ({ code: book.code, name: book.name, chapters: book.chapterCount }))
+);
 ---
 
 <Main title="Bookmarks">
@@ -9,6 +17,8 @@ import Main from "../../layouts/Main.astro";
     <h2>Continue reading</h2>
     <ul class="continue-list" data-continue-list></ul>
   </section>
+
+  <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
 
   <section class="card-panel section-spacer">
     <ul class="mark-list" data-mark-list hidden></ul>
@@ -31,6 +41,38 @@ import Main from "../../layouts/Main.astro";
     const continueList = document.querySelector("[data-continue-list]");
     const markList = document.querySelector("[data-mark-list]");
     const markEmpty = document.querySelector("[data-mark-empty]");
+
+    let books = [];
+    try {
+      books = JSON.parse(document.getElementById("book-catalog-data")?.dataset.bookCatalog || "[]");
+    } catch {
+      books = [];
+    }
+
+    /**
+     * The chapter after this one, derived rather than stored so every row gets a
+     * link — including rows saved before this existed. Rolls over at the end of
+     * a book (Genesis 50 -> Exodus 1) and at the end of the canon
+     * (Revelation 22 -> Genesis 1).
+     */
+    const nextChapterOf = (book, chapter) => {
+      const index = books.findIndex((entry) => entry.code === book);
+      if (index < 0) {
+        return null;
+      }
+
+      const current = books[index];
+      if (chapter < current.chapters) {
+        return {
+          book: current.code,
+          chapter: chapter + 1,
+          label: `${current.name} ${chapter + 1}`,
+        };
+      }
+
+      const following = books[(index + 1) % books.length];
+      return following ? { book: following.code, chapter: 1, label: `${following.name} 1` } : null;
+    };
 
     const formatSavedAt = (value) => {
       if (!value) {
@@ -62,18 +104,33 @@ import Main from "../../layouts/Main.astro";
         const link = document.createElement("a");
         link.className = "continue-item-link";
         link.href = markHref(recent, "resume");
-
-        const ref = document.createElement("span");
-        ref.className = "continue-item-ref";
-        ref.textContent = recent.label;
-
-        const go = document.createElement("span");
-        go.className = "continue-item-go";
-        go.setAttribute("aria-hidden", "true");
-        go.textContent = "→";
-
-        link.append(ref, go);
+        link.textContent = recent.label;
         item.append(link);
+
+        // Returning to where you stopped is one intent; carrying on into the
+        // next chapter is the more common one, so both are offered in the row.
+        const onwardTarget = nextChapterOf(recent.book, recent.chapter);
+        if (onwardTarget) {
+          const onward = document.createElement("a");
+          onward.className = "continue-item-next";
+          onward.href = `/bible/${encodeURIComponent(onwardTarget.book)}/${onwardTarget.chapter}`;
+
+          const eyebrow = document.createElement("span");
+          eyebrow.className = "continue-item-next-label";
+          eyebrow.textContent = "Next";
+
+          const name = document.createElement("span");
+          name.className = "continue-item-next-ref";
+          name.textContent = onwardTarget.label;
+
+          const go = document.createElement("span");
+          go.setAttribute("aria-hidden", "true");
+          go.textContent = "→";
+
+          onward.append(eyebrow, name, go);
+          item.append(onward);
+        }
+
         continueList.append(item);
       }
 
@@ -165,34 +222,88 @@ import Main from "../../layouts/Main.astro";
 
   /* Built in JavaScript, so the rows carry no scoping attribute — see the
      bookmark list below. */
-  .continue-list :global(.continue-item-link) {
+  .continue-list :global(.continue-item) {
     display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.85rem;
+    align-items: stretch;
     border: 1px solid var(--surface-border);
     border-left: 4px solid var(--color-link);
     border-radius: 10px;
     background: var(--surface-bg-muted);
+    overflow: hidden;
+  }
+
+  .continue-list :global(.continue-item:hover),
+  .continue-list :global(.continue-item:focus-within) {
+    border-color: var(--color-link);
+  }
+
+  .continue-list :global(.continue-item-link) {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.65rem 0.85rem;
     color: var(--color-text);
+    font-weight: 700;
     text-decoration: none;
   }
 
   .continue-list :global(.continue-item-link:hover),
   .continue-list :global(.continue-item-link:focus-visible) {
-    border-color: var(--color-link);
     background: var(--surface-bg-hover);
     text-decoration: none;
   }
 
-  .continue-list :global(.continue-item-ref) {
+  /* Fixed basis rather than content width: book names differ in length, so a
+     content-sized column put the divider in a different place on every row and
+     the rule zig-zagged down the list. */
+  .continue-list :global(.continue-item-next) {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 13.5rem;
+    min-width: 0;
+    padding: 0.65rem 0.85rem;
+    border-left: 1px solid var(--surface-border);
+    color: var(--color-link);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .continue-list :global(.continue-item-next:hover),
+  .continue-list :global(.continue-item-next:focus-visible) {
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .continue-list :global(.continue-item-next-label) {
+    color: var(--color-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Takes the slack so the arrow sits flush right in every row, and truncates
+     rather than widening the column for a long name like 1 Thessalonians 2. */
+  .continue-list :global(.continue-item-next-ref) {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-weight: 700;
   }
 
-  .continue-list :global(.continue-item-go) {
-    margin-left: auto;
-    color: var(--color-link);
-    font-weight: 800;
+  @media (max-width: 32rem) {
+    .continue-list :global(.continue-item-next-label) {
+      display: none;
+    }
+
+    /* Narrower, but still a fixed basis so the rows stay aligned. */
+    .continue-list :global(.continue-item-next) {
+      flex-basis: 9rem;
+      padding: 0.65rem 0.6rem;
+    }
   }
 
   .mark-list {

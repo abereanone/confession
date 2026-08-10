@@ -183,10 +183,33 @@
     updateInstallUi();
 
     // --- Download for offline ---
+    // `cache.add()` cannot be used here. The host 308-redirects `/bible/gen/1`
+    // to `/bible/gen/1/`; add() follows the redirect and cache.put() then
+    // rejects the redirected response outright, so every page failed to store —
+    // silently, because the failure was swallowed and still counted as saved.
+    // Re-wrapping the body as a plain 200 stores it under the non-slash URL the
+    // site's own links navigate to. Keep in sync with cachePage() in sw.js.
+    const cachePage = async (cache, url) => {
+      const response = await fetch(url, { credentials: "same-origin" });
+      if (!response.ok) {
+        throw new Error(`${url} responded ${response.status}`);
+      }
+      const body = await response.blob();
+      const headers = new Headers(response.headers);
+      // The blob is already decoded; carrying these over would describe it wrongly.
+      headers.delete("content-encoding");
+      headers.delete("content-length");
+      await cache.put(
+        new Request(url),
+        new Response(body, { status: 200, statusText: "OK", headers })
+      );
+    };
+
     const cacheUrls = async (urls, onProgress) => {
       const cache = await caches.open(OFFLINE_CACHE);
       const total = urls.length;
       let done = 0;
+      let failed = 0;
       let cursor = 0;
       const concurrency = Math.min(8, total) || 1;
 
@@ -195,9 +218,10 @@
           const url = urls[cursor];
           cursor += 1;
           try {
-            await cache.add(url);
+            await cachePage(cache, url);
           } catch {
-            // Skip pages that fail; one miss shouldn't abort the whole download.
+            // One miss shouldn't abort the download, but it must be reported.
+            failed += 1;
           }
           done += 1;
           onProgress(done, total);
@@ -205,6 +229,7 @@
       };
 
       await Promise.all(Array.from({ length: concurrency }, () => worker()));
+      return { total, failed, saved: total - failed };
     };
 
     // Fetch the manifest fresh each time the dialog opens so update checks are current.
@@ -307,16 +332,29 @@
           const manifest = await getManifest();
           const urls = Array.isArray(manifest[group]) ? manifest[group] : [];
 
-          await cacheUrls(urls, (current, total) => {
+          const result = await cacheUrls(urls, (current, total) => {
             const pct = total ? Math.round((current / total) * 100) : 100;
             if (bar) bar.style.width = `${pct}%`;
             if (status) status.textContent = `${current} / ${total} pages saved`;
           });
 
-          write(savedKey, "1");
-          write(versionKey, manifest.versions ? manifest.versions[group] || "" : "");
+          // Only claim the group is saved if something actually stored, and say
+          // so plainly when pages were lost — a download that silently kept
+          // nothing is exactly how this went unnoticed before.
+          if (result.saved > 0) {
+            write(savedKey, "1");
+            write(versionKey, manifest.versions ? manifest.versions[group] || "" : "");
+          }
           reflectState(false);
-          if (status) status.textContent = `Saved ${urls.length} pages for offline reading.`;
+          if (status) {
+            if (result.saved === 0) {
+              status.textContent = "Nothing could be saved — please retry.";
+            } else if (result.failed > 0) {
+              status.textContent = `Saved ${result.saved} of ${result.total} pages — ${result.failed} could not be stored.`;
+            } else {
+              status.textContent = `Saved ${result.saved} pages for offline reading.`;
+            }
+          }
         } catch {
           if (status) status.textContent = "Download failed — check your connection and retry.";
           reflectState(false);
