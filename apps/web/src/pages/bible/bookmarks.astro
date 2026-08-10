@@ -11,16 +11,19 @@ const bookCatalogJson = JSON.stringify(
 ---
 
 <Main title="Bookmarks">
-  <h1>Bookmarks</h1>
+  {/* The visible headings now label their own sections, but the page still
+      needs one top-level heading for assistive tech and search results. */}
+  <h1 class="sr-only">Bookmarks</h1>
 
   <section class="card-panel continue-panel" data-continue hidden>
-    <h2>Continue reading</h2>
+    <h2>Continue where you left off</h2>
     <ul class="continue-list" data-continue-list></ul>
   </section>
 
   <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
 
   <section class="card-panel section-spacer">
+    <h2 class="marks-heading">Bookmarks</h2>
     <ul class="mark-list" data-mark-list hidden></ul>
     <p class="meta" data-mark-empty>
       No bookmarks yet — use the ribbon beside a chapter heading in the reader.
@@ -204,11 +207,24 @@ const bookCatalogJson = JSON.stringify(
     margin-top: 1rem;
   }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .continue-panel[hidden] {
     display: none;
   }
 
-  .continue-panel h2 {
+  .continue-panel h2,
+  .marks-heading {
     margin-top: 0;
   }
 

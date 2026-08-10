@@ -116,7 +116,25 @@ const verseLookup = await getVerseLookup([...references]);
               data-bible-autolink
               data-paragraph-card
               data-proof-source={hasProofTags(paragraph) ? paragraph : undefined}
+              data-paragraph-ref={`${confession.shortCode} ${confession.unitLabel} ${unit.number}${
+                showParagraphMeta ? `, Paragraph ${index + 1}` : ""
+              }`}
             >
+              <button
+                type="button"
+                class="paragraph-share"
+                data-paragraph-share
+                aria-label={`Copy or share ${confession.unitLabel} ${unit.number}${
+                  showParagraphMeta ? `, Paragraph ${index + 1}` : ""
+                }`}
+                title="Copy or share this paragraph"
+              >
+                <svg class="paragraph-share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3v12" />
+                  <path d="m8 7 4-4 4 4" />
+                  <path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+                </svg>
+              </button>
               {showParagraphMeta ? (
                 <p class="paragraph-meta">{confession.unitLabel} {unit.number} - Paragraph {index + 1}</p>
               ) : null}
@@ -129,6 +147,41 @@ const verseLookup = await getVerseLookup([...references]);
         </p>
       </section>
     ))}
+
+    <div
+      class="para-actionbar"
+      data-para-actionbar
+      hidden
+      role="region"
+      aria-label="Paragraph actions"
+    >
+      <div class="para-actionbar-inner">
+        <button
+          type="button"
+          class="para-actionbar-switch"
+          data-para-refs
+          role="switch"
+          aria-checked="true"
+          aria-label="Include Scripture references when copying or sharing"
+          title="Include Scripture references when copying or sharing"
+        >
+          <span class="para-actionbar-switch-track" aria-hidden="true">
+            <span class="para-actionbar-switch-thumb"></span>
+          </span>
+          <span>Refs</span>
+        </button>
+        <button type="button" class="para-actionbar-button" data-para-copy>Copy</button>
+        <button type="button" class="para-actionbar-button" data-para-share hidden>Share</button>
+        <button
+          type="button"
+          class="para-actionbar-button para-actionbar-clear"
+          data-para-close
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
   </div>
 </Main>
 
@@ -293,6 +346,235 @@ const verseLookup = await getVerseLookup([...references]);
     }
     return raw.replace(/\{\{proofs:\s*([^}]+?)\s*\}\}/gi, "($1)");
   };
+
+  // --- Copy / share a paragraph ---
+  // Mirrors the Bible reader's verse action bar. The switch controls the inline
+  // Scripture references, which is the thing that differs between wanting the
+  // confession's prose and wanting its proof texts; the citation and a link to
+  // the paragraph are always included so a pasted quote can be traced back.
+  (() => {
+    const actionBar = document.querySelector("[data-para-actionbar]");
+    const refsButton = document.querySelector("[data-para-refs]");
+    const copyButton = document.querySelector("[data-para-copy]");
+    const shareButton = document.querySelector("[data-para-share]");
+    const closeButton = document.querySelector("[data-para-close]");
+    const refsStorageKey = "confession-copy-include-refs";
+
+    if (!(actionBar instanceof HTMLElement)) {
+      return;
+    }
+
+    const readIncludeRefs = () => {
+      try {
+        return window.localStorage.getItem(refsStorageKey) !== "0";
+      } catch {
+        return true;
+      }
+    };
+
+    const writeIncludeRefs = (value) => {
+      try {
+        window.localStorage.setItem(refsStorageKey, value ? "1" : "0");
+      } catch {
+        // preference is best-effort; the toggle still works this session
+      }
+    };
+
+    let includeRefs = readIncludeRefs();
+    let activeCard = null;
+    const feedbackTimers = new WeakMap();
+
+    const getHeaderOffset = () => {
+      const header = document.querySelector(".top");
+      return header instanceof HTMLElement ? Math.ceil(header.getBoundingClientRect().height) : 0;
+    };
+
+    const getParagraphText = (card) => {
+      const source = card.dataset.proofSource;
+      if (source) {
+        // `enabled` means reader mode, i.e. strip the references.
+        return renderParagraphFromProofTagsClient(source, !includeRefs);
+      }
+      // No proof tags: the rendered body is the whole paragraph either way.
+      const body = card.querySelector("p:last-child");
+      return (body?.textContent || "").trim();
+    };
+
+    const getShareUrl = (card) => {
+      const url = new URL(window.location.pathname, window.location.origin);
+      if (card.id) {
+        url.hash = card.id;
+      }
+      return url.toString();
+    };
+
+    const buildShareText = (card) =>
+      [String(card.dataset.paragraphRef || "").trim(), getParagraphText(card)]
+        .filter(Boolean)
+        .join("\n");
+
+    const positionActionBar = () => {
+      if (!(activeCard instanceof HTMLElement) || actionBar.hidden) {
+        return;
+      }
+
+      const margin = 8;
+      const gap = 8;
+      const headerOffset = getHeaderOffset();
+      const cardRect = activeCard.getBoundingClientRect();
+      const barWidth = actionBar.offsetWidth;
+      const barHeight = actionBar.offsetHeight;
+
+      let top = cardRect.top - gap - barHeight;
+      if (top < headerOffset + margin) {
+        top = Math.min(cardRect.top + gap, window.innerHeight - margin - barHeight);
+        top = Math.max(top, headerOffset + margin);
+      }
+
+      let left = cardRect.right - barWidth;
+      if (left + barWidth > window.innerWidth - margin) {
+        left = window.innerWidth - margin - barWidth;
+      }
+      if (left < margin) {
+        left = margin;
+      }
+
+      actionBar.style.top = `${Math.round(top)}px`;
+      actionBar.style.left = `${Math.round(left)}px`;
+    };
+
+    const render = () => {
+      for (const card of Array.from(document.querySelectorAll(".paragraph-card.is-sharing"))) {
+        card.classList.remove("is-sharing");
+      }
+
+      if (!(activeCard instanceof HTMLElement)) {
+        actionBar.hidden = true;
+        return;
+      }
+
+      activeCard.classList.add("is-sharing");
+      actionBar.hidden = false;
+      if (refsButton instanceof HTMLButtonElement) {
+        refsButton.setAttribute("aria-checked", includeRefs ? "true" : "false");
+        // A paragraph with no proof tags has nothing to toggle.
+        refsButton.hidden = !activeCard.dataset.proofSource;
+      }
+      positionActionBar();
+    };
+
+    const close = () => {
+      activeCard = null;
+      render();
+    };
+
+    const setFeedback = (trigger, label) => {
+      const previous = feedbackTimers.get(trigger);
+      if (previous) {
+        window.clearTimeout(previous);
+      }
+      if (!trigger.dataset.defaultLabel) {
+        trigger.dataset.defaultLabel = trigger.textContent || "";
+      }
+      trigger.textContent = label;
+      feedbackTimers.set(
+        trigger,
+        window.setTimeout(() => {
+          trigger.textContent = trigger.dataset.defaultLabel || "";
+          feedbackTimers.delete(trigger);
+        }, 1400)
+      );
+    };
+
+    const copyText = async (value) => {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      const textArea = document.createElement("textarea");
+      textArea.value = value;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        textArea.remove();
+      }
+    };
+
+    document.addEventListener("click", (event) => {
+      const trigger = event.target instanceof Element
+        ? event.target.closest("[data-paragraph-share]")
+        : null;
+      if (!(trigger instanceof HTMLElement)) {
+        return;
+      }
+      event.preventDefault();
+      const card = trigger.closest("[data-paragraph-card]");
+      if (!(card instanceof HTMLElement)) {
+        return;
+      }
+      activeCard = activeCard === card ? null : card;
+      render();
+    });
+
+    if (refsButton instanceof HTMLButtonElement) {
+      refsButton.addEventListener("click", () => {
+        includeRefs = !includeRefs;
+        writeIncludeRefs(includeRefs);
+        render();
+      });
+    }
+
+    if (copyButton instanceof HTMLButtonElement) {
+      copyButton.addEventListener("click", async () => {
+        if (!(activeCard instanceof HTMLElement)) {
+          return;
+        }
+        const value = [buildShareText(activeCard), getShareUrl(activeCard)].join("\n");
+        try {
+          await copyText(value);
+          setFeedback(copyButton, "Copied!");
+        } catch {
+          setFeedback(copyButton, "Failed");
+        }
+      });
+    }
+
+    if (shareButton instanceof HTMLButtonElement && navigator.share) {
+      shareButton.hidden = false;
+      shareButton.addEventListener("click", async () => {
+        if (!(activeCard instanceof HTMLElement)) {
+          return;
+        }
+        try {
+          await navigator.share({
+            title: String(activeCard.dataset.paragraphRef || "").trim() || "Confession paragraph",
+            text: buildShareText(activeCard),
+            url: getShareUrl(activeCard),
+          });
+        } catch {
+          // dismissed or unavailable; leave the selection alone
+        }
+      });
+    }
+
+    if (closeButton instanceof HTMLButtonElement) {
+      closeButton.addEventListener("click", close);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && activeCard) {
+        close();
+      }
+    });
+
+    window.addEventListener("scroll", positionActionBar, { passive: true });
+    window.addEventListener("resize", positionActionBar);
+  })();
 
   const applyReaderModeToTaggedParagraphs = (enabled) => {
     const taggedCards = Array.from(document.querySelectorAll("[data-proof-source]"));
@@ -532,7 +814,172 @@ const verseLookup = await getVerseLookup([...references]);
     font-size: 0.9rem;
   }
 
+  .paragraph-share {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-muted);
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.55;
+  }
+
+  .paragraph-card:hover .paragraph-share,
+  .paragraph-share:focus-visible,
+  .paragraph-card.is-sharing .paragraph-share {
+    opacity: 1;
+    border-color: var(--surface-border);
+    background: var(--surface-bg-muted);
+    color: var(--color-link);
+    outline: none;
+  }
+
+  .paragraph-share-icon {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .paragraph-card.is-sharing {
+    border-color: var(--color-link);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-link) 24%, transparent);
+  }
+
+  .para-actionbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1500;
+    width: max-content;
+    max-width: min(30rem, calc(100vw - 1rem));
+  }
+
+  .para-actionbar[hidden] {
+    display: none;
+  }
+
+  .para-actionbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    border: 1px solid var(--tooltip-border);
+    border-radius: 14px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow-tooltip);
+  }
+
+  .para-actionbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--tooltip-text) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tooltip-text) 7%, transparent);
+    color: var(--tooltip-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .para-actionbar-button:hover,
+  .para-actionbar-button:focus-visible {
+    border-color: color-mix(in srgb, var(--tooltip-text) 55%, transparent);
+    background: color-mix(in srgb, var(--tooltip-text) 16%, transparent);
+    outline: none;
+  }
+
+  .para-actionbar-clear {
+    min-width: 2.1rem;
+    padding: 0.4rem;
+  }
+
+  .para-actionbar-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--tooltip-text) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tooltip-text) 7%, transparent);
+    color: var(--tooltip-text);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .para-actionbar-switch[hidden] {
+    display: none;
+  }
+
+  .para-actionbar-switch:hover,
+  .para-actionbar-switch:focus-visible {
+    border-color: color-mix(in srgb, var(--tooltip-text) 55%, transparent);
+    background: color-mix(in srgb, var(--tooltip-text) 16%, transparent);
+    outline: none;
+  }
+
+  .para-actionbar-switch-track {
+    position: relative;
+    flex: 0 0 auto;
+    width: 1.75rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tooltip-text) 32%, transparent);
+    transition: background 0.15s ease-out;
+  }
+
+  .para-actionbar-switch-thumb {
+    position: absolute;
+    top: 0.125rem;
+    left: 0.125rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--tooltip-text);
+    transition: transform 0.15s ease-out;
+  }
+
+  .para-actionbar-switch[aria-checked="true"] {
+    border-color: var(--color-link);
+  }
+
+  .para-actionbar-switch[aria-checked="true"] .para-actionbar-switch-track {
+    background: var(--color-link);
+  }
+
+  .para-actionbar-switch[aria-checked="true"] .para-actionbar-switch-thumb {
+    transform: translateX(0.75rem);
+    background: var(--tooltip-bg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .para-actionbar-switch-track,
+    .para-actionbar-switch-thumb {
+      transition: none;
+    }
+  }
+
   .paragraph-card {
+    position: relative;
     border-color: var(--confession-accent-border, var(--card-border));
     background:
       color-mix(in srgb, var(--confession-accent-bg, transparent) 18%, transparent),

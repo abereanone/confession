@@ -1,12 +1,18 @@
 ---
 // Install ("Add to Mobile") + offline-download controls, shown in the header.
+//
+// The bulk download is hidden until offline reading is confirmed working end to
+// end: it presented itself as a finished feature while storing nothing, which is
+// worse than not offering it. The implementation below is left intact — flip
+// this to true to advertise it again.
+const OFFLINE_DOWNLOAD_ENABLED = false;
 ---
 <div class="app-install" data-app-install>
   <button type="button" class="install-trigger" data-install-open aria-haspopup="dialog">
-    Install / Offline
+    {OFFLINE_DOWNLOAD_ENABLED ? "Install / Offline" : "Install"}
   </button>
 
-  <dialog class="install-dialog" data-install-dialog aria-label="Install and offline options">
+  <dialog class="install-dialog" data-install-dialog aria-label="Install options">
     <form method="dialog" class="install-close-row">
       <button type="submit" class="install-close" aria-label="Close">✕</button>
     </form>
@@ -16,7 +22,7 @@
     <section class="install-section">
       <h3>Add to your device</h3>
       <p class="install-text" data-install-text>
-        Install the app for a full-screen, offline-ready experience.
+        Install the app for a full-screen experience.
       </p>
       <button type="button" class="install-action install-action-primary" data-install-button hidden>
         Add to Mobile
@@ -28,12 +34,12 @@
       </div>
       <div class="install-hint" data-install-fallback hidden>
         To install, open this site in <strong>Chrome</strong>, <strong>Edge</strong>, or another
-        Chromium-based browser. DuckDuckGo and Firefox don't support installing web apps — but you
-        can still download content for offline reading below.
+        Chromium-based browser. DuckDuckGo and Firefox don't support installing web apps.
       </div>
       <p class="install-done" data-install-done hidden>✓ Installed on this device</p>
     </section>
 
+    {OFFLINE_DOWNLOAD_ENABLED && (
     <section class="install-section">
       <h3>Download for offline reading</h3>
       <p class="install-text">Save content so you can read it with no connection.</p>
@@ -87,6 +93,7 @@
         Chapters you open are saved automatically too — this just grabs everything at once.
       </p>
     </section>
+    )}
   </dialog>
 </div>
 
