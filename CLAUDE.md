@@ -79,6 +79,34 @@ before committing. A bad reference fails silently at runtime.
 `scripts/normalize-confession-proofs.mjs` can tidy existing tags, but it will
 not catch the four gotchas above.
 
+### Auditing the whole corpus
+
+Worth re-running after any import. Three passes catch three different faults:
+
+1. **Resolvable** — every reference parses and the verse exists in `bsb.json`.
+   This catches misnumbering (`Isa 116:2`, `Jhn 7:56`) and Hebrew psalm
+   versification (`Psa 62:13` where English has 12 verses).
+2. **Linkable** — the reference is written in a form the autolinker matches.
+   A verse hidden behind `and`, or behind `ff.,`, links the first verse and
+   silently drops the second (`Jhn 10:1 and 7`, `Mat 13:24 ff., 47 ff.`).
+3. **Correct** — where a paragraph quotes scripture and then cites it, compare
+   the quoted wording against the verse text and flag near-zero overlap. This
+   is the only pass that catches a reference that is well-formed, resolvable,
+   and simply points at the wrong verse (`Rev 14:8` for "the Lamb slain from
+   the foundation of the world", which is `Rev 13:8`).
+
+Expect false positives in pass 3 wherever the confession quotes a translation
+other than the BSB, and wherever the citation carries `f.`/`ff.` so the quote
+runs past the named verse.
+
+Note that a book-less continuation after a semicolon (`Mat 3:17; 17:5`) is
+legal — `continuedVerseRegex` inherits the book from the previous reference.
+A bare number after a semicolon (`Heb 11; 6`) is *not* the same thing and is
+usually a colon that was corrupted into a semicolon on import.
+
+`, etc.` and a trailing `ff.` are the sources' own shorthand; the named verse
+still links, so leave them alone.
+
 ## Adding a confession — checklist
 
 1. Write `shared/data/confessions/<slug>.json` in the schema above.
