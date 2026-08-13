@@ -17,7 +17,7 @@ const { slug } = Astro.params;
 const confession = findConfession(String(slug));
 
 if (!confession) {
-  return Astro.redirect("/confessions");
+  return Astro.redirect("/");
 }
 
 const about = getConfessionAbout(confession);

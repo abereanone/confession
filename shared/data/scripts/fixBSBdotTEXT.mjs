@@ -35,7 +35,11 @@ const bookMap = {
 
 // Prebuild regex for performance
 const bookNames = Object.keys(bookMap).sort((a, b) => b.length - a.length);
-const bookRegex = new RegExp(`^(${bookNames.join("|")})\\s+(\\d+):(\\d+)\\s+(.*)$`);
+// The verse text is optional: bsb.txt gives the verses omitted by the critical
+// text (Acts 24:7, Mark 9:44, …) as a reference line with nothing after it.
+// Requiring text there made those lines fall through to the continuation branch,
+// which glued "Acts 24:7" onto the end of verse 24:6.
+const bookRegex = new RegExp(`^(${bookNames.join("|")})\\s+(\\d+):(\\d+)(?:\\s+(.*))?$`);
 
 // -----------------------------
 // PARSER (LINE-DRIVEN)
@@ -72,7 +76,7 @@ function parseBsbTxt(text) {
       const entry = {
         chapter,
         verse,
-        text: verseText.trim()
+        text: (verseText ?? "").trim()
       };
 
       result[bookCode][chapter - 1].push(entry);
@@ -264,8 +268,9 @@ async function run() {
           };
         }
 
-        // CASE 2: NORMAL BSB
-        if (existingEntry) {
+        // CASE 2: NORMAL BSB. A text-less placeholder that mods.json does not
+        // supply is dropped rather than emitted as an empty verse.
+        if (existingEntry && existingEntry.text) {
           return {
             chapter: chapterNumber,
             verse: verseNum,

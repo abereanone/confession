@@ -19,7 +19,8 @@ export const GET: APIRoute = async () => {
     }
   }
 
-  const confessions: string[] = ["/confessions"];
+  // The list page is the site root now, so it is already in the app shell.
+  const confessions: string[] = [];
   for (const confession of listConfessions()) {
     confessions.push(`/confessions/${confession.slug}`);
     confessions.push(`/confessions/${confession.slug}/about`);
