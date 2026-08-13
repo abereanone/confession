@@ -1,8 +1,17 @@
 ---
 import Main from "../layouts/Main.astro";
 import { listConfessions } from "../lib/confessions";
+import { listBibleBooks } from "../lib/bible/bibleData";
 
 const confessions = listConfessions();
+
+// Just code/name/chapterCount for 66 books — enough for the resume card to
+// derive the chapter after the one you stopped in, the same way the bookmarks
+// page does.
+const books = await listBibleBooks();
+const bookCatalogJson = JSON.stringify(
+  books.map((book) => ({ code: book.code, name: book.name, chapters: book.chapterCount }))
+);
 ---
 
 <Main title="Confessions Hub">
@@ -45,6 +54,10 @@ const confessions = listConfessions();
 
   <section class="card-panel section-spacer">
     <h2>Scripture Tools</h2>
+
+    <div id="book-catalog-data" data-book-catalog={bookCatalogJson} hidden></div>
+    <ul class="continue-list" data-continue-list hidden></ul>
+
     <ul class="tool-list">
       <li data-tool="references">
         <a class="tool-item-link" href="/scriptures">
@@ -52,9 +65,8 @@ const confessions = listConfessions();
         </a>
       </li>
       <li data-tool="bible">
-        <a class="tool-item-link" href="/bible" data-bible-tool-link>
-          <span data-bible-tool-label>Read the Bible</span>
-          <span class="tool-item-note" data-bible-tool-note hidden></span>
+        <a class="tool-item-link" href="/bible">
+          <span>Read the Bible</span>
         </a>
       </li>
     </ul>
@@ -64,29 +76,96 @@ const confessions = listConfessions();
 <script>
   import { markHref, readPosition } from "../lib/bible/readingMarks";
 
-  // Upgrade the reader tile to a resume card once there is somewhere to return
-  // to. Rendered client-side because the position lives in localStorage and the
-  // page is static.
+  // The resume card, above the reader tile. Rendered client-side because the
+  // position lives in localStorage and the page is static; the card stays hidden
+  // until there is somewhere to go back to.
   (() => {
+    const list = document.querySelector("[data-continue-list]");
+    if (!(list instanceof HTMLElement)) {
+      return;
+    }
+
     const position = readPosition();
     if (!position) {
       return;
     }
 
-    const link = document.querySelector("[data-bible-tool-link]");
-    const label = document.querySelector("[data-bible-tool-label]");
-    const note = document.querySelector("[data-bible-tool-note]");
+    let books = [];
+    try {
+      books = JSON.parse(document.getElementById("book-catalog-data")?.dataset.bookCatalog || "[]");
+    } catch {
+      books = [];
+    }
 
-    if (link instanceof HTMLAnchorElement) {
-      link.href = markHref(position, "resume");
+    /**
+     * The chapter after this one, derived rather than stored so a place saved
+     * before this existed still gets a link. Rolls over at the end of a book
+     * (Genesis 50 -> Exodus 1) and at the end of the canon
+     * (Revelation 22 -> Genesis 1). Mirrors the bookmarks page.
+     */
+    const nextChapterOf = (book, chapter) => {
+      const index = books.findIndex((entry) => entry.code === book);
+      if (index < 0) {
+        return null;
+      }
+
+      const current = books[index];
+      if (chapter < current.chapters) {
+        return {
+          book: current.code,
+          chapter: chapter + 1,
+          label: `${current.name} ${chapter + 1}`,
+        };
+      }
+
+      const following = books[(index + 1) % books.length];
+      return following ? { book: following.code, chapter: 1, label: `${following.name} 1` } : null;
+    };
+
+    const item = document.createElement("li");
+    item.className = "continue-item";
+
+    const link = document.createElement("a");
+    link.className = "continue-item-link";
+    link.href = markHref(position, "resume");
+
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "continue-item-eyebrow";
+    eyebrow.textContent = "Pick up where you left off";
+
+    const reference = document.createElement("span");
+    reference.className = "continue-item-ref";
+    reference.textContent = position.label;
+
+    link.append(eyebrow, reference);
+    item.append(link);
+
+    // Returning to where you stopped is one intent; carrying on into the next
+    // chapter is the more common one, so both are offered in the card.
+    const onwardTarget = nextChapterOf(position.book, position.chapter);
+    if (onwardTarget) {
+      const onward = document.createElement("a");
+      onward.className = "continue-item-next";
+      onward.href = `/bible/${encodeURIComponent(onwardTarget.book)}/${onwardTarget.chapter}`;
+
+      const onwardLabel = document.createElement("span");
+      onwardLabel.className = "continue-item-next-label";
+      onwardLabel.textContent = "Next";
+
+      const onwardRef = document.createElement("span");
+      onwardRef.className = "continue-item-next-ref";
+      onwardRef.textContent = onwardTarget.label;
+
+      const go = document.createElement("span");
+      go.setAttribute("aria-hidden", "true");
+      go.textContent = "→";
+
+      onward.append(onwardLabel, onwardRef, go);
+      item.append(onward);
     }
-    if (label instanceof HTMLElement) {
-      label.textContent = "Continue where you left off";
-    }
-    if (note instanceof HTMLElement) {
-      note.textContent = position.label;
-      note.hidden = false;
-    }
+
+    list.append(item);
+    list.hidden = false;
   })();
 </script>
 
@@ -532,16 +611,109 @@ const confessions = listConfessions();
     font-weight: 600;
   }
 
-  .tool-item-note {
-    margin-left: auto;
-    padding-left: 0.5rem;
+  /* Resume card. Built in JavaScript, so the row carries no scoping attribute —
+     scope through the server-rendered list, as the bookmarks page does. */
+  .continue-list {
+    list-style: none;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .continue-list[hidden] {
+    display: none;
+  }
+
+  .continue-list :global(.continue-item) {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--surface-border);
+    border-left: 4px solid var(--color-link);
+    border-radius: 10px;
+    background: var(--surface-bg-muted);
+    overflow: hidden;
+  }
+
+  .continue-list :global(.continue-item:hover),
+  .continue-list :global(.continue-item:focus-within) {
+    border-color: var(--color-link);
+  }
+
+  .continue-list :global(.continue-item-link) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.1rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.55rem 0.85rem;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .continue-list :global(.continue-item-link:hover),
+  .continue-list :global(.continue-item-link:focus-visible) {
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  .continue-list :global(.continue-item-eyebrow),
+  .continue-list :global(.continue-item-next-label) {
     color: var(--color-muted);
-    font-size: 0.85rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .continue-list :global(.continue-item-ref) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: 700;
   }
 
-  .tool-item-note[hidden] {
-    display: none;
+  /* Fixed basis rather than content width, matching the bookmarks rows: book
+     names differ in length and a content-sized column moves the divider. */
+  .continue-list :global(.continue-item-next) {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 13.5rem;
+    min-width: 0;
+    padding: 0.55rem 0.85rem;
+    border-left: 1px solid var(--surface-border);
+    color: var(--color-link);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .continue-list :global(.continue-item-next:hover),
+  .continue-list :global(.continue-item-next:focus-visible) {
+    background: var(--surface-bg-hover);
+    text-decoration: none;
+  }
+
+  /* Takes the slack so the arrow sits flush right, and truncates rather than
+     widening the column for a long name like 1 Thessalonians 2. */
+  .continue-list :global(.continue-item-next-ref) {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 700;
+  }
+
+  @media (max-width: 32rem) {
+    .continue-list :global(.continue-item-next-label) {
+      display: none;
+    }
+
+    .continue-list :global(.continue-item-next) {
+      flex-basis: 9rem;
+      padding: 0.55rem 0.6rem;
+    }
   }
 
   .tool-item-link:hover,
