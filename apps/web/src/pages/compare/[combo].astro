@@ -32,6 +32,24 @@ if (!docs) return Astro.redirect("/compare/wcf-savoy-lbcf/");
 const groups = buildComparison(docs, { foldArchaic: true, differencesOnly: false });
 
 const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
+
+/**
+ * A row's label in the jump menu. Every reference the row covers is shown,
+ * because the numbering diverges after chapter 19 — Westminster 20.1 is Savoy
+ * 21.1 — so a single number would be ambiguous, and a reader who arrives
+ * thinking "1689 26.12" needs to find it under that number.
+ *
+ * Rows are listed once each, grouped under their chapter heading, rather than
+ * once per confession: the page compares aligned rows, so listing a row three
+ * times would offer three routes to the same place.
+ */
+function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
+  const parts = docs.map((doc) => {
+    const cell = row.cells[doc];
+    return cell ? `${DOC_LABELS[doc].short} ${cell.refs.join(", ")}` : `${DOC_LABELS[doc].short} —`;
+  });
+  return parts.join("  ·  ");
+}
 ---
 
 <Main title={`${title} | Confessions Hub`}>
@@ -82,6 +100,22 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
       </label>
     </div>
 
+    <div class="jump-control">
+      <label for="row-select">Jump to paragraph</label>
+      <select id="row-select">
+        <option value="">Select a paragraph</option>
+        {
+          groups.map((group) => (
+            <optgroup label={group.label}>
+              {group.rows.map((row) => (
+                <option value={row.id}>{rowLabel(row)}</option>
+              ))}
+            </optgroup>
+          ))
+        }
+      </select>
+    </div>
+
     {
       groups.map((group) => (
         <section class="compare-group" id={group.id}>
@@ -104,6 +138,22 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
     }
   </section>
 </Main>
+
+<script>
+  // Jump menu. Navigating by hash rather than scrollIntoView so the row also
+  // picks up its :target highlight, and so the browser honours the
+  // scroll-margin-top that keeps the row clear of the header and the sticky key.
+  (() => {
+    const select = document.getElementById("row-select");
+    if (!(select instanceof HTMLSelectElement)) return;
+
+    select.addEventListener("change", () => {
+      const id = select.value;
+      if (!id) return;
+      if (document.getElementById(id)) window.location.hash = id;
+    });
+  })();
+</script>
 
 <script>
   // Keep the sticky colour key clear of the site header, whose height changes
@@ -204,6 +254,21 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
      hardcoded, because that header wraps to two lines on narrow screens. The
      negative inline margins let the strip span the card's padding, so nothing
      shows through at its edges as content passes beneath. */
+  .jump-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+  }
+
+  .jump-control select {
+    flex: 1 1 22rem;
+    max-width: 40rem;
+    padding: 0.35rem 0.5rem;
+  }
+
   .legend {
     position: sticky;
     /* Fallback clears the header at its usual height (3.25rem logo plus
