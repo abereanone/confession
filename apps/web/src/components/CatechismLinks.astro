@@ -17,22 +17,16 @@ interface Props {
 
 const { confessionSlug, unitNumber, paragraphNumber } = Astro.props;
 
-// High and medium links both show. They arrive already ordered strongest first
-// (see questionsForParagraph), and everything past VISIBLE is collapsed behind
-// a toggle — which is what keeps a long list from becoming noise, rather than
-// throwing links away. Westminster 11.1 draws eleven.
-const VISIBLE = 4;
-
+// High and medium links both show, all of them, ordered strongest first (see
+// questionsForParagraph). A collapse was tried and removed: it hid links behind
+// a toggle that had to work before anyone could see what was there, and the
+// list is short enough that ordering does the job instead. The densest
+// paragraph in the corpus is Westminster 11.1, with eleven.
 const questions: ParagraphQuestion[] = questionsForParagraph(
   confessionSlug,
   unitNumber,
   paragraphNumber
 ).filter((question) => question.confidence === "high" || question.confidence === "medium");
-
-// One over the limit is not worth a toggle — showing "+1 more" costs the same
-// room as the chip it hides.
-const collapsed = questions.length > VISIBLE + 1;
-const hiddenCount = questions.length - VISIBLE;
 ---
 
 {
@@ -41,7 +35,6 @@ const hiddenCount = questions.length - VISIBLE;
       class="catechism-links"
       aria-label="Catechism questions on this paragraph"
       data-catechism-links
-      data-collapsed={collapsed ? "true" : undefined}
     >
       <span class="catechism-label">Catechism</span>
       <ul class="catechism-chips">
@@ -63,40 +56,9 @@ const hiddenCount = questions.length - VISIBLE;
           </li>
         ))}
       </ul>
-      {collapsed && (
-        <button type="button" class="catechism-more" data-catechism-more aria-expanded="false">
-          +{hiddenCount} more
-        </button>
-      )}
     </aside>
   )
 }
-
-<script>
-  // The button and the collapsed state are rendered on the server, so the
-  // styling is Astro-scoped and the markup is correct before any JS runs. This
-  // only flips the attribute the CSS keys off.
-  //
-  // An earlier version built the button in JS, which silently lost the scoped
-  // style attribute and rendered it as a bare browser button.
-  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-catechism-more]")) {
-    const group = button.closest<HTMLElement>("[data-catechism-links]");
-    if (!group) continue;
-
-    const label = button.textContent?.trim() ?? "";
-
-    button.addEventListener("click", () => {
-      const collapsed = group.dataset.collapsed === "true";
-      if (collapsed) {
-        delete group.dataset.collapsed;
-      } else {
-        group.dataset.collapsed = "true";
-      }
-      button.setAttribute("aria-expanded", String(collapsed));
-      button.textContent = collapsed ? "Show fewer" : label;
-    });
-  }
-</script>
 
 <style>
   .catechism-links {
@@ -156,32 +118,6 @@ const hiddenCount = questions.length - VISIBLE;
   .catechism-chip[data-confidence="medium"] {
     border-style: dashed;
     background: transparent;
-  }
-
-  /* Collapse in CSS rather than with the `hidden` attribute, which any author
-     rule setting `display` would silently defeat. The 5 is VISIBLE + 1 — keep
-     the two in step. Hidden chips stay in the DOM, so they are still in the
-     markup for anything reading the page rather than looking at it. */
-  .catechism-links[data-collapsed="true"] .catechism-chips > li:nth-child(n + 5) {
-    display: none;
-  }
-
-  .catechism-more {
-    flex: none;
-    padding: 0.22rem 0.55rem;
-    border: 1px dashed var(--surface-border);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-muted);
-    font: inherit;
-    font-size: 0.78rem;
-    cursor: pointer;
-  }
-
-  .catechism-more:hover,
-  .catechism-more:focus-visible {
-    border-color: var(--surface-border-strong);
-    color: var(--color-text);
   }
 
   .chip-doc {
