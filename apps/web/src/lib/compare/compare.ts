@@ -272,8 +272,4 @@ export function comboSlug(docs: DocId[]): string {
   return DOC_IDS.filter((doc) => docs.includes(doc)).join("-");
 }
 
-export const DOC_LABELS: Record<DocId, { short: string; full: string; slug: string }> = {
-  wcf: { short: "WCF", full: "Westminster Confession (1646)", slug: DOC_SLUGS.wcf },
-  savoy: { short: "Savoy", full: "Savoy Declaration (1658)", slug: DOC_SLUGS.savoy },
-  lbcf: { short: "2LBCF", full: "Second London Baptist Confession (1689)", slug: DOC_SLUGS.lbcf },
-};
+export { DOC_LABELS } from "./text";

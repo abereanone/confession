@@ -157,6 +157,16 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
   .compare-row {
     border-top: 1px solid var(--border-subtle, #2a2a2a);
     padding: 1.25rem 0;
+    /* Arriving from a paragraph's compare link, the row must clear both the
+       site header and the sticky colour key, or it lands underneath them. */
+    scroll-margin-top: calc(var(--compare-header-offset, 5.25rem) + 4rem);
+  }
+
+  /* Mark the row that was linked to, so it is obvious which one you came for. */
+  .compare-row:target {
+    background: var(--surface-bg-muted, rgba(255, 255, 255, 0.04));
+    box-shadow: inset 3px 0 0 var(--color-link, #8fbc8a);
+    border-radius: 0 0.4rem 0.4rem 0;
   }
 
   .compare-row-meta {

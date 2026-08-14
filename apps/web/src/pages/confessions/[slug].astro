@@ -11,6 +11,8 @@ import {
 import { autoLinkBibleRefs } from "../../lib/bible/autoLinkBibleRefs";
 import { normalizeReference } from "../../lib/bible/normalizeRef";
 import { getVerseLookup } from "../../lib/bible/bibleData";
+import { COMPARE_URL, DOC_IDS, DOC_LABELS, docIdForSlug } from "../../lib/compare/text";
+import { compareHrefFor } from "../../lib/compare/anchors";
 
 export function getStaticPaths() {
   return listConfessions().map((item) => ({
@@ -30,6 +32,16 @@ const paragraphId = (unitNumber: number, paragraphNumber: number) =>
   `para-${unitNumber}-${paragraphNumber}`;
 const displayUnits = getConfessionDisplayUnits(confession);
 const showParagraphMeta = usesParagraphNumbers(confession.slug);
+
+// Westminster, Savoy and the 1689 are aligned paragraph by paragraph in the
+// comparison view; the other confessions have no counterpart there, so they get
+// no link. Naming the other two makes the link say what it will show.
+const comparedDoc = docIdForSlug(confession.slug);
+const comparedWith = comparedDoc
+  ? DOC_IDS.filter((doc) => doc !== comparedDoc)
+      .map((doc) => DOC_LABELS[doc].short)
+      .join(" and ")
+  : null;
 const proofTagPattern = /\{\{proofs:\s*([^}]+?)\s*\}\}/gi;
 
 function hasProofTags(value: string): boolean {
@@ -75,6 +87,9 @@ const verseLookup = await getVerseLookup([...references]);
       </h1>
       <p class="confession-meta-line">
         <a class="confession-link" href={`/confessions/${confession.slug}/about`}>About this confession</a>
+        {comparedWith && (
+          <a class="confession-link" href={COMPARE_URL}>Compare with {comparedWith}</a>
+        )}
       </p>
     </section>
 
@@ -120,6 +135,22 @@ const verseLookup = await getVerseLookup([...references]);
                 showParagraphMeta ? `, Paragraph ${index + 1}` : ""
               }`}
             >
+              {comparedWith && compareHrefFor(confession.slug, unit.number, index + 1) && (
+                <a
+                  class="paragraph-compare"
+                  href={compareHrefFor(confession.slug, unit.number, index + 1)}
+                  title={`Compare this paragraph with ${comparedWith}`}
+                  aria-label={`Compare ${confession.unitLabel} ${unit.number}${
+                    showParagraphMeta ? `, Paragraph ${index + 1}` : ""
+                  } with ${comparedWith}`}
+                >
+                  <svg class="paragraph-share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 4v16" />
+                    <path d="M12 4v16" />
+                    <path d="M20 4v16" />
+                  </svg>
+                </a>
+              )}
               <button
                 type="button"
                 class="paragraph-share"
@@ -802,6 +833,32 @@ const verseLookup = await getVerseLookup([...references]);
     margin: 0.55rem 0 0;
     text-align: right;
     font-size: 0.9rem;
+  }
+
+  /* Sits beside the share control, same affordance and same reveal-on-hover
+     behaviour, one slot to its left. */
+  .paragraph-compare {
+    position: absolute;
+    top: 0.4rem;
+    right: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-muted);
+    line-height: 1;
+    opacity: 0.55;
+  }
+
+  .paragraph-card:hover .paragraph-compare,
+  .paragraph-compare:focus-visible,
+  .paragraph-compare:hover {
+    opacity: 1;
+    color: var(--color-link);
   }
 
   .paragraph-share {

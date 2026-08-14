@@ -36,6 +36,25 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
 
 <Main title={`${title} | Confessions Hub`}>
   <section class="compare card-panel" data-compare data-show-punctuation="false" id="top">
+    <ul class="legend" aria-label="What the colours mean">
+      {
+        docs.map((doc) => (
+          <li data-confession={DOC_LABELS[doc].slug}>
+            <span class="swatch swatch-unique" aria-hidden="true" />
+            Only in {DOC_LABELS[doc].short}
+          </li>
+        ))
+      }
+      {
+        docs.length > 2 && (
+          <li>
+            <span class="swatch swatch-shared" aria-hidden="true" />
+            Two agree, the third differs
+          </li>
+        )
+      }
+    </ul>
+
     <h1>{title}</h1>
     <p class="lede">
       {docs.map((doc) => DOC_LABELS[doc].full).join(", ")} aligned paragraph by paragraph, with
@@ -63,25 +82,6 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
       </label>
     </div>
 
-    <ul class="legend" aria-label="What the colours mean">
-      {
-        docs.map((doc) => (
-          <li data-confession={DOC_LABELS[doc].slug}>
-            <span class="swatch swatch-unique" aria-hidden="true" />
-            Only in {DOC_LABELS[doc].short}
-          </li>
-        ))
-      }
-      {
-        docs.length > 2 && (
-          <li>
-            <span class="swatch swatch-shared" aria-hidden="true" />
-            Two agree, the third differs
-          </li>
-        )
-      }
-    </ul>
-
     {
       groups.map((group) => (
         <section class="compare-group" id={group.id}>
@@ -104,6 +104,24 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
     }
   </section>
 </Main>
+
+<script>
+  // Keep the sticky colour key clear of the site header, whose height changes
+  // when it wraps. Cheaper and more reliable than guessing a fixed offset.
+  (() => {
+    const header = document.querySelector(".top");
+    if (!(header instanceof HTMLElement)) return;
+
+    const setOffset = () => {
+      const height = Math.ceil(header.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--compare-header-offset", `${height}px`);
+    };
+
+    setOffset();
+    window.addEventListener("resize", setOffset);
+    if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header);
+  })();
+</script>
 
 <script>
   // Punctuation toggle. The page ships both agreement figures on every row, so
@@ -177,15 +195,32 @@ const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
     cursor: pointer;
   }
 
+  /* The key sits above everything and stays put while the comparison scrolls
+     under it — with 185 rows you are always a long way from where the colours
+     were explained. Only this strip is sticky; the title and the pills scroll
+     away normally.
+
+     The offset is measured from the site header at runtime rather than
+     hardcoded, because that header wraps to two lines on narrow screens. The
+     negative inline margins let the strip span the card's padding, so nothing
+     shows through at its edges as content passes beneath. */
   .legend {
+    position: sticky;
+    /* Fallback clears the header at its usual height (3.25rem logo plus
+       0.9rem padding each side) in case the measuring script never runs. */
+    top: var(--compare-header-offset, 5.25rem);
+    z-index: 5;
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem 1.1rem;
     list-style: none;
-    padding: 0;
-    margin: 0 0 1rem;
+    margin: -1rem -1rem 1rem;
+    padding: 0.7rem 1rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    border-radius: 16px 16px 0 0;
     font-size: 0.8rem;
-    opacity: 0.85;
+    opacity: 0.95;
   }
 
   .legend li {

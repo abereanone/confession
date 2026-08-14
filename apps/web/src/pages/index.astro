@@ -2,8 +2,10 @@
 import Main from "../layouts/Main.astro";
 import { listConfessions } from "../lib/confessions";
 import { listBibleBooks } from "../lib/bible/bibleData";
+import { COMPARE_URL, DOC_IDS, DOC_LABELS } from "../lib/compare/text";
 
 const confessions = listConfessions();
+const compareNames = DOC_IDS.map((doc) => DOC_LABELS[doc].short).join(", ");
 
 // Just code/name/chapterCount for 66 books — enough for the resume card to
 // derive the chapter after the one you stopped in, the same way the bookmarks
@@ -49,6 +51,14 @@ const bookCatalogJson = JSON.stringify(
           </a>
         </li>
       ))}
+      <li class="compare-cta">
+        <a class="confession-link confession-item-link" href={COMPARE_URL}>
+          <span class="confession-badge">VS</span>
+          <span>
+            Compare {compareNames} side by side
+          </span>
+        </a>
+      </li>
     </ul>
   </section>
 
@@ -572,6 +582,18 @@ const bookCatalogJson = JSON.stringify(
   .confession-list li,
   .tool-list li {
     list-style: none;
+  }
+
+  /* Sits in the grid as an ordinary card, last in the list, but carries a
+     stronger background so it does not read as an eighth confession. */
+  .compare-cta .confession-item-link {
+    background: var(--surface-bg-strong);
+    border-left-color: var(--surface-border-strong);
+  }
+
+  .compare-cta .confession-item-link:hover,
+  .compare-cta .confession-item-link:focus-visible {
+    background: var(--surface-bg-hover);
   }
 
   .confession-item-link,

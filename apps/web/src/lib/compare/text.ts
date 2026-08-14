@@ -36,6 +36,25 @@ export const DOC_SLUGS: Record<DocId, string> = {
   lbcf: "lbcf-1689",
 };
 
+/**
+ * Naming for the three comparable confessions. Kept here rather than in
+ * compare.ts so pages that only need to link to the comparison — the home page,
+ * the confession pages — do not pull in the alignment spine to do it.
+ */
+export const DOC_LABELS: Record<DocId, { short: string; full: string; slug: string }> = {
+  wcf: { short: "WCF", full: "Westminster Confession (1646)", slug: DOC_SLUGS.wcf },
+  savoy: { short: "Savoy", full: "Savoy Declaration (1658)", slug: DOC_SLUGS.savoy },
+  lbcf: { short: "2LBCF", full: "Second London Baptist Confession (1689)", slug: DOC_SLUGS.lbcf },
+};
+
+/** The comparison view's canonical URL — all three side by side. */
+export const COMPARE_URL = "/compare/wcf-savoy-lbcf/";
+
+/** Which DocId a confession slug corresponds to, or null if it is not compared. */
+export function docIdForSlug(slug: string): DocId | null {
+  return DOC_IDS.find((doc) => DOC_SLUGS[doc] === slug) ?? null;
+}
+
 export type StrippedParagraph = {
   /** Display text: label and proof tags removed, whitespace collapsed. */
   text: string;
