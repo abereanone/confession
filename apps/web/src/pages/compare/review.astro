@@ -1,0 +1,169 @@
+---
+// Alignment review queue.
+//
+// Every pairing decision that is not a certainty, numbered, with the reasoning
+// that produced it and the text laid out so it can be judged by reading. The
+// numbers are the point: they give a reviewer a way to reject a specific
+// decision without having to describe it.
+//
+// A row leaves this page when its "confidence" in
+// shared/data/comparison/alignment.json is raised to "high".
+
+import Main from "../../layouts/Main.astro";
+import CompareRow from "../../components/CompareRow.astro";
+import { DOC_LABELS, buildComparison } from "../../lib/compare/compare";
+import type { DocId } from "../../lib/compare/text";
+
+const docs: DocId[] = ["wcf", "savoy", "lbcf"];
+const all = buildComparison(docs, { foldArchaic: true });
+
+const queue = all.flatMap((group) =>
+  group.rows
+    .filter((row) => row.confidence !== "high")
+    .map((row) => ({ row, groupLabel: group.label }))
+);
+
+// Low confidence first: those are the ones most likely to be wrong.
+queue.sort((a, b) => (a.row.confidence === "low" ? 0 : 1) - (b.row.confidence === "low" ? 0 : 1));
+
+const settled = all.reduce(
+  (count, group) => count + group.rows.filter((row) => row.confidence === "high").length,
+  0
+);
+const lowCount = queue.filter((entry) => entry.row.confidence === "low").length;
+---
+
+<Main title="Alignment review | Confessions Hub">
+  <section class="review card-panel">
+    <h1>Alignment decisions to check</h1>
+
+    <p class="lede">
+      Every pairing has been decided. <strong>{settled}</strong> are settled and not shown here.
+      The <strong>{queue.length}</strong> below are the ones worth your eye — {lowCount} of them I
+      am genuinely unsure about.
+    </p>
+
+    <p class="how">
+      Each card is numbered. Read the text, read the reasoning, and reply with the numbers you
+      disagree with — <em>"no to 4 and 11"</em> is enough. Anything you don't mention is taken as
+      agreed and its confidence gets raised to high.
+    </p>
+
+    <ol class="queue">
+      {
+        queue.map(({ row, groupLabel }, index) => (
+          <li class="queue-item" data-confidence={row.confidence} id={`n${index + 1}`}>
+            <header class="item-head">
+              <span class="number">{index + 1}</span>
+              <span class="where">{groupLabel}</span>
+              <span class="conf" data-confidence={row.confidence}>
+                {row.confidence} confidence
+              </span>
+              <code class="row-id">{row.id}</code>
+            </header>
+
+            <p class="refs">
+              {docs
+                .map((doc) => {
+                  const cell = row.cells[doc];
+                  return `${DOC_LABELS[doc].short} ${cell ? cell.refs.join(", ") : "—"}`;
+                })
+                .join("   ·   ")}
+            </p>
+
+            {row.decision && <p class="reasoning">{row.decision}</p>}
+
+            <CompareRow row={row} docs={docs} />
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+</Main>
+
+<style>
+  .review {
+    max-width: 1400px;
+  }
+
+  .lede {
+    font-size: 1.05rem;
+  }
+
+  .how {
+    font-size: 0.9rem;
+    opacity: 0.85;
+    border-left: 2px solid var(--border-subtle, #333);
+    padding-left: 0.85rem;
+  }
+
+  .queue {
+    list-style: none;
+    padding: 0;
+    counter-reset: none;
+  }
+
+  .queue-item {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-subtle, #333);
+    border-radius: 0.6rem;
+    padding: 1rem 1.15rem;
+  }
+
+  .queue-item[data-confidence="low"] {
+    border-color: var(--danger, #d2603f);
+  }
+
+  .item-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+
+  .number {
+    font-size: 1.35rem;
+    font-weight: 700;
+    min-width: 1.5rem;
+  }
+
+  .where {
+    font-weight: 600;
+  }
+
+  .conf {
+    font-size: 0.75rem;
+    text-transform: capitalize;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+  }
+
+  .conf[data-confidence="medium"] {
+    color: var(--warning, #d08c3c);
+  }
+
+  .conf[data-confidence="low"] {
+    color: var(--danger, #d2603f);
+  }
+
+  .row-id {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    margin-left: auto;
+  }
+
+  .refs {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+
+  .reasoning {
+    margin: 0.6rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+</style>

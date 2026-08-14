@@ -1,0 +1,430 @@
+{
+  "$comment": "Chapter-level correspondence between the Westminster Confession (1646), the Savoy Declaration (1658) and the Second London Baptist Confession (1689). Hand-maintained: this is the editorial layer. The paragraph-level spine in alignment.json is generated inside these groups, so a wrong entry here silently misaligns everything under it. An empty array means the confession has no chapter covering this material.",
+  "updatedAt": "2026-08-14",
+  "docs": {
+    "wcf": "westminster-confession",
+    "savoy": "savoy-declaration",
+    "lbcf": "lbcf-1689"
+  },
+  "groups": [
+    {
+      "id": "scripture",
+      "label": "Of the Holy Scripture",
+      "wcf": [
+        1
+      ],
+      "savoy": [
+        1
+      ],
+      "lbcf": [
+        1
+      ]
+    },
+    {
+      "id": "god-trinity",
+      "label": "Of God, and of the Holy Trinity",
+      "wcf": [
+        2
+      ],
+      "savoy": [
+        2
+      ],
+      "lbcf": [
+        2
+      ]
+    },
+    {
+      "id": "decree",
+      "label": "Of God's Decree",
+      "wcf": [
+        3
+      ],
+      "savoy": [
+        3
+      ],
+      "lbcf": [
+        3
+      ]
+    },
+    {
+      "id": "creation",
+      "label": "Of Creation",
+      "wcf": [
+        4
+      ],
+      "savoy": [
+        4
+      ],
+      "lbcf": [
+        4
+      ]
+    },
+    {
+      "id": "providence",
+      "label": "Of Providence",
+      "wcf": [
+        5
+      ],
+      "savoy": [
+        5
+      ],
+      "lbcf": [
+        5
+      ]
+    },
+    {
+      "id": "fall",
+      "label": "Of the Fall of Man, of Sin, and of the Punishment Thereof",
+      "wcf": [
+        6
+      ],
+      "savoy": [
+        6
+      ],
+      "lbcf": [
+        6
+      ]
+    },
+    {
+      "id": "covenant",
+      "label": "Of God's Covenant",
+      "wcf": [
+        7
+      ],
+      "savoy": [
+        7
+      ],
+      "lbcf": [
+        7
+      ]
+    },
+    {
+      "id": "mediator",
+      "label": "Of Christ the Mediator",
+      "wcf": [
+        8
+      ],
+      "savoy": [
+        8
+      ],
+      "lbcf": [
+        8
+      ]
+    },
+    {
+      "id": "free-will",
+      "label": "Of Free Will",
+      "wcf": [
+        9
+      ],
+      "savoy": [
+        9
+      ],
+      "lbcf": [
+        9
+      ]
+    },
+    {
+      "id": "effectual-calling",
+      "label": "Of Effectual Calling",
+      "wcf": [
+        10
+      ],
+      "savoy": [
+        10
+      ],
+      "lbcf": [
+        10
+      ]
+    },
+    {
+      "id": "justification",
+      "label": "Of Justification",
+      "wcf": [
+        11
+      ],
+      "savoy": [
+        11
+      ],
+      "lbcf": [
+        11
+      ]
+    },
+    {
+      "id": "adoption",
+      "label": "Of Adoption",
+      "wcf": [
+        12
+      ],
+      "savoy": [
+        12
+      ],
+      "lbcf": [
+        12
+      ]
+    },
+    {
+      "id": "sanctification",
+      "label": "Of Sanctification",
+      "wcf": [
+        13
+      ],
+      "savoy": [
+        13
+      ],
+      "lbcf": [
+        13
+      ]
+    },
+    {
+      "id": "saving-faith",
+      "label": "Of Saving Faith",
+      "wcf": [
+        14
+      ],
+      "savoy": [
+        14
+      ],
+      "lbcf": [
+        14
+      ]
+    },
+    {
+      "id": "repentance",
+      "label": "Of Repentance unto Life",
+      "wcf": [
+        15
+      ],
+      "savoy": [
+        15
+      ],
+      "lbcf": [
+        15
+      ]
+    },
+    {
+      "id": "good-works",
+      "label": "Of Good Works",
+      "wcf": [
+        16
+      ],
+      "savoy": [
+        16
+      ],
+      "lbcf": [
+        16
+      ]
+    },
+    {
+      "id": "perseverance",
+      "label": "Of the Perseverance of the Saints",
+      "wcf": [
+        17
+      ],
+      "savoy": [
+        17
+      ],
+      "lbcf": [
+        17
+      ]
+    },
+    {
+      "id": "assurance",
+      "label": "Of the Assurance of Grace and Salvation",
+      "wcf": [
+        18
+      ],
+      "savoy": [
+        18
+      ],
+      "lbcf": [
+        18
+      ]
+    },
+    {
+      "id": "law",
+      "label": "Of the Law of God",
+      "wcf": [
+        19
+      ],
+      "savoy": [
+        19
+      ],
+      "lbcf": [
+        19
+      ]
+    },
+    {
+      "id": "gospel",
+      "label": "Of the Gospel, and of the Extent of the Grace Thereof",
+      "wcf": [],
+      "savoy": [
+        20
+      ],
+      "lbcf": [
+        20
+      ],
+      "note": "New at Savoy; taken over by the 1689. Westminster has no counterpart chapter — its nearest material sits in WCF 7.3 and 10."
+    },
+    {
+      "id": "christian-liberty",
+      "label": "Of Christian Liberty, and Liberty of Conscience",
+      "wcf": [
+        20
+      ],
+      "savoy": [
+        21
+      ],
+      "lbcf": [
+        21
+      ]
+    },
+    {
+      "id": "worship-sabbath",
+      "label": "Of Religious Worship, and the Sabbath Day",
+      "wcf": [
+        21
+      ],
+      "savoy": [
+        22
+      ],
+      "lbcf": [
+        22
+      ]
+    },
+    {
+      "id": "oaths-vows",
+      "label": "Of Lawful Oaths and Vows",
+      "wcf": [
+        22
+      ],
+      "savoy": [
+        23
+      ],
+      "lbcf": [
+        23
+      ]
+    },
+    {
+      "id": "magistrate",
+      "label": "Of the Civil Magistrate",
+      "wcf": [
+        23
+      ],
+      "savoy": [
+        24
+      ],
+      "lbcf": [
+        24
+      ]
+    },
+    {
+      "id": "marriage",
+      "label": "Of Marriage",
+      "wcf": [
+        24
+      ],
+      "savoy": [
+        25
+      ],
+      "lbcf": [
+        25
+      ],
+      "note": "Westminster's chapter is 'Of Marriage and Divorce'; Savoy and the 1689 drop the two divorce paragraphs (WCF 24.5-6) and retitle it."
+    },
+    {
+      "id": "church",
+      "label": "Of the Church, Church Censures, and Synods & Councils",
+      "wcf": [
+        25,
+        30,
+        31
+      ],
+      "savoy": [
+        26
+      ],
+      "lbcf": [
+        26
+      ],
+      "note": "One group, because the three documents divide this material three different ways. Westminster spreads it over chapters 25, 30 and 31. The 1689 folds all of it into chapter 26. Savoy keeps only the chapter 26 material here and moves church government into its separate Institution of Churches, which is not one of the 32 chapters and is not in this corpus — so an empty Savoy column below means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "communion-of-saints",
+      "label": "Of the Communion of Saints",
+      "wcf": [
+        26
+      ],
+      "savoy": [
+        27
+      ],
+      "lbcf": [
+        27
+      ]
+    },
+    {
+      "id": "sacraments",
+      "label": "Of the Sacraments",
+      "wcf": [
+        27
+      ],
+      "savoy": [
+        28
+      ],
+      "lbcf": [
+        28
+      ]
+    },
+    {
+      "id": "baptism",
+      "label": "Of Baptism",
+      "wcf": [
+        28
+      ],
+      "savoy": [
+        29
+      ],
+      "lbcf": [
+        29
+      ]
+    },
+    {
+      "id": "lords-supper",
+      "label": "Of the Lord's Supper",
+      "wcf": [
+        29
+      ],
+      "savoy": [
+        30
+      ],
+      "lbcf": [
+        30
+      ]
+    },
+    {
+      "id": "after-death",
+      "label": "Of the State of Man after Death, and of the Resurrection of the Dead",
+      "wcf": [
+        32
+      ],
+      "savoy": [
+        31
+      ],
+      "lbcf": [
+        31
+      ]
+    },
+    {
+      "id": "last-judgment",
+      "label": "Of the Last Judgment",
+      "wcf": [
+        33
+      ],
+      "savoy": [
+        32
+      ],
+      "lbcf": [
+        32
+      ]
+    }
+  ]
+}

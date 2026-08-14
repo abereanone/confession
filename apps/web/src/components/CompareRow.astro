@@ -1,0 +1,328 @@
+---
+// One aligned row of the comparison table: the same passage across every
+// selected confession, with the differing words marked.
+//
+// Every column walks the *same* segment list, which is what keeps the columns
+// row-aligned. A column that has nothing at this point in the text renders a
+// gap cell rather than collapsing, so the reader can see that the confession is
+// silent here rather than that the layout drifted.
+
+import type { CompareRow } from "../lib/compare/compare";
+import { DOC_LABELS } from "../lib/compare/compare";
+import { isPunctuationOnly } from "../lib/compare/align";
+import type { DocId } from "../lib/compare/text";
+
+interface Props {
+  row: CompareRow;
+  docs: DocId[];
+  showProofs?: boolean;
+  /** Off on the review page, where rows are already short and boxed. */
+  backToTop?: boolean;
+}
+
+const { row, docs, showProofs = false, backToTop = false } = Astro.props;
+
+const kindLabel: Record<CompareRow["kind"], string> = {
+  parallel: "",
+  recast: "Substantially rewritten",
+  insertion: "Added",
+  omission: "Dropped",
+};
+
+/**
+ * Class for a segment in a given column. `agree` groups the documents that read
+ * alike, so a two-document group inside a three-way comparison can be tinted
+ * differently from a word only one confession has — that pairing is usually the
+ * whole point ("Savoy and the 1689 agree against Westminster").
+ */
+function segmentClass(segment: CompareRow["segments"][number], doc: DocId, total: number): string {
+  if (segment.kind === "common") return "seg seg-common";
+  // Punctuation-only variants are marked but not styled as differences unless
+  // the reader turns them on; the class is always emitted so the toggle is
+  // pure CSS with no re-render.
+  const punct = isPunctuationOnly(segment) ? " seg-punct" : "";
+  const group = segment.agree?.find((members) => members.includes(doc));
+  if (group && group.length > 1 && group.length < total) return `seg seg-shared${punct}`;
+  return `seg seg-unique${punct}`;
+}
+
+const words = Math.round(row.agreement.words * 100);
+const all = Math.round(row.agreement.all * 100);
+
+// Where a row opens with material only some confessions carry — the 1689
+// prefixing "The Holy Scripture is the only sufficient... rule" to 1.1, for
+// instance — the shared text that follows starts at a different point in every
+// column and the eye has to hunt for it. Splitting that opening run into its own
+// band lets the columns re-synchronise on the first words they share.
+//
+// Only worth the extra block when the opening run is substantial; a three-word
+// divergence banded onto its own line reads worse than leaving it inline.
+// Re-synchronising at every sentence break was considered and rejected: only 13
+// of 166 rows have a sentence boundary all three documents share mid-paragraph.
+const LEAD_BAND_MIN_WORDS = 8;
+
+const firstCommon = row.segments.findIndex((segment) => segment.kind === "common");
+const leadCandidate = firstCommon > 0 ? row.segments.slice(0, firstCommon) : [];
+const leadWords = Math.max(
+  0,
+  ...docs.map((doc) =>
+    leadCandidate.reduce(
+      (total, segment) => total + ((segment.text[doc] ?? "").match(/[\p{L}\p{N}]+/gu) ?? []).length,
+      0
+    )
+  )
+);
+const banded = leadWords >= LEAD_BAND_MIN_WORDS;
+const leadSegments = banded ? leadCandidate : [];
+const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
+---
+
+<article class="compare-row" data-kind={row.kind} id={row.id}>
+  <header class="compare-row-meta">
+    <span
+      class="agreement"
+      data-agreement
+      data-words={words}
+      data-all={all}
+      title="Share of wording held in common"
+    >
+      {words}% alike
+    </span>
+    {kindLabel[row.kind] && <span class="kind-badge">{kindLabel[row.kind]}</span>}
+    {
+      row.confidence !== "high" && (
+        <span class="confidence-badge" data-confidence={row.confidence}>
+          {row.confidence} confidence
+        </span>
+      )
+    }
+  </header>
+
+  {row.note && <p class="row-note">{row.note}</p>}
+
+  <div
+    class="compare-columns"
+    style={`--columns:${docs.length}`}
+    data-banded={banded ? "true" : "false"}
+  >
+    {
+      docs.map((doc) => {
+        const cell = row.cells[doc];
+        const render = (segments: CompareRow["segments"]) =>
+          segments.map((segment) => {
+            const text = segment.text[doc];
+            if (text === undefined) return null;
+            return <span class={segmentClass(segment, doc, docs.length)}>{text}</span>;
+          });
+        return (
+          <div class="compare-cell" data-doc={doc} data-confession={DOC_LABELS[doc].slug}>
+            {cell ? (
+              <>
+                <p class="cell-ref">
+                  <a href={`/confessions/${DOC_LABELS[doc].slug}#unit-${cell.refs[0].split(".")[0]}`}>
+                    {DOC_LABELS[doc].short} {cell.refs.join(", ")}
+                  </a>
+                </p>
+                {/* Always emitted when the row is banded, empty or not, so the
+                    subgrid keeps a row for it and the columns stay level. */}
+                {banded && <p class="cell-lead">{render(leadSegments)}</p>}
+                <p class="cell-text">{render(bodySegments)}</p>
+                {showProofs && cell.proofs.length > 0 && (
+                  <p class="cell-proofs">{cell.proofs.join("; ")}</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p class="cell-ref" aria-hidden="true" />
+                {banded && <p class="cell-lead" />}
+                <p class="cell-empty">No counterpart in {DOC_LABELS[doc].short}</p>
+              </>
+            )}
+          </div>
+        );
+      })
+    }
+  </div>
+
+  {
+    backToTop && (
+      <p class="back-to-top">
+        <a href="#top">Back to top</a>
+      </p>
+    )
+  }
+</article>
+
+<style>
+  .compare-row {
+    border-top: 1px solid var(--border-subtle, #2a2a2a);
+    padding: 1.25rem 0;
+  }
+
+  .compare-row-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.75;
+  }
+
+  .kind-badge,
+  .confidence-badge {
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+  }
+
+  .confidence-badge {
+    text-transform: capitalize;
+  }
+
+  .confidence-badge[data-confidence="medium"] {
+    color: var(--warning, #d08c3c);
+  }
+
+  .confidence-badge[data-confidence="low"] {
+    color: var(--danger, #d2603f);
+  }
+
+  .row-note {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    border-left: 2px solid var(--border-subtle, #333);
+    padding-left: 0.7rem;
+  }
+
+  .compare-columns {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  /* Banded rows share their track heights across the columns via subgrid, so
+     the opening divergence occupies the same vertical space everywhere and the
+     shared text below it starts on one line. Browsers without subgrid fall back
+     to ordinary flow — the columns simply do not re-synchronise, which is the
+     behaviour before this existed. */
+  .compare-columns[data-banded="true"] {
+    grid-template-rows: auto auto auto;
+    align-items: stretch;
+  }
+
+  .compare-columns[data-banded="true"] .compare-cell {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
+  .compare-cell {
+    border-left: 3px solid var(--confession-accent-border, transparent);
+    padding-left: 0.75rem;
+  }
+
+  .cell-lead {
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* A column with nothing in the opening band still holds the track open. */
+  .cell-lead:empty::after {
+    content: "";
+    display: block;
+  }
+
+  .cell-ref {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--confession-accent-text, inherit);
+    margin: 0 0 0.5rem;
+  }
+
+  .cell-ref a {
+    text-decoration: none;
+  }
+
+  .cell-ref a:hover {
+    text-decoration: underline;
+  }
+
+  .back-to-top {
+    margin: 0.75rem 0 0;
+    text-align: right;
+    font-size: 0.78rem;
+  }
+
+  .back-to-top a {
+    color: var(--color-muted, inherit);
+    text-decoration: none;
+  }
+
+  .back-to-top a:hover {
+    text-decoration: underline;
+  }
+
+  .cell-text {
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .cell-empty {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px dashed var(--border-subtle, #333);
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    opacity: 0.55;
+  }
+
+  .cell-proofs {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+
+  /* A reading only this confession carries is tinted with that confession's own
+     accent — the same colours used for its badge and chapter pages — so the
+     colour identifies whose wording it is without needing a lookup. The
+     underline rule carries the hue at a strength the low-alpha background
+     cannot, which matters most in the three-way view where three accents can
+     land on one line.
+
+     Common text is left completely unstyled so the eye goes to the differences
+     rather than to a page of highlights. */
+  .seg-unique {
+    background: var(--confession-accent-bg, rgba(214, 138, 60, 0.28));
+    box-shadow: inset 0 -2px 0 var(--confession-accent-border, rgba(214, 138, 60, 0.6));
+    border-radius: 0.15rem;
+  }
+
+  /* Two confessions agreeing against the third: the pair recedes, so the odd
+     one out is what the eye finds. */
+  .seg-shared {
+    background: var(--diff-shared-bg, rgba(90, 150, 210, 0.18));
+    box-shadow: inset 0 -2px 0 var(--diff-shared-rule, rgba(90, 150, 210, 0.4));
+    border-radius: 0.15rem;
+  }
+
+  :global([data-show-punctuation="false"]) .seg-punct {
+    box-shadow: none;
+  }
+
+  /* Punctuation-only differences: the text still renders in each column with
+     its own pointing, but carries no mark unless the reader asks for it. */
+  :global([data-show-punctuation="false"]) .seg-punct {
+    background: none;
+  }
+
+  @media (max-width: 800px) {
+    .compare-columns {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

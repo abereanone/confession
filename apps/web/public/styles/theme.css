@@ -33,6 +33,12 @@
   --shadow-card: 0 18px 32px rgba(0, 0, 0, 0.22);
   --shadow-card-hover: 0 22px 38px rgba(0, 0, 0, 0.28);
   --shadow-tooltip: 0 18px 38px rgba(10, 8, 6, 0.42);
+  /* Comparison view. A reading unique to one confession is tinted with that
+     confession's own accent, so the colour says whose wording it is. Where two
+     agree against the third, the pair takes this neutral and the odd one out
+     keeps its accent. */
+  --diff-shared-bg: rgba(150, 163, 178, 0.16);
+  --diff-shared-rule: rgba(150, 163, 178, 0.4);
 }
 
 [data-theme="light"] {
@@ -65,6 +71,8 @@
   --tooltip-border: rgba(120, 157, 123, 0.28);
   --shadow-card: 0 16px 28px rgba(21, 33, 24, 0.12);
   --shadow-card-hover: 0 20px 34px rgba(21, 33, 24, 0.16);
+  --diff-shared-bg: rgba(84, 98, 116, 0.13);
+  --diff-shared-rule: rgba(84, 98, 116, 0.34);
 }
 
 html,

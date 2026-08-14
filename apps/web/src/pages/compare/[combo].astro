@@ -1,0 +1,262 @@
+---
+// Side-by-side comparison of the Westminster Confession, the Savoy Declaration
+// and the Second London Baptist Confession.
+//
+// One static page per combination (three pairs plus the three-way), so every
+// view has a shareable URL. Column selection is a link between those pages
+// rather than client-side state — the alignment is computed at build time and a
+// two-column view is a projection of the same three-way alignment, so the text
+// does not reflow when a column is dropped.
+
+import Main from "../../layouts/Main.astro";
+import CompareRow from "../../components/CompareRow.astro";
+import {
+  DOC_LABELS,
+  allCombos,
+  buildComparison,
+  comboSlug,
+  parseCombo,
+} from "../../lib/compare/compare";
+
+export function getStaticPaths() {
+  return allCombos().map((docs) => ({ params: { combo: comboSlug(docs) } }));
+}
+
+const { combo } = Astro.params;
+const docs = parseCombo(combo ?? "");
+if (!docs) return Astro.redirect("/compare/wcf-savoy-lbcf/");
+
+// TODO(scaffold): wire these to querystring or a client toggle. `foldArchaic`
+// especially deserves a control — off, it shows the 1689's copy-editing hand;
+// on, it shows only where the doctrine moved.
+const groups = buildComparison(docs, { foldArchaic: true, differencesOnly: false });
+
+const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
+---
+
+<Main title={`${title} | Confessions Hub`}>
+  <section class="compare card-panel" data-compare data-show-punctuation="false" id="top">
+    <h1>{title}</h1>
+    <p class="lede">
+      {docs.map((doc) => DOC_LABELS[doc].full).join(", ")} aligned paragraph by paragraph, with
+      differing wording marked.
+    </p>
+
+    <div class="toolbar">
+      <nav class="combo-switch" aria-label="Choose confessions to compare">
+        {
+          allCombos().map((option) => {
+            const slug = comboSlug(option);
+            const current = slug === comboSlug(docs);
+            return (
+              <a href={`/compare/${slug}/`} aria-current={current ? "page" : undefined}>
+                {option.map((doc) => DOC_LABELS[doc].short).join(" + ")}
+              </a>
+            );
+          })
+        }
+      </nav>
+
+      <label class="control">
+        <input type="checkbox" data-punctuation-toggle />
+        Include punctuation
+      </label>
+    </div>
+
+    <ul class="legend" aria-label="What the colours mean">
+      {
+        docs.map((doc) => (
+          <li data-confession={DOC_LABELS[doc].slug}>
+            <span class="swatch swatch-unique" aria-hidden="true" />
+            Only in {DOC_LABELS[doc].short}
+          </li>
+        ))
+      }
+      {
+        docs.length > 2 && (
+          <li>
+            <span class="swatch swatch-shared" aria-hidden="true" />
+            Two agree, the third differs
+          </li>
+        )
+      }
+    </ul>
+
+    {
+      groups.map((group) => (
+        <section class="compare-group" id={group.id}>
+          <h2>{group.label}</h2>
+          <p class="chapter-line">
+            {docs
+              .map((doc) => {
+                const chapters = group.chapters[doc];
+                const where = chapters?.length ? `ch. ${chapters.join(", ")}` : "—";
+                return `${DOC_LABELS[doc].short} ${where}`;
+              })
+              .join("  ·  ")}
+          </p>
+          {group.note && <p class="group-note">{group.note}</p>}
+          {group.rows.map((row) => (
+            <CompareRow row={row} docs={docs} backToTop />
+          ))}
+        </section>
+      ))
+    }
+  </section>
+</Main>
+
+<script>
+  // Punctuation toggle. The page ships both agreement figures on every row, so
+  // flipping the setting is a class change plus a number swap — no re-render,
+  // and it still works if the preference cannot be stored.
+  (() => {
+    const root = document.querySelector("[data-compare]");
+    const toggle = document.querySelector("[data-punctuation-toggle]");
+    if (!(root instanceof HTMLElement) || !(toggle instanceof HTMLInputElement)) return;
+
+    const storageKey = "compare-show-punctuation";
+
+    const read = () => {
+      try {
+        return window.localStorage.getItem(storageKey) === "1";
+      } catch {
+        return false;
+      }
+    };
+
+    const write = (value) => {
+      try {
+        window.localStorage.setItem(storageKey, value ? "1" : "0");
+      } catch {
+        // preference is best-effort; the toggle still works this session
+      }
+    };
+
+    const apply = (show) => {
+      root.dataset.showPunctuation = show ? "true" : "false";
+      for (const node of document.querySelectorAll("[data-agreement]")) {
+        if (!(node instanceof HTMLElement)) continue;
+        const value = show ? node.dataset.all : node.dataset.words;
+        node.textContent = `${value}% alike`;
+      }
+    };
+
+    const initial = read();
+    toggle.checked = initial;
+    apply(initial);
+
+    toggle.addEventListener("change", () => {
+      write(toggle.checked);
+      apply(toggle.checked);
+    });
+  })();
+</script>
+
+<style>
+  .compare {
+    max-width: 1400px;
+  }
+
+  /* Confession pills and the punctuation setting share one row; the setting is
+     pushed to the far end so the two kinds of control stay distinguishable.
+     Both wrap onto their own lines when the row runs out of width. */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 1rem 0;
+  }
+
+  .control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-left: auto;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 1.1rem;
+    height: 0.85rem;
+    border-radius: 0.15rem;
+  }
+
+  .swatch-unique {
+    background: var(--confession-accent-bg);
+    box-shadow: inset 0 -2px 0 var(--confession-accent-border);
+  }
+
+  .swatch-shared {
+    background: var(--diff-shared-bg);
+    box-shadow: inset 0 -2px 0 var(--diff-shared-rule);
+  }
+
+
+  .lede {
+    opacity: 0.8;
+  }
+
+  .combo-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  .combo-switch a {
+    border: 1px solid var(--border-subtle, #333);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+
+  .combo-switch a[aria-current="page"] {
+    border-color: currentColor;
+    font-weight: 600;
+  }
+
+  .compare-group {
+    margin-top: 2.5rem;
+  }
+
+  .compare-group h2 {
+    margin-bottom: 0.25rem;
+  }
+
+  .chapter-line {
+    margin: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+
+  .group-note {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    border-left: 2px solid var(--border-subtle, #333);
+    padding-left: 0.75rem;
+  }
+</style>

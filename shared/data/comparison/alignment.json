@@ -1,0 +1,3500 @@
+{
+  "$comment": "Curated alignment spine — the source of truth for the comparison view. Every row carries a `confidence`; rows marked medium or low are the ones still worth a second pair of eyes, and `decision` records why the pairing is what it is. Re-run scripts/draft-comparison-alignment.mjs after a corpus edit and diff the draft against this file to find alignment that has gone stale.",
+  "generatedAt": "2026-08-14",
+  "docs": {
+    "wcf": "westminster-confession",
+    "savoy": "savoy-declaration",
+    "lbcf": "lbcf-1689"
+  },
+  "groups": [
+    {
+      "id": "scripture",
+      "label": "Of the Holy Scripture"
+    },
+    {
+      "id": "god-trinity",
+      "label": "Of God, and of the Holy Trinity"
+    },
+    {
+      "id": "decree",
+      "label": "Of God's Decree"
+    },
+    {
+      "id": "creation",
+      "label": "Of Creation"
+    },
+    {
+      "id": "providence",
+      "label": "Of Providence"
+    },
+    {
+      "id": "fall",
+      "label": "Of the Fall of Man, of Sin, and of the Punishment Thereof"
+    },
+    {
+      "id": "covenant",
+      "label": "Of God's Covenant"
+    },
+    {
+      "id": "mediator",
+      "label": "Of Christ the Mediator"
+    },
+    {
+      "id": "free-will",
+      "label": "Of Free Will"
+    },
+    {
+      "id": "effectual-calling",
+      "label": "Of Effectual Calling"
+    },
+    {
+      "id": "justification",
+      "label": "Of Justification"
+    },
+    {
+      "id": "adoption",
+      "label": "Of Adoption"
+    },
+    {
+      "id": "sanctification",
+      "label": "Of Sanctification"
+    },
+    {
+      "id": "saving-faith",
+      "label": "Of Saving Faith"
+    },
+    {
+      "id": "repentance",
+      "label": "Of Repentance unto Life"
+    },
+    {
+      "id": "good-works",
+      "label": "Of Good Works"
+    },
+    {
+      "id": "perseverance",
+      "label": "Of the Perseverance of the Saints"
+    },
+    {
+      "id": "assurance",
+      "label": "Of the Assurance of Grace and Salvation"
+    },
+    {
+      "id": "law",
+      "label": "Of the Law of God"
+    },
+    {
+      "id": "gospel",
+      "label": "Of the Gospel, and of the Extent of the Grace Thereof",
+      "note": "New at Savoy; taken over by the 1689. Westminster has no counterpart chapter — its nearest material sits in WCF 7.3 and 10."
+    },
+    {
+      "id": "christian-liberty",
+      "label": "Of Christian Liberty, and Liberty of Conscience"
+    },
+    {
+      "id": "worship-sabbath",
+      "label": "Of Religious Worship, and the Sabbath Day"
+    },
+    {
+      "id": "oaths-vows",
+      "label": "Of Lawful Oaths and Vows"
+    },
+    {
+      "id": "magistrate",
+      "label": "Of the Civil Magistrate"
+    },
+    {
+      "id": "marriage",
+      "label": "Of Marriage",
+      "note": "Westminster's chapter is 'Of Marriage and Divorce'; Savoy and the 1689 drop the two divorce paragraphs (WCF 24.5-6) and retitle it."
+    },
+    {
+      "id": "church",
+      "label": "Of the Church, Church Censures, and Synods & Councils",
+      "note": "One group, because the three documents divide this material three different ways. Westminster spreads it over chapters 25, 30 and 31. The 1689 folds all of it into chapter 26. Savoy keeps only the chapter 26 material here and moves church government into its separate Institution of Churches, which is not one of the 32 chapters and is not in this corpus — so an empty Savoy column below means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "communion-of-saints",
+      "label": "Of the Communion of Saints"
+    },
+    {
+      "id": "sacraments",
+      "label": "Of the Sacraments"
+    },
+    {
+      "id": "baptism",
+      "label": "Of Baptism"
+    },
+    {
+      "id": "lords-supper",
+      "label": "Of the Lord's Supper"
+    },
+    {
+      "id": "after-death",
+      "label": "Of the State of Man after Death, and of the Resurrection of the Dead"
+    },
+    {
+      "id": "last-judgment",
+      "label": "Of the Last Judgment"
+    }
+  ],
+  "rows": [
+    {
+      "id": "scripture-1",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.1"
+      ],
+      "savoy": [
+        "1.1"
+      ],
+      "lbcf": [
+        "1.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-2",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.2"
+      ],
+      "savoy": [
+        "1.2"
+      ],
+      "lbcf": [
+        "1.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.99,
+        "lbcf-savoy": 0.85
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-3",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.3"
+      ],
+      "savoy": [
+        "1.3"
+      ],
+      "lbcf": [
+        "1.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-4",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.4"
+      ],
+      "savoy": [
+        "1.4"
+      ],
+      "lbcf": [
+        "1.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-5",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.5"
+      ],
+      "savoy": [
+        "1.5"
+      ],
+      "lbcf": [
+        "1.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-6",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.6"
+      ],
+      "savoy": [
+        "1.6"
+      ],
+      "lbcf": [
+        "1.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-7",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.7"
+      ],
+      "savoy": [
+        "1.7"
+      ],
+      "lbcf": [
+        "1.7"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-8",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.8"
+      ],
+      "savoy": [
+        "1.8"
+      ],
+      "lbcf": [
+        "1.8"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-9",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.9"
+      ],
+      "savoy": [
+        "1.9"
+      ],
+      "lbcf": [
+        "1.9"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "scripture-10",
+      "group": "scripture",
+      "kind": "parallel",
+      "wcf": [
+        "1.10"
+      ],
+      "savoy": [
+        "1.10"
+      ],
+      "lbcf": [
+        "1.10"
+      ],
+      "sim": {
+        "savoy-wcf": 0.88,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "god-trinity-1",
+      "group": "god-trinity",
+      "kind": "parallel",
+      "wcf": [
+        "2.1"
+      ],
+      "savoy": [
+        "2.1"
+      ],
+      "lbcf": [
+        "2.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.84
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "god-trinity-2",
+      "group": "god-trinity",
+      "kind": "parallel",
+      "wcf": [
+        "2.2"
+      ],
+      "savoy": [
+        "2.2"
+      ],
+      "lbcf": [
+        "2.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.97,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "god-trinity-3",
+      "group": "god-trinity",
+      "kind": "parallel",
+      "wcf": [
+        "2.3"
+      ],
+      "savoy": [
+        "2.3"
+      ],
+      "lbcf": [
+        "2.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.85,
+        "lbcf-savoy": 0.7
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-1",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.1"
+      ],
+      "savoy": [
+        "3.1"
+      ],
+      "lbcf": [
+        "3.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.77
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-2",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.2"
+      ],
+      "savoy": [
+        "3.2"
+      ],
+      "lbcf": [
+        "3.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-3",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.3"
+      ],
+      "savoy": [
+        "3.3"
+      ],
+      "lbcf": [
+        "3.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.57
+      },
+      "decision": "Same slot. The 1689 rewrites the paragraph to fold reprobation into it ('others being left to act in their sin to their just condemnation') instead of giving it a paragraph of its own.",
+      "confidence": "high"
+    },
+    {
+      "id": "decree-4",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.4"
+      ],
+      "savoy": [
+        "3.4"
+      ],
+      "lbcf": [
+        "3.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-5",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.5"
+      ],
+      "savoy": [
+        "3.5"
+      ],
+      "lbcf": [
+        "3.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.81
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-6",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.6"
+      ],
+      "savoy": [
+        "3.6"
+      ],
+      "lbcf": [
+        "3.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "decree-7",
+      "group": "decree",
+      "kind": "omission",
+      "wcf": [
+        "3.7"
+      ],
+      "savoy": [
+        "3.7"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. Westminster's separate reprobation paragraph has no 1689 counterpart because the 1689 folded that material into 3.3.",
+      "confidence": "high"
+    },
+    {
+      "id": "decree-8",
+      "group": "decree",
+      "kind": "parallel",
+      "wcf": [
+        "3.8"
+      ],
+      "savoy": [
+        "3.8"
+      ],
+      "lbcf": [
+        "3.7"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "creation-1",
+      "group": "creation",
+      "kind": "parallel",
+      "wcf": [
+        "4.1"
+      ],
+      "savoy": [
+        "4.1"
+      ],
+      "lbcf": [
+        "4.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.99,
+        "lbcf-wcf": 0.96,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "creation-2",
+      "group": "creation",
+      "kind": "parallel",
+      "wcf": [
+        "4.2"
+      ],
+      "savoy": [
+        "4.2"
+      ],
+      "lbcf": [
+        "4.2",
+        "4.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.88,
+        "lbcf-savoy": 0.88
+      },
+      "decision": "Not an insertion. Westminster's 4.2 already ends with the command not to eat of the tree; the 1689 simply breaks that tail off into its own paragraph. Verified against the full text of WCF 4.2.",
+      "confidence": "high"
+    },
+    {
+      "id": "providence-1",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.1"
+      ],
+      "savoy": [
+        "5.1"
+      ],
+      "lbcf": [
+        "5.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-2",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.2"
+      ],
+      "savoy": [
+        "5.2"
+      ],
+      "lbcf": [
+        "5.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-3",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.3"
+      ],
+      "savoy": [
+        "5.3"
+      ],
+      "lbcf": [
+        "5.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-4",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.4"
+      ],
+      "savoy": [
+        "5.4"
+      ],
+      "lbcf": [
+        "5.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.86,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-5",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.5"
+      ],
+      "savoy": [
+        "5.5"
+      ],
+      "lbcf": [
+        "5.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-6",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.6"
+      ],
+      "savoy": [
+        "5.6"
+      ],
+      "lbcf": [
+        "5.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "providence-7",
+      "group": "providence",
+      "kind": "parallel",
+      "wcf": [
+        "5.7"
+      ],
+      "savoy": [
+        "5.7"
+      ],
+      "lbcf": [
+        "5.7"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "fall-1",
+      "group": "fall",
+      "kind": "recast",
+      "wcf": [
+        "6.1"
+      ],
+      "savoy": [
+        "6.1"
+      ],
+      "lbcf": [
+        "6.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.47,
+        "lbcf-savoy": 0.39
+      },
+      "decision": "Same slot: the opening paragraph of the chapter. Savoy and the 1689 reframe it around the covenant of works rather than starting from the act of eating.",
+      "confidence": "high"
+    },
+    {
+      "id": "fall-2",
+      "group": "fall",
+      "kind": "parallel",
+      "wcf": [
+        "6.2"
+      ],
+      "savoy": [
+        "6.2"
+      ],
+      "lbcf": [
+        "6.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.94,
+        "lbcf-savoy": 0.82
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "fall-3",
+      "group": "fall",
+      "kind": "parallel",
+      "wcf": [
+        "6.3"
+      ],
+      "savoy": [
+        "6.3"
+      ],
+      "lbcf": [
+        "6.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.87,
+        "lbcf-savoy": 0.72
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "fall-4",
+      "group": "fall",
+      "kind": "parallel",
+      "wcf": [
+        "6.4"
+      ],
+      "savoy": [
+        "6.4"
+      ],
+      "lbcf": [
+        "6.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "fall-5",
+      "group": "fall",
+      "kind": "parallel",
+      "wcf": [
+        "6.5"
+      ],
+      "savoy": [
+        "6.5"
+      ],
+      "lbcf": [
+        "6.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "fall-6",
+      "group": "fall",
+      "kind": "omission",
+      "wcf": [
+        "6.6"
+      ],
+      "savoy": [
+        "6.6"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. The 1689's chapter 6 ends at 6.5 with indwelling corruption in the regenerate; it has no 'every sin brings guilt' paragraph.",
+      "confidence": "high"
+    },
+    {
+      "id": "covenant-1",
+      "group": "covenant",
+      "kind": "parallel",
+      "wcf": [
+        "7.1"
+      ],
+      "savoy": [
+        "7.1"
+      ],
+      "lbcf": [
+        "7.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.91,
+        "lbcf-wcf": 0.91,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "covenant-2",
+      "group": "covenant",
+      "kind": "omission",
+      "wcf": [
+        "7.2"
+      ],
+      "savoy": [
+        "7.2"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap, and a well-known one: the 1689's chapter 7 has three paragraphs and no covenant-of-works paragraph.",
+      "confidence": "high"
+    },
+    {
+      "id": "covenant-3",
+      "group": "covenant",
+      "kind": "parallel",
+      "wcf": [
+        "7.3"
+      ],
+      "savoy": [
+        "7.3"
+      ],
+      "lbcf": [
+        "7.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.86,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "covenant-4",
+      "group": "covenant",
+      "kind": "omission",
+      "wcf": [
+        "7.4"
+      ],
+      "savoy": [
+        "7.4"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. The 1689 drops Westminster's 'covenant as testament' paragraph.",
+      "confidence": "high"
+    },
+    {
+      "id": "covenant-5",
+      "group": "covenant",
+      "kind": "recast",
+      "wcf": [
+        "7.5",
+        "7.6"
+      ],
+      "savoy": [
+        "7.5"
+      ],
+      "lbcf": [
+        "7.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.4,
+        "lbcf-wcf": 0.39,
+        "lbcf-savoy": 0.38
+      },
+      "decision": "Merged. Westminster spends two paragraphs on the covenant being administered differently under law and gospel; Savoy compresses both into one, and the 1689's 7.3 covers the same ground as progressive revelation. Pairing them one-to-one (the drafter's guess) left Savoy 7.5 opposite the wrong Westminster paragraph.",
+      "confidence": "medium"
+    },
+    {
+      "id": "mediator-1",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.1"
+      ],
+      "savoy": [
+        "8.1"
+      ],
+      "lbcf": [
+        "8.1"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.94,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-2",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.2"
+      ],
+      "savoy": [
+        "8.2"
+      ],
+      "lbcf": [
+        "8.2"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.78,
+        "lbcf-savoy": 0.78
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-3",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.3"
+      ],
+      "savoy": [
+        "8.3"
+      ],
+      "lbcf": [
+        "8.3"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.91,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-4",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.4"
+      ],
+      "savoy": [
+        "8.4"
+      ],
+      "lbcf": [
+        "8.4"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.84,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-5",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.5"
+      ],
+      "savoy": [
+        "8.5"
+      ],
+      "lbcf": [
+        "8.5"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.93,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-6",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.6"
+      ],
+      "savoy": [
+        "8.6"
+      ],
+      "lbcf": [
+        "8.6"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.92,
+        "lbcf-savoy": 0.92
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-7",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.7"
+      ],
+      "savoy": [
+        "8.7"
+      ],
+      "lbcf": [
+        "8.7"
+      ],
+      "sim": {
+        "lbcf-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-8",
+      "group": "mediator",
+      "kind": "parallel",
+      "wcf": [
+        "8.8"
+      ],
+      "savoy": [
+        "8.8"
+      ],
+      "lbcf": [
+        "8.8"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.85,
+        "lbcf-savoy": 0.84
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-9",
+      "group": "mediator",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "8.9"
+      ],
+      "decision": "A 1689 addition. Its chapter 8 runs to ten paragraphs against eight in Westminster and Savoy.",
+      "confidence": "high"
+    },
+    {
+      "id": "mediator-10",
+      "group": "mediator",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "8.10"
+      ],
+      "decision": "A 1689 addition, continuing 8.9 on the threefold office.",
+      "confidence": "high"
+    },
+    {
+      "id": "free-will-1",
+      "group": "free-will",
+      "kind": "parallel",
+      "wcf": [
+        "9.1"
+      ],
+      "savoy": [
+        "9.1"
+      ],
+      "lbcf": [
+        "9.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.9,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "free-will-2",
+      "group": "free-will",
+      "kind": "parallel",
+      "wcf": [
+        "9.2"
+      ],
+      "savoy": [
+        "9.2"
+      ],
+      "lbcf": [
+        "9.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "free-will-3",
+      "group": "free-will",
+      "kind": "parallel",
+      "wcf": [
+        "9.3"
+      ],
+      "savoy": [
+        "9.3"
+      ],
+      "lbcf": [
+        "9.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "free-will-4",
+      "group": "free-will",
+      "kind": "parallel",
+      "wcf": [
+        "9.4"
+      ],
+      "savoy": [
+        "9.4"
+      ],
+      "lbcf": [
+        "9.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "free-will-5",
+      "group": "free-will",
+      "kind": "parallel",
+      "wcf": [
+        "9.5"
+      ],
+      "savoy": [
+        "9.5"
+      ],
+      "lbcf": [
+        "9.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "effectual-calling-1",
+      "group": "effectual-calling",
+      "kind": "parallel",
+      "wcf": [
+        "10.1"
+      ],
+      "savoy": [
+        "10.1"
+      ],
+      "lbcf": [
+        "10.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "effectual-calling-2",
+      "group": "effectual-calling",
+      "kind": "parallel",
+      "wcf": [
+        "10.2"
+      ],
+      "savoy": [
+        "10.2"
+      ],
+      "lbcf": [
+        "10.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.7
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "effectual-calling-3",
+      "group": "effectual-calling",
+      "kind": "parallel",
+      "wcf": [
+        "10.3"
+      ],
+      "savoy": [
+        "10.3"
+      ],
+      "lbcf": [
+        "10.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "effectual-calling-4",
+      "group": "effectual-calling",
+      "kind": "parallel",
+      "wcf": [
+        "10.4"
+      ],
+      "savoy": [
+        "10.4"
+      ],
+      "lbcf": [
+        "10.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.93,
+        "lbcf-savoy": 0.87
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-1",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.1"
+      ],
+      "savoy": [
+        "11.1"
+      ],
+      "lbcf": [
+        "11.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.91,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-2",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.2"
+      ],
+      "savoy": [
+        "11.2"
+      ],
+      "lbcf": [
+        "11.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-3",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.3"
+      ],
+      "savoy": [
+        "11.3"
+      ],
+      "lbcf": [
+        "11.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.89,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-4",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.4"
+      ],
+      "savoy": [
+        "11.4"
+      ],
+      "lbcf": [
+        "11.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.99,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-5",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.5"
+      ],
+      "savoy": [
+        "11.5"
+      ],
+      "lbcf": [
+        "11.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "justification-6",
+      "group": "justification",
+      "kind": "parallel",
+      "wcf": [
+        "11.6"
+      ],
+      "savoy": [
+        "11.6"
+      ],
+      "lbcf": [
+        "11.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "adoption-1",
+      "group": "adoption",
+      "kind": "parallel",
+      "wcf": [
+        "12.1"
+      ],
+      "savoy": [
+        "12.1"
+      ],
+      "lbcf": [
+        "12.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "sanctification-1",
+      "group": "sanctification",
+      "kind": "parallel",
+      "wcf": [
+        "13.1"
+      ],
+      "savoy": [
+        "13.1"
+      ],
+      "lbcf": [
+        "13.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.95,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "sanctification-2",
+      "group": "sanctification",
+      "kind": "parallel",
+      "wcf": [
+        "13.2"
+      ],
+      "savoy": [
+        "13.2"
+      ],
+      "lbcf": [
+        "13.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "sanctification-3",
+      "group": "sanctification",
+      "kind": "parallel",
+      "wcf": [
+        "13.3"
+      ],
+      "savoy": [
+        "13.3"
+      ],
+      "lbcf": [
+        "13.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.78
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "saving-faith-1",
+      "group": "saving-faith",
+      "kind": "parallel",
+      "wcf": [
+        "14.1"
+      ],
+      "savoy": [
+        "14.1"
+      ],
+      "lbcf": [
+        "14.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.96,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "saving-faith-2",
+      "group": "saving-faith",
+      "kind": "parallel",
+      "wcf": [
+        "14.2"
+      ],
+      "savoy": [
+        "14.2"
+      ],
+      "lbcf": [
+        "14.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.7
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "saving-faith-3",
+      "group": "saving-faith",
+      "kind": "parallel",
+      "wcf": [
+        "14.3"
+      ],
+      "savoy": [
+        "14.3"
+      ],
+      "lbcf": [
+        "14.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.65,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "repentance-1",
+      "group": "repentance",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [
+        "15.1"
+      ],
+      "lbcf": [
+        "15.1"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.97
+      },
+      "decision": "An addition. Savoy opens the chapter with the elect converted at riper years; Westminster has nothing corresponding.",
+      "confidence": "high"
+    },
+    {
+      "id": "repentance-2",
+      "group": "repentance",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [
+        "15.2"
+      ],
+      "lbcf": [
+        "15.2"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.97
+      },
+      "decision": "An addition. Savoy's paragraph on believers falling into great sins has no Westminster counterpart.",
+      "confidence": "high"
+    },
+    {
+      "id": "repentance-3",
+      "group": "repentance",
+      "kind": "recast",
+      "wcf": [
+        "15.1",
+        "15.2"
+      ],
+      "savoy": [
+        "15.3"
+      ],
+      "lbcf": [
+        "15.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.39,
+        "lbcf-wcf": 0.39,
+        "lbcf-savoy": 0.99
+      },
+      "decision": "Merged. Savoy's 15.3 ('This saving repentance is an evangelical grace, whereby a person...') carries both of Westminster's opening paragraphs: 15.1 defines repentance as an evangelical grace, 15.2 describes the sinner turning from sin to God. The drafter matched by position and got all three wrong.",
+      "confidence": "medium"
+    },
+    {
+      "id": "repentance-4",
+      "group": "repentance",
+      "kind": "omission",
+      "wcf": [
+        "15.3"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Westminster's paragraph on repentance not being rested in as satisfaction for sin has no counterpart in Savoy or the 1689.",
+      "confidence": "medium"
+    },
+    {
+      "id": "repentance-5",
+      "group": "repentance",
+      "kind": "recast",
+      "wcf": [
+        "15.5"
+      ],
+      "savoy": [
+        "15.4"
+      ],
+      "lbcf": [
+        "15.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.44,
+        "lbcf-wcf": 0.44,
+        "lbcf-savoy": 1
+      },
+      "decision": "Correct pairing on the duty of particular repentance — note that Savoy transposes the order of Westminster's 15.4 and 15.5, so this row and the next run against the numbering.",
+      "confidence": "high"
+    },
+    {
+      "id": "repentance-6",
+      "group": "repentance",
+      "kind": "recast",
+      "wcf": [
+        "15.4"
+      ],
+      "savoy": [
+        "15.5"
+      ],
+      "lbcf": [
+        "15.5"
+      ],
+      "sim": {
+        "savoy-wcf": 0.51,
+        "lbcf-wcf": 0.51,
+        "lbcf-savoy": 1
+      },
+      "decision": "The drafter missed this one entirely. Westminster 15.4 ('no sin so small but it deserves damnation... no sin so great that it can bring damnation upon those who truly repent') is reproduced almost word for word inside Savoy 15.5. It had been left as an orphan while Savoy 15.5 was paired against Westminster 15.6.",
+      "confidence": "high"
+    },
+    {
+      "id": "repentance-7",
+      "group": "repentance",
+      "kind": "omission",
+      "wcf": [
+        "15.6"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Westminster's paragraph on private and public confession of sin has no Savoy or 1689 counterpart.",
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-1",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.1"
+      ],
+      "savoy": [
+        "16.1"
+      ],
+      "lbcf": [
+        "16.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-2",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.2"
+      ],
+      "savoy": [
+        "16.2"
+      ],
+      "lbcf": [
+        "16.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-3",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.3"
+      ],
+      "savoy": [
+        "16.3"
+      ],
+      "lbcf": [
+        "16.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-4",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.4"
+      ],
+      "savoy": [
+        "16.4"
+      ],
+      "lbcf": [
+        "16.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-5",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.5"
+      ],
+      "savoy": [
+        "16.5"
+      ],
+      "lbcf": [
+        "16.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-6",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.6"
+      ],
+      "savoy": [
+        "16.6"
+      ],
+      "lbcf": [
+        "16.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "good-works-7",
+      "group": "good-works",
+      "kind": "parallel",
+      "wcf": [
+        "16.7"
+      ],
+      "savoy": [
+        "16.7"
+      ],
+      "lbcf": [
+        "16.7"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "perseverance-1",
+      "group": "perseverance",
+      "kind": "recast",
+      "wcf": [
+        "17.1"
+      ],
+      "savoy": [
+        "17.1"
+      ],
+      "lbcf": [
+        "17.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.33
+      },
+      "decision": "Same passage. The 1689 inserts 'and given the precious faith of His elect unto' and modernizes the verbs.",
+      "confidence": "high"
+    },
+    {
+      "id": "perseverance-2",
+      "group": "perseverance",
+      "kind": "parallel",
+      "wcf": [
+        "17.2"
+      ],
+      "savoy": [
+        "17.2"
+      ],
+      "lbcf": [
+        "17.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.95,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "perseverance-3",
+      "group": "perseverance",
+      "kind": "parallel",
+      "wcf": [
+        "17.3"
+      ],
+      "savoy": [
+        "17.3"
+      ],
+      "lbcf": [
+        "17.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.86,
+        "lbcf-savoy": 0.9
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "assurance-1",
+      "group": "assurance",
+      "kind": "parallel",
+      "wcf": [
+        "18.1"
+      ],
+      "savoy": [
+        "18.1"
+      ],
+      "lbcf": [
+        "18.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.98,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "assurance-2",
+      "group": "assurance",
+      "kind": "parallel",
+      "wcf": [
+        "18.2"
+      ],
+      "savoy": [
+        "18.2"
+      ],
+      "lbcf": [
+        "18.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.74
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "assurance-3",
+      "group": "assurance",
+      "kind": "parallel",
+      "wcf": [
+        "18.3"
+      ],
+      "savoy": [
+        "18.3"
+      ],
+      "lbcf": [
+        "18.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "assurance-4",
+      "group": "assurance",
+      "kind": "parallel",
+      "wcf": [
+        "18.4"
+      ],
+      "savoy": [
+        "18.4"
+      ],
+      "lbcf": [
+        "18.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.99,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-1",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.1"
+      ],
+      "savoy": [
+        "19.1"
+      ],
+      "lbcf": [
+        "19.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.8,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-2",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.2"
+      ],
+      "savoy": [
+        "19.2"
+      ],
+      "lbcf": [
+        "19.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.89,
+        "lbcf-savoy": 0.93
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-3",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.3"
+      ],
+      "savoy": [
+        "19.3"
+      ],
+      "lbcf": [
+        "19.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.72,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-4",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.4"
+      ],
+      "savoy": [
+        "19.4"
+      ],
+      "lbcf": [
+        "19.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.69,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-5",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.5"
+      ],
+      "savoy": [
+        "19.5"
+      ],
+      "lbcf": [
+        "19.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-6",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.6"
+      ],
+      "savoy": [
+        "19.6"
+      ],
+      "lbcf": [
+        "19.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "law-7",
+      "group": "law",
+      "kind": "parallel",
+      "wcf": [
+        "19.7"
+      ],
+      "savoy": [
+        "19.7"
+      ],
+      "lbcf": [
+        "19.7"
+      ],
+      "sim": {
+        "savoy-wcf": 0.98,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "gospel-1",
+      "group": "gospel",
+      "kind": "parallel",
+      "wcf": [],
+      "savoy": [
+        "20.1"
+      ],
+      "lbcf": [
+        "20.1"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "gospel-2",
+      "group": "gospel",
+      "kind": "parallel",
+      "wcf": [],
+      "savoy": [
+        "20.2"
+      ],
+      "lbcf": [
+        "20.2"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "gospel-3",
+      "group": "gospel",
+      "kind": "parallel",
+      "wcf": [],
+      "savoy": [
+        "20.3"
+      ],
+      "lbcf": [
+        "20.3"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "gospel-4",
+      "group": "gospel",
+      "kind": "parallel",
+      "wcf": [],
+      "savoy": [
+        "20.4"
+      ],
+      "lbcf": [
+        "20.4"
+      ],
+      "sim": {
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "christian-liberty-1",
+      "group": "christian-liberty",
+      "kind": "parallel",
+      "wcf": [
+        "20.1"
+      ],
+      "savoy": [
+        "21.1"
+      ],
+      "lbcf": [
+        "21.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.94,
+        "lbcf-wcf": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "christian-liberty-2",
+      "group": "christian-liberty",
+      "kind": "parallel",
+      "wcf": [
+        "20.2"
+      ],
+      "savoy": [
+        "21.2"
+      ],
+      "lbcf": [
+        "21.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.94,
+        "lbcf-wcf": 0.92
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "christian-liberty-3",
+      "group": "christian-liberty",
+      "kind": "parallel",
+      "wcf": [
+        "20.3"
+      ],
+      "savoy": [
+        "21.3"
+      ],
+      "lbcf": [
+        "21.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.85,
+        "lbcf-wcf": 0.81
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "christian-liberty-4",
+      "group": "christian-liberty",
+      "kind": "omission",
+      "wcf": [
+        "20.4"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Savoy and the 1689 drop Westminster's paragraph on the civil and church power punishing those who oppose lawful authority — consistent with their revisions to the magistrate chapter.",
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-1",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.1"
+      ],
+      "savoy": [
+        "22.1"
+      ],
+      "lbcf": [
+        "22.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.99,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-2",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.2"
+      ],
+      "savoy": [
+        "22.2"
+      ],
+      "lbcf": [
+        "22.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-3",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.3"
+      ],
+      "savoy": [
+        "22.3"
+      ],
+      "lbcf": [
+        "22.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.93,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-4",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.4"
+      ],
+      "savoy": [
+        "22.4"
+      ],
+      "lbcf": [
+        "22.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-5",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.5"
+      ],
+      "savoy": [
+        "22.5"
+      ],
+      "lbcf": [
+        "22.5"
+      ],
+      "sim": {
+        "savoy-wcf": 0.78,
+        "lbcf-savoy": 0.81
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-6",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.6"
+      ],
+      "savoy": [
+        "22.6"
+      ],
+      "lbcf": [
+        "22.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-7",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.7"
+      ],
+      "savoy": [
+        "22.7"
+      ],
+      "lbcf": [
+        "22.7"
+      ],
+      "sim": {
+        "savoy-wcf": 0.94,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "worship-sabbath-8",
+      "group": "worship-sabbath",
+      "kind": "parallel",
+      "wcf": [
+        "21.8"
+      ],
+      "savoy": [
+        "22.8"
+      ],
+      "lbcf": [
+        "22.8"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "oaths-vows-1",
+      "group": "oaths-vows",
+      "kind": "parallel",
+      "wcf": [
+        "22.1"
+      ],
+      "savoy": [
+        "23.1"
+      ],
+      "lbcf": [
+        "23.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.9,
+        "lbcf-wcf": 0.78,
+        "lbcf-savoy": 0.89
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "oaths-vows-2",
+      "group": "oaths-vows",
+      "kind": "parallel",
+      "wcf": [
+        "22.2"
+      ],
+      "savoy": [
+        "23.2"
+      ],
+      "lbcf": [
+        "23.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.89,
+        "lbcf-savoy": 0.89
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "oaths-vows-3",
+      "group": "oaths-vows",
+      "kind": "recast",
+      "wcf": [
+        "22.3"
+      ],
+      "savoy": [
+        "23.3"
+      ],
+      "lbcf": [
+        "23.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.96,
+        "lbcf-wcf": 0.5,
+        "lbcf-savoy": 0.55
+      },
+      "decision": "Same passage. Savoy adds 'warranted by the Word of God'; the 1689 follows Savoy and then rewrites the second half.",
+      "confidence": "high"
+    },
+    {
+      "id": "oaths-vows-4",
+      "group": "oaths-vows",
+      "kind": "recast",
+      "wcf": [
+        "22.4"
+      ],
+      "savoy": [
+        "23.4"
+      ],
+      "lbcf": [
+        "23.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.54,
+        "lbcf-savoy": 0.54
+      },
+      "decision": "Same passage. The 1689 keeps only the first sentence.",
+      "confidence": "high"
+    },
+    {
+      "id": "oaths-vows-5",
+      "group": "oaths-vows",
+      "kind": "recast",
+      "wcf": [
+        "22.5",
+        "22.6",
+        "22.7"
+      ],
+      "savoy": [
+        "23.5",
+        "23.6"
+      ],
+      "lbcf": [
+        "23.5"
+      ],
+      "sim": {
+        "savoy-wcf": 0.53,
+        "lbcf-wcf": 0.5,
+        "lbcf-savoy": 0.8
+      },
+      "decision": "Merged. The 1689 compresses Westminster's three vow paragraphs into a single 23.5 ('A vow, which is not to be made to any creature, but to God alone... but popish monastical vows...'). Savoy keeps two of the three, dropping Westminster's 22.6. Left one-to-one, this showed as two spurious gaps.",
+      "confidence": "medium"
+    },
+    {
+      "id": "magistrate-1",
+      "group": "magistrate",
+      "kind": "parallel",
+      "wcf": [
+        "23.1"
+      ],
+      "savoy": [
+        "24.1"
+      ],
+      "lbcf": [
+        "24.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.98,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "magistrate-2",
+      "group": "magistrate",
+      "kind": "parallel",
+      "wcf": [
+        "23.2"
+      ],
+      "savoy": [
+        "24.2"
+      ],
+      "lbcf": [
+        "24.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.98,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "magistrate-3",
+      "group": "magistrate",
+      "kind": "omission",
+      "wcf": [
+        "23.3"
+      ],
+      "savoy": [
+        "24.3"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 0.45
+      },
+      "decision": "Savoy rewrites Westminster's paragraph on the magistrate's power in the church. The 1689's chapter 24 has only three paragraphs and drops it entirely, so the gap is real.",
+      "confidence": "high"
+    },
+    {
+      "id": "magistrate-4",
+      "group": "magistrate",
+      "kind": "recast",
+      "wcf": [
+        "23.4"
+      ],
+      "savoy": [
+        "24.4"
+      ],
+      "lbcf": [
+        "24.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.26
+      },
+      "decision": "Same slot: the duty of subjection and prayer. The 1689 rewrites it and drops Westminster's clause on infidelity not voiding the magistrate's authority.",
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-1",
+      "group": "marriage",
+      "kind": "parallel",
+      "wcf": [
+        "24.1"
+      ],
+      "savoy": [
+        "25.1"
+      ],
+      "lbcf": [
+        "25.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-2",
+      "group": "marriage",
+      "kind": "parallel",
+      "wcf": [
+        "24.2"
+      ],
+      "savoy": [
+        "25.2"
+      ],
+      "lbcf": [
+        "25.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-3",
+      "group": "marriage",
+      "kind": "parallel",
+      "wcf": [
+        "24.3"
+      ],
+      "savoy": [
+        "25.3"
+      ],
+      "lbcf": [
+        "25.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-4",
+      "group": "marriage",
+      "kind": "parallel",
+      "wcf": [
+        "24.4"
+      ],
+      "savoy": [
+        "25.4"
+      ],
+      "lbcf": [
+        "25.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.73
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-5",
+      "group": "marriage",
+      "kind": "omission",
+      "wcf": [
+        "24.5"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Savoy and the 1689 drop Westminster's two divorce paragraphs and retitle the chapter 'Of Marriage'.",
+      "confidence": "high"
+    },
+    {
+      "id": "marriage-6",
+      "group": "marriage",
+      "kind": "omission",
+      "wcf": [
+        "24.6"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap; the second of the two dropped divorce paragraphs.",
+      "confidence": "high"
+    },
+    {
+      "id": "church-1",
+      "group": "church",
+      "kind": "parallel",
+      "wcf": [
+        "25.1"
+      ],
+      "savoy": [
+        "26.1"
+      ],
+      "lbcf": [
+        "26.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.84,
+        "lbcf-savoy": 0.84
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "church-2",
+      "group": "church",
+      "kind": "recast",
+      "wcf": [
+        "25.2"
+      ],
+      "savoy": [
+        "26.2"
+      ],
+      "lbcf": [
+        "26.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.42,
+        "lbcf-wcf": 0.37,
+        "lbcf-savoy": 0.66
+      },
+      "decision": "Repointed. All three describe the visible church of professing believers; the drafter had left the 1689's 26.2 opposite Westminster's 25.3 and this row without a 1689 column at all.",
+      "confidence": "high"
+    },
+    {
+      "id": "church-3",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "25.3"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Westminster's paragraph on the ministry, oracles and ordinances being given to the catholic visible church has no Savoy or 1689 counterpart.",
+      "confidence": "medium"
+    },
+    {
+      "id": "church-4",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "25.4"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Westminster's paragraph on the church being sometimes more and sometimes less visible is dropped by both.",
+      "confidence": "medium"
+    },
+    {
+      "id": "church-5",
+      "group": "church",
+      "kind": "parallel",
+      "wcf": [
+        "25.5"
+      ],
+      "savoy": [
+        "26.3"
+      ],
+      "lbcf": [
+        "26.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.66,
+        "lbcf-wcf": 0.65,
+        "lbcf-savoy": 0.98
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "church-6",
+      "group": "church",
+      "kind": "parallel",
+      "wcf": [
+        "25.6"
+      ],
+      "savoy": [
+        "26.4"
+      ],
+      "lbcf": [
+        "26.4"
+      ],
+      "sim": {
+        "savoy-wcf": 0.9,
+        "lbcf-wcf": 0.67,
+        "lbcf-savoy": 0.77
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "church-7",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [
+        "26.5"
+      ],
+      "lbcf": [],
+      "decision": "A Savoy addition, and the drafter's worst miss: it had been paired against Westminster's paragraph on synods. Savoy 26.5 is its latter-day hope — that antichrist being destroyed, the churches shall enjoy a more quiet, peaceable and glorious condition. Nothing to do with synods.",
+      "confidence": "high"
+    },
+    {
+      "id": "church-8",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.5"
+      ],
+      "decision": "A 1689 addition: Christ calling particular churches out of the world.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-9",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.6"
+      ],
+      "decision": "A 1689 addition: members as saints by calling who willingly consent to walk together.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-10",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "30.1"
+      ],
+      "savoy": [],
+      "lbcf": [
+        "26.7"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.24
+      },
+      "decision": "Reviewed and confirmed. Both answer the same question — where church power resides. Westminster puts government in the hands of church officers; the 1689 gives all needful power and authority to each gathered church. Westminster 30.2 on the keys was split out of this row, because the 1689 has no keys paragraph and merging it overstated the correspondence.",
+      "confidence": "high",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-11",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "30.2"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "confidence": "high",
+      "decision": "Reviewed and confirmed as a real gap. The keys of the kingdom, committed to church officers, have no counterpart in the 1689 chapter 26.",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-12",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.8"
+      ],
+      "decision": "A 1689 addition: a particular church consists of officers and members.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-13",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.9"
+      ],
+      "decision": "A 1689 addition: the calling of elders by common suffrage of the church.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-14",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.10"
+      ],
+      "decision": "A 1689 addition: the work and maintenance of pastors.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-15",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.11"
+      ],
+      "decision": "A 1689 addition: preaching not confined to those in office.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-16",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "30.3"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Reviewed and confirmed as unpaired. Westminster explains why censures are necessary; the nearest 1689 paragraph (26.12) says who is subject to them. Different claims, so no pairing was forced.",
+      "confidence": "high",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-17",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.12"
+      ],
+      "decision": "Reviewed and confirmed as unpaired — the other half of the Westminster 30.3 decision.",
+      "confidence": "high",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-18",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "30.4"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Westminster's steps of censure — admonition, suspension, excommunication — have no counterpart in the 1689's chapter 26.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-19",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.13"
+      ],
+      "decision": "A 1689 addition: members not to disturb church order over offences taken.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-20",
+      "group": "church",
+      "kind": "insertion",
+      "wcf": [],
+      "savoy": [],
+      "lbcf": [
+        "26.14"
+      ],
+      "decision": "A 1689 addition: the communion churches hold with one another. The drafter had this against Westminster's 31.3 on synods determining controversies.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-21",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "31.1",
+        "31.3"
+      ],
+      "savoy": [],
+      "lbcf": [
+        "26.15"
+      ],
+      "sim": {
+        "lbcf-wcf": 0.28
+      },
+      "decision": "Reviewed and confirmed. The 1689 answers Westminster's whole synods chapter in one paragraph, and the merge surfaces the substantive difference: Westminster's synods authoritatively determine controversies, while the 1689's messengers only give advice and hold no church power.",
+      "confidence": "high",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-22",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "31.2"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Nothing in the 1689 on magistrates calling synods.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-23",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "31.4"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Nothing in the 1689 on synods being able to err.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "church-24",
+      "group": "church",
+      "kind": "omission",
+      "wcf": [
+        "31.5"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. The 1689's 26.15 does say such assemblies are not entrusted with church power, but that clause is already carried by the row above.",
+      "confidence": "medium",
+      "note": "Savoy treats this material in its separate Institution of Churches and the Order Appointed in Them, which is not one of the 32 chapters and is not part of this corpus. The empty Savoy column here means 'not in this corpus', not 'Savoy is silent'."
+    },
+    {
+      "id": "communion-of-saints-1",
+      "group": "communion-of-saints",
+      "kind": "parallel",
+      "wcf": [
+        "26.1"
+      ],
+      "savoy": [
+        "27.1"
+      ],
+      "lbcf": [
+        "27.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.93,
+        "lbcf-wcf": 0.9
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "communion-of-saints-2",
+      "group": "communion-of-saints",
+      "kind": "parallel",
+      "wcf": [
+        "26.2"
+      ],
+      "savoy": [
+        "27.2"
+      ],
+      "lbcf": [
+        "27.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.88,
+        "lbcf-wcf": 0.7
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "communion-of-saints-3",
+      "group": "communion-of-saints",
+      "kind": "omission",
+      "wcf": [
+        "26.3"
+      ],
+      "savoy": [],
+      "lbcf": [],
+      "decision": "Real gap. Savoy and the 1689 both cut their communion-of-saints chapter to two paragraphs, dropping Westminster's guard against making the saints partakers of the divine substance.",
+      "confidence": "high"
+    },
+    {
+      "id": "sacraments-1",
+      "group": "sacraments",
+      "kind": "recast",
+      "wcf": [
+        "27.1"
+      ],
+      "savoy": [
+        "28.1"
+      ],
+      "lbcf": [
+        "28.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.78,
+        "lbcf-wcf": 0.35,
+        "lbcf-savoy": 0.32
+      },
+      "decision": "Repointed. The 1689's 28.1 ('Baptism and the Lord's Supper are ordinances of positive and sovereign institution') is its replacement for Westminster's definition of a sacrament, not for the sacramental-union paragraph the drafter matched it against.",
+      "confidence": "medium"
+    },
+    {
+      "id": "sacraments-2",
+      "group": "sacraments",
+      "kind": "omission",
+      "wcf": [
+        "27.2"
+      ],
+      "savoy": [
+        "28.2"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap, once 28.1 is repointed to the paragraph above. The 1689 has nothing on the sacramental union between sign and thing signified.",
+      "confidence": "medium"
+    },
+    {
+      "id": "sacraments-3",
+      "group": "sacraments",
+      "kind": "omission",
+      "wcf": [
+        "27.3"
+      ],
+      "savoy": [
+        "28.3"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. The 1689's chapter 28 has two paragraphs and nothing on sacramental efficacy.",
+      "confidence": "high"
+    },
+    {
+      "id": "sacraments-4",
+      "group": "sacraments",
+      "kind": "recast",
+      "wcf": [
+        "27.4"
+      ],
+      "savoy": [
+        "28.4"
+      ],
+      "lbcf": [
+        "28.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.93,
+        "lbcf-wcf": 0.25,
+        "lbcf-savoy": 0.3
+      },
+      "decision": "Same slot: who may administer. Westminster and Savoy say a lawfully ordained minister; the 1689 says 'those only who are qualified and thereunto called'.",
+      "confidence": "high"
+    },
+    {
+      "id": "sacraments-5",
+      "group": "sacraments",
+      "kind": "omission",
+      "wcf": [
+        "27.5"
+      ],
+      "savoy": [
+        "28.5"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. The 1689 drops Westminster's paragraph on the Old Testament sacraments being for substance the same.",
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-1",
+      "group": "baptism",
+      "kind": "parallel",
+      "wcf": [
+        "28.1"
+      ],
+      "savoy": [
+        "29.1"
+      ],
+      "lbcf": [
+        "29.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.89,
+        "lbcf-wcf": 0.64,
+        "lbcf-savoy": 0.69
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-2",
+      "group": "baptism",
+      "kind": "parallel",
+      "wcf": [
+        "28.2"
+      ],
+      "savoy": [
+        "29.2"
+      ],
+      "lbcf": [
+        "29.3"
+      ],
+      "sim": {
+        "savoy-wcf": 0.98,
+        "lbcf-wcf": 0.8,
+        "lbcf-savoy": 0.83
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-3",
+      "group": "baptism",
+      "kind": "recast",
+      "wcf": [
+        "28.3"
+      ],
+      "savoy": [
+        "29.3"
+      ],
+      "lbcf": [
+        "29.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-wcf": 0.45,
+        "lbcf-savoy": 0.45
+      },
+      "decision": "Same slot, opposite conclusion — the sharpest row in the comparison. Westminster and Savoy: 'Dipping of the person into the water is not necessary.' The 1689: 'Immersion, or dipping of the person in water, is necessary.'",
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-4",
+      "group": "baptism",
+      "kind": "parallel",
+      "wcf": [
+        "28.4"
+      ],
+      "savoy": [
+        "29.4"
+      ],
+      "lbcf": [
+        "29.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.95,
+        "lbcf-wcf": 0.58,
+        "lbcf-savoy": 0.55
+      },
+      "decision": "Merged deliberately. Both paragraphs answer 'who are the proper subjects of baptism?' and answer it in opposite directions: Westminster and Savoy say believers and their infants, the 1689 says only those who actually profess repentance and faith. The drafter had them as an unrelated gap plus an unrelated insertion, which hides the single most important disagreement between these documents.",
+      "confidence": "medium"
+    },
+    {
+      "id": "baptism-5",
+      "group": "baptism",
+      "kind": "omission",
+      "wcf": [
+        "28.5"
+      ],
+      "savoy": [
+        "29.5"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap. The 1689's chapter 29 has four paragraphs and drops Westminster's on neglect of the ordinance.",
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-6",
+      "group": "baptism",
+      "kind": "omission",
+      "wcf": [
+        "28.6"
+      ],
+      "savoy": [
+        "29.6"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap; the 1689 drops Westminster's paragraph on the efficacy of baptism not being tied to the moment of administration.",
+      "confidence": "high"
+    },
+    {
+      "id": "baptism-7",
+      "group": "baptism",
+      "kind": "omission",
+      "wcf": [
+        "28.7"
+      ],
+      "savoy": [
+        "29.7"
+      ],
+      "lbcf": [],
+      "sim": {
+        "savoy-wcf": 1
+      },
+      "decision": "Real gap; the 1689 drops 'but once to be administered'.",
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-1",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.1"
+      ],
+      "savoy": [
+        "30.1"
+      ],
+      "lbcf": [
+        "30.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.97,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-2",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.2"
+      ],
+      "savoy": [
+        "30.2"
+      ],
+      "lbcf": [
+        "30.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.97,
+        "lbcf-savoy": 0.97
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-3",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.3"
+      ],
+      "savoy": [
+        "30.3"
+      ],
+      "lbcf": [
+        "30.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.83
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-4",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.4"
+      ],
+      "savoy": [
+        "30.4"
+      ],
+      "lbcf": [
+        "30.4"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.83
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-5",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.5"
+      ],
+      "savoy": [
+        "30.5"
+      ],
+      "lbcf": [
+        "30.5"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.86
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-6",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.6"
+      ],
+      "savoy": [
+        "30.6"
+      ],
+      "lbcf": [
+        "30.6"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-7",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.7"
+      ],
+      "savoy": [
+        "30.7"
+      ],
+      "lbcf": [
+        "30.7"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.92
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "lords-supper-8",
+      "group": "lords-supper",
+      "kind": "parallel",
+      "wcf": [
+        "29.8"
+      ],
+      "savoy": [
+        "30.8"
+      ],
+      "lbcf": [
+        "30.8"
+      ],
+      "sim": {
+        "savoy-wcf": 0.73,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "after-death-1",
+      "group": "after-death",
+      "kind": "parallel",
+      "wcf": [
+        "32.1"
+      ],
+      "savoy": [
+        "31.1"
+      ],
+      "lbcf": [
+        "31.1"
+      ],
+      "sim": {
+        "savoy-wcf": 0.92,
+        "lbcf-savoy": 0.95
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "after-death-2",
+      "group": "after-death",
+      "kind": "parallel",
+      "wcf": [
+        "32.2"
+      ],
+      "savoy": [
+        "31.2"
+      ],
+      "lbcf": [
+        "31.2"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.94
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "after-death-3",
+      "group": "after-death",
+      "kind": "parallel",
+      "wcf": [
+        "32.3"
+      ],
+      "savoy": [
+        "31.3"
+      ],
+      "lbcf": [
+        "31.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "last-judgment-1",
+      "group": "last-judgment",
+      "kind": "parallel",
+      "wcf": [
+        "33.1"
+      ],
+      "savoy": [
+        "32.1"
+      ],
+      "lbcf": [
+        "32.1"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "last-judgment-2",
+      "group": "last-judgment",
+      "kind": "parallel",
+      "wcf": [
+        "33.2"
+      ],
+      "savoy": [
+        "32.2"
+      ],
+      "lbcf": [
+        "32.2"
+      ],
+      "sim": {
+        "savoy-wcf": 0.95,
+        "lbcf-savoy": 0.96
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "last-judgment-3",
+      "group": "last-judgment",
+      "kind": "parallel",
+      "wcf": [
+        "33.3"
+      ],
+      "savoy": [
+        "32.3"
+      ],
+      "lbcf": [
+        "32.3"
+      ],
+      "sim": {
+        "savoy-wcf": 1,
+        "lbcf-savoy": 0.99
+      },
+      "confidence": "high"
+    }
+  ],
+  "reviewedAt": "2026-08-14"
+}

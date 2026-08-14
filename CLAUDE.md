@@ -41,6 +41,46 @@ in `confessions.ts`. `usesParagraphNumbers(slug)` then suppresses the
 link to `#unit-N` instead of `#para-N-M`. Use that helper — do not add new
 per-slug checks in the page templates.
 
+## Corpus editions — keep them consistent
+
+Westminster, Savoy and the 1689 are all held in their **traditional wording**:
+`calleth`/`justifieth`, `hath`, `doth`, `shew`, British spellings (`honour`,
+`endeavour`, `pretence`), and lowercase divine pronouns. Chapter titles are
+sentence case (`Of the Holy Scriptures`, not `Of The Holy Scriptures`).
+
+This matters beyond taste. The comparison view diffs these three against each
+other word by word, so a modernized document lights up on every `calleth` and
+buries the places where the doctrine actually changed. The 1689 arrived
+lightly modernized and was converted back in August 2026; if a future import
+reintroduces `has`/`does`/`calls`, the comparison degrades quietly.
+
+Westminster is the **original 1646** text, not the 1788 American revision.
+Do not "fix" it against the OPC or other American editions: they rewrite
+chapter 23 on the civil magistrate, drop "that antichrist, that man of sin"
+from 25.6, cut the synods chapter from five paragraphs to four, and remove the
+kindred clause from 24.4. Savoy and the 1689 derive from the original, so
+swapping it in would break every alignment that depends on it.
+
+### Verifying text against an outside edition
+
+Fetch the reference with `curl` and diff it locally. Do not use a
+summarizing fetch tool — it paraphrases, which is useless for text comparison.
+Compare on *folded* words (archaic/modern forms treated as equal) so edition
+spelling does not drown real differences, and treat any online edition as
+evidence rather than authority. Ones already checked:
+
+| Document | Reference | Caveats found in the *reference* |
+| --- | --- | --- |
+| 1689 | reformedreader.org, per chapter | ch3 page truncated (3.6, 3.7 missing); typos `justifis`, `Solomen`, `righeousness`; drops words in 10.2 and 11.1 |
+| WCF | opc.org/wcf.html | It is the 1788 American revision — expect ~14 legitimate divergences |
+| Savoy | grace.org.uk, tfcchurch.co.uk | Both share the typo `consanguity`, so they likely descend from one transcription and are not independent witnesses |
+
+The strongest internal check is cross-document: where the three confessions
+share a paragraph, a reading present in two of them and absent from the third
+is usually an error in the third. That is how Savoy 18.2 was caught carrying
+Westminster's text verbatim, and how WCF 32.1 was found missing its closing
+sentence.
+
 ## Scripture proof tags
 
 Inline, in the clause they support, **preceded by a space**:

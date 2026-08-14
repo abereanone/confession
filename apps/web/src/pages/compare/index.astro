@@ -1,0 +1,45 @@
+---
+import Main from "../../layouts/Main.astro";
+import { DOC_LABELS, allCombos, comboSlug } from "../../lib/compare/compare";
+---
+
+<Main title="Compare confessions | Confessions Hub">
+  <section class="compare-index card-panel">
+    <h1>Compare confessions</h1>
+    <p>
+      The Savoy Declaration (1658) is a Congregationalist revision of the Westminster Confession
+      (1646); the Second London Baptist Confession (1689) works from Savoy in turn. Reading them in
+      parallel shows where each body kept the wording it inherited and where it deliberately changed
+      it.
+    </p>
+
+    <ul class="combo-list">
+      {
+        allCombos().map((docs) => (
+          <li>
+            <a href={`/compare/${comboSlug(docs)}/`}>
+              {docs.map((doc) => DOC_LABELS[doc].full).join("  ·  ")}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Main>
+
+<style>
+  .combo-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .combo-list a {
+    display: block;
+    border: 1px solid var(--border-subtle, #333);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+  }
+</style>
