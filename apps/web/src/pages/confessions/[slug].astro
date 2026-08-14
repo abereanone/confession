@@ -2,6 +2,7 @@
 import Main from "../../layouts/Main.astro";
 import BibleReferencesScript from "../../components/BibleReferencesScript.astro";
 import ConfessionReferenceHighlightScript from "../../components/ConfessionReferenceHighlightScript.astro";
+import CatechismLinks from "../../components/CatechismLinks.astro";
 import {
   findConfession,
   getConfessionDisplayUnits,
@@ -170,6 +171,11 @@ const verseLookup = await getVerseLookup([...references]);
                 <p class="paragraph-meta">{confession.unitLabel} {unit.number} - Paragraph {index + 1}</p>
               ) : null}
               <p>{renderParagraphFromProofTags(paragraph, false)}</p>
+              <CatechismLinks
+                confessionSlug={confession.slug}
+                unitNumber={unit.number}
+                paragraphNumber={index + 1}
+              />
             </article>
           ))}
         </div>

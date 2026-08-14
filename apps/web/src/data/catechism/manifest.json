@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-08-14",
+  "mappings": [
+    {
+      "id": "bc-lbcf-1689",
+      "catechism": {
+        "prefix": "bc",
+        "label": "The Baptist Catechism",
+        "short": "BC"
+      },
+      "confession": "lbcf-1689",
+      "questions": 118,
+      "linked": 95,
+      "paragraphs": 160
+    },
+    {
+      "id": "wsc-westminster-confession",
+      "catechism": {
+        "prefix": "wsc",
+        "label": "Westminster Shorter Catechism",
+        "short": "WSC"
+      },
+      "confession": "westminster-confession",
+      "questions": 107,
+      "linked": 96,
+      "paragraphs": 172
+    },
+    {
+      "id": "wlc-westminster-confession",
+      "catechism": {
+        "prefix": "wlc",
+        "label": "Westminster Larger Catechism",
+        "short": "WLC"
+      },
+      "confession": "westminster-confession",
+      "questions": 196,
+      "linked": 181,
+      "paragraphs": 172
+    }
+  ]
+}

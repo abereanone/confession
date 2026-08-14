@@ -1,0 +1,406 @@
+---
+// One catechism against one confession, in the confession's own order.
+//
+// Grouped by chapter rather than by question number, because the useful reading
+// is "what does this catechism say about chapter 11?" — and because a catechism
+// that runs in roughly the confession's order shows its shape immediately when
+// laid out this way.
+//
+// Questions with no counterpart are listed at the end rather than dropped. For
+// the Baptist Catechism most of them are the Decalogue and the Lord's Prayer,
+// which the 1689 never walks through, and that is a fact about the documents.
+
+import Main from "../../layouts/Main.astro";
+import { findConfession, usesParagraphNumbers } from "../../lib/confessions";
+import { getMapping, listMappings, questionUrl, rowsByChapter } from "../../lib/catechism";
+
+export function getStaticPaths() {
+  return listMappings().map((mapping) => ({ params: { id: mapping.id } }));
+}
+
+const { id } = Astro.params;
+const mapping = getMapping(String(id));
+if (!mapping) return Astro.redirect("/catechism/");
+
+const confession = findConfession(mapping.confession.slug);
+const showParagraphMeta = usesParagraphNumbers(mapping.confession.slug);
+const { chapters, unplaced } = rowsByChapter(mapping);
+
+const chapterTitle = (number: number) =>
+  confession?.units.find((unit) => unit.number === number)?.title ?? "";
+
+const paragraphHref = (ref: string) => {
+  const [unit, paragraph] = ref.split(".");
+  const anchor = showParagraphMeta ? `para-${unit}-${paragraph}` : `unit-${unit}`;
+  return `/confessions/${mapping.confession.slug}/#${anchor}`;
+};
+
+const linked = mapping.rows.filter((row) => row.links.length).length;
+const confident = mapping.rows.filter((row) => row.confidence === "high").length;
+const gaps = mapping.rows.filter((row) => row.elsewhere?.gap);
+---
+
+<Main title={`${mapping.catechism.label} | Confessions Hub`}>
+  <section class="mapping" data-filter="all">
+    <header class="mapping-head card-panel">
+      <p class="crumb"><a href="/catechism/">Catechism links</a></p>
+      <h1>{mapping.catechism.label}</h1>
+      <p class="lede">
+        against the <a href={`/confessions/${mapping.confession.slug}/`}>
+          {mapping.confession.title}</a
+        > — {linked} of {mapping.rows.length} questions linked, {confident} of them confidently.
+      </p>
+
+      <div class="filters" role="group" aria-label="Filter by confidence">
+        <button type="button" data-show="all" aria-pressed="true">All</button>
+        <button type="button" data-show="high" aria-pressed="false">Confident only</button>
+        <button type="button" data-show="review" aria-pressed="false">Needs an eye</button>
+      </div>
+    </header>
+
+    {
+      gaps.length > 0 && (
+        <section class="gaps card-panel">
+          <h2>Where the {mapping.confession.unitLabel.toLowerCase()}s fall silent</h2>
+          <p class="gaps-note">
+            These questions have no counterpart in this confession, but another one carries the
+            paragraph. They mark where the traditions parted.
+          </p>
+          <ul>
+            {gaps.map((row) => (
+              <li>
+                <a class="q-ref" href={questionUrl(row.id)} target="_blank" rel="noopener noreferrer">
+                  {mapping.catechism.short} {row.n}
+                </a>
+                <span class="q-title">{row.title}</span>
+                <span class="gap-target">
+                  {row.elsewhere?.short} {row.elsewhere?.refs.join(", ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      chapters.map(({ chapter, rows }) => (
+        <section class="chapter card-panel">
+          <h2 class="chapter-head">
+            <a href={`/confessions/${mapping.confession.slug}/#unit-${chapter}`}>
+              {mapping.confession.unitLabel} {chapter}
+            </a>
+            <span class="chapter-title">{chapterTitle(chapter)}</span>
+          </h2>
+
+          <ol class="rows">
+            {rows.map((row) => (
+              <li
+                class="row"
+                data-confidence={row.confidence}
+                data-review={row.confidence === "high" ? undefined : "true"}
+              >
+                <div class="row-main">
+                  <a
+                    class="q-ref"
+                    href={questionUrl(row.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {mapping.catechism.short} {row.n}
+                  </a>
+                  <span class="q-title">{row.title}</span>
+                  <span class="paras">
+                    {row.links.map((link, index) => (
+                      <a
+                        class="para"
+                        href={paragraphHref(link.ref)}
+                        data-secondary={index > 0 ? "true" : undefined}
+                      >
+                        {link.ref}
+                        {link.coverage !== null && (
+                          <span class="cov">{Math.round(link.coverage * 100)}%</span>
+                        )}
+                      </a>
+                    ))}
+                  </span>
+                  <span class="conf" data-confidence={row.confidence}>
+                    {row.confidence}
+                  </span>
+                </div>
+                <p class="decision">{row.decision}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+
+    {
+      unplaced.length > 0 && (
+        <section class="chapter card-panel unplaced">
+          <h2 class="chapter-head">
+            No counterpart
+            <span class="chapter-title">{unplaced.length} questions</span>
+          </h2>
+          <p class="gaps-note">
+            Nothing in this confession answers these. Most expound the Ten Commandments or the
+            Lord's Prayer petition by petition, which no confession does.
+          </p>
+          <ol class="rows">
+            {unplaced.map((row) => (
+              <li class="row" data-confidence={row.confidence} data-review="true">
+                <div class="row-main">
+                  <a
+                    class="q-ref"
+                    href={questionUrl(row.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {mapping.catechism.short} {row.n}
+                  </a>
+                  <span class="q-title">{row.title}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+  </section>
+</Main>
+
+<script>
+  // Filtering is a class on the wrapper, so the rows themselves stay in the
+  // document and keep their anchors working.
+  const wrapper = document.querySelector<HTMLElement>("[data-filter]");
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".filters button"));
+
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      const show = button.dataset.show ?? "all";
+      wrapper?.setAttribute("data-filter", show);
+      for (const other of buttons) {
+        other.setAttribute("aria-pressed", String(other === button));
+      }
+    });
+  }
+</script>
+
+<style>
+  .mapping {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .crumb {
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+  }
+
+  .mapping-head h1 {
+    margin: 0 0 0.4rem;
+  }
+
+  .lede {
+    margin: 0 0 1rem;
+    color: var(--color-muted);
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .filters button {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .filters button[aria-pressed="true"] {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-strong);
+    color: var(--color-text);
+  }
+
+  .chapter-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+  }
+
+  .chapter-title {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .rows {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .row {
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .row:first-child {
+    border-top: 0;
+  }
+
+  /* Two columns that matter — the question and where it lands — with the
+     reasoning tucked underneath in a size that stays out of the way until
+     someone is actually auditing a row. */
+  .row-main {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .q-ref {
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .q-title {
+    min-width: 0;
+  }
+
+  .paras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-self: end;
+  }
+
+  .para {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .para[data-secondary] {
+    border-style: dashed;
+    opacity: 0.75;
+  }
+
+  .cov {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+  }
+
+  .conf {
+    justify-self: end;
+    min-width: 4.2rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: right;
+    color: var(--color-muted);
+  }
+
+  .conf[data-confidence="high"] {
+    color: var(--color-link);
+  }
+
+  .decision {
+    margin: 0.25rem 0 0;
+    padding-left: 5.25rem;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .gaps h2,
+  .unplaced .chapter-head {
+    margin-top: 0;
+  }
+
+  .gaps-note {
+    margin: 0 0 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+  }
+
+  .gaps ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gaps li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+
+  .gap-target {
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+
+  /* Filters */
+  [data-filter="high"] .row[data-review],
+  [data-filter="review"] .row:not([data-review]) {
+    display: none;
+  }
+
+  [data-filter="high"] .unplaced {
+    display: none;
+  }
+
+  @media (max-width: 720px) {
+    .row-main {
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+    }
+
+    .paras,
+    .conf {
+      grid-column: 2;
+      justify-self: start;
+      text-align: left;
+    }
+
+    .decision {
+      padding-left: 0;
+    }
+
+    .gaps li {
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+    }
+
+    .gap-target {
+      grid-column: 2;
+    }
+  }
+</style>

@@ -1,0 +1,238 @@
+---
+// Where the catechisms sit against the confessions.
+//
+// One card per mapping. The numbers are honest about what the tool can and
+// cannot do: a catechism that walks through the Ten Commandments one at a time
+// has a large stretch with no confession counterpart to find, and saying so is
+// more useful than a single coverage figure that hides it.
+
+import Main from "../../layouts/Main.astro";
+import { listMappings, mappingStats } from "../../lib/catechism";
+
+const mappings = listMappings().map((mapping) => {
+  const stats = mappingStats(mapping.id);
+  const cohorts = [...new Set(mapping.rows.map((row) => row.cohort))].map((cohort) => {
+    const rows = mapping.rows.filter((row) => row.cohort === cohort);
+    return {
+      label: cohort,
+      total: rows.length,
+      linked: rows.filter((row) => row.links.length).length,
+    };
+  });
+  return {
+    mapping,
+    linked: stats?.linked ?? 0,
+    questions: stats?.questions ?? mapping.rows.length,
+    cohorts,
+    high: mapping.rows.filter((row) => row.confidence === "high").length,
+  };
+});
+---
+
+<Main title="Catechism links | Confessions Hub">
+  <section class="catechism-index">
+    <header class="index-head card-panel">
+      <h1>Catechisms against the confessions</h1>
+      <p class="lede">
+        A catechism asks what a confession states. Both cite scripture at clause level, and two
+        statements defending the same doctrine reach for the same verses — so the proof texts, not
+        the wording, are what pair a question to a paragraph.
+      </p>
+      <p class="note">
+        Every link carries a confidence. Confident links appear under the paragraph itself on each
+        confession page; the rest are listed here so they can be judged and corrected.
+      </p>
+    </header>
+
+    <ul class="mapping-list">
+      {
+        mappings.map(({ mapping, linked, questions, cohorts, high }) => (
+          <li>
+            <a class="mapping-card card-panel" href={`/catechism/${mapping.id}/`}>
+              <h2>
+                {mapping.catechism.label}
+                <span class="arrow" aria-hidden="true">
+                  →
+                </span>
+                <span class="target">{mapping.confession.title}</span>
+              </h2>
+
+              <p class="counts">
+                <strong>{linked}</strong> of {questions} questions linked
+                <span class="dot" aria-hidden="true">
+                  ·
+                </span>
+                <strong>{high}</strong> confident
+              </p>
+
+              <dl class="cohorts">
+                {cohorts.map((cohort) => (
+                  <div class="cohort">
+                    <dt>{cohort.label}</dt>
+                    <dd>
+                      <span
+                        class="bar"
+                        style={`--fill:${Math.round((cohort.linked / cohort.total) * 100)}%`}
+                      />
+                      <span class="cohort-count">
+                        {cohort.linked}/{cohort.total}
+                      </span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="feed">
+      The mapping is published as <a href="/catechism-links.json">/catechism-links.json</a> for
+      catechize.ing to read at build.
+    </p>
+  </section>
+</Main>
+
+<style>
+  .catechism-index {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .index-head h1 {
+    margin-top: 0;
+  }
+
+  .lede {
+    font-size: 1.05rem;
+  }
+
+  .note {
+    color: var(--color-muted);
+    margin-bottom: 0;
+  }
+
+  .mapping-list {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mapping-card {
+    display: block;
+    padding: 1.15rem 1.25rem;
+    color: inherit;
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .mapping-card:hover,
+  .mapping-card:focus-visible {
+    border-color: var(--card-hover-border);
+    transform: translateY(-1px);
+  }
+
+  .mapping-card h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  .arrow {
+    color: var(--color-muted);
+  }
+
+  .target {
+    color: var(--color-muted);
+    font-size: 0.95rem;
+  }
+
+  .counts {
+    margin: 0 0 0.9rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+  }
+
+  .counts strong {
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dot {
+    margin: 0 0.4rem;
+  }
+
+  .cohorts {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+  }
+
+  .cohort {
+    display: grid;
+    grid-template-columns: minmax(9rem, 14rem) 1fr;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cohort dt {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+  }
+
+  .cohort dd {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+  }
+
+  /* The bar is the point of this card: it shows at a glance that the low
+     figure on the Decalogue stretch is the documents differing, not the
+     matching failing. */
+  .bar {
+    flex: 1;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: var(--surface-bg-strong);
+    overflow: hidden;
+  }
+
+  .bar::after {
+    content: "";
+    display: block;
+    width: var(--fill, 0%);
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-link);
+  }
+
+  .cohort-count {
+    flex: none;
+    min-width: 3.5rem;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .feed {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 560px) {
+    .cohort {
+      grid-template-columns: 1fr;
+      gap: 0.2rem;
+    }
+  }
+</style>

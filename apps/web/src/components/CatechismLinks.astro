@@ -1,0 +1,205 @@
+---
+// The catechism questions that expound one confession paragraph.
+//
+// Deliberately quiet: a paragraph of the confession is the thing being read,
+// and these are a side door out to catechize.ing. Only high and medium
+// confidence links appear here — a low-confidence guess is worth recording in
+// the data and showing on the mapping page, but not worth putting under the
+// text as though the confession claimed it.
+
+import { questionsForParagraph, type ParagraphQuestion } from "../lib/catechism";
+
+interface Props {
+  confessionSlug: string;
+  unitNumber: number;
+  paragraphNumber: number;
+}
+
+const { confessionSlug, unitNumber, paragraphNumber } = Astro.props;
+
+// High and medium links both show. They arrive already ordered strongest
+// first (see questionsForParagraph), and the script below collapses everything
+// past the first few — which is what keeps a long list from becoming noise,
+// rather than throwing links away.
+const questions: ParagraphQuestion[] = questionsForParagraph(
+  confessionSlug,
+  unitNumber,
+  paragraphNumber
+).filter((question) => question.confidence === "high" || question.confidence === "medium");
+---
+
+{
+  questions.length > 0 && (
+    <aside
+      class="catechism-links"
+      aria-label="Catechism questions on this paragraph"
+      data-catechism-links
+    >
+      <span class="catechism-label">Catechism</span>
+      <ul class="catechism-chips">
+        {questions.map((question) => (
+          <li>
+            <a
+              class="catechism-chip"
+              href={question.href}
+              data-confidence={question.confidence}
+              data-secondary={question.secondary ? "true" : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${question.catechism.label} ${question.n}. ${question.title}`}
+            >
+              <span class="chip-doc">{question.catechism.short}</span>
+              <span class="chip-n">{question.n}</span>
+              <span class="chip-title">{question.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}
+
+<script>
+  // A well-worked paragraph can draw a lot of questions — Westminster 11.1 on
+  // justification pulls nine from the two Westminster catechisms, and each
+  // catechism added multiplies that. Collapse past the first few so the
+  // paragraph stays the thing on the page.
+  //
+  // Done in script rather than at build so that with no JS every link is still
+  // there and still crawlable; the collapse is the enhancement, not the
+  // default.
+  const LIMIT = 4;
+
+  for (const group of document.querySelectorAll<HTMLElement>("[data-catechism-links]")) {
+    const items = Array.from(group.querySelectorAll<HTMLLIElement>(".catechism-chips > li"));
+    if (items.length <= LIMIT + 1) continue;
+
+    const hidden = items.slice(LIMIT);
+    for (const item of hidden) item.hidden = true;
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "catechism-more";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = `+${hidden.length} more`;
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      for (const item of hidden) item.hidden = expanded;
+      toggle.setAttribute("aria-expanded", String(!expanded));
+      toggle.textContent = expanded ? `+${hidden.length} more` : "Show fewer";
+    });
+
+    group.append(toggle);
+  }
+</script>
+
+<style>
+  .catechism-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.65rem;
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .catechism-label {
+    flex: none;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .catechism-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .catechism-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    max-width: min(30rem, 100%);
+    padding: 0.22rem 0.6rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-bg-muted);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .catechism-chip:hover,
+  .catechism-chip:focus-visible {
+    border-color: var(--surface-border-strong);
+    background: var(--surface-bg-hover);
+  }
+
+  /* A medium-confidence link is a suggestion, not a statement, and reads as
+     one: the same chip with its outline dashed rather than a different colour,
+     which would compete with the confession accents. */
+  .catechism-chip[data-confidence="medium"] {
+    border-style: dashed;
+    background: transparent;
+  }
+
+  .catechism-more {
+    flex: none;
+    padding: 0.22rem 0.55rem;
+    border: 1px dashed var(--surface-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-muted);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .catechism-more:hover,
+  .catechism-more:focus-visible {
+    border-color: var(--surface-border-strong);
+    color: var(--color-text);
+  }
+
+  .chip-doc {
+    flex: none;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .chip-n {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--color-link);
+  }
+
+  .chip-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .catechism-chip[data-secondary] .chip-title {
+    color: var(--color-muted);
+  }
+
+  @media (max-width: 640px) {
+    .chip-title {
+      max-width: 14rem;
+    }
+  }
+</style>
