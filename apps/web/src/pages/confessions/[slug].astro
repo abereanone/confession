@@ -170,7 +170,7 @@ const verseLookup = await getVerseLookup([...references]);
               {showParagraphMeta ? (
                 <p class="paragraph-meta">{confession.unitLabel} {unit.number} - Paragraph {index + 1}</p>
               ) : null}
-              <p>{renderParagraphFromProofTags(paragraph, false)}</p>
+              <p data-paragraph-body>{renderParagraphFromProofTags(paragraph, false)}</p>
               <CatechismLinks
                 confessionSlug={confession.slug}
                 unitNumber={unit.number}
@@ -240,7 +240,7 @@ const verseLookup = await getVerseLookup([...references]);
   const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   const getParagraphBodies = () =>
-    Array.from(document.querySelectorAll(".paragraph-card p:last-child"));
+    Array.from(document.querySelectorAll(".paragraph-card [data-paragraph-body]"));
 
   // Shared with the Bible reader and the confession listing, so all three search
   // boxes take the same query syntax and skip the same trivial words.
@@ -419,7 +419,7 @@ const verseLookup = await getVerseLookup([...references]);
         return renderParagraphFromProofTagsClient(source, !includeRefs);
       }
       // No proof tags: the rendered body is the whole paragraph either way.
-      const body = card.querySelector("p:last-child");
+      const body = card.querySelector("[data-paragraph-body]");
       return (body?.textContent || "").trim();
     };
 
@@ -611,7 +611,7 @@ const verseLookup = await getVerseLookup([...references]);
         return;
       }
 
-      const paragraph = card.querySelector("p:last-child");
+      const paragraph = card.querySelector("[data-paragraph-body]");
       if (!(paragraph instanceof HTMLElement)) {
         return;
       }
@@ -720,7 +720,7 @@ const verseLookup = await getVerseLookup([...references]);
           continue;
         }
 
-        const paragraphBody = paragraphCard.querySelector("p:last-child");
+        const paragraphBody = paragraphCard.querySelector("[data-paragraph-body]");
         const text = (paragraphBody?.textContent ?? "").toLowerCase();
         const match = terms.length === 0 || terms.every((term) => text.includes(term.value));
         paragraphCard.hidden = !match;
@@ -1050,13 +1050,20 @@ const verseLookup = await getVerseLookup([...references]);
     margin-bottom: 0.35rem;
   }
 
-  .paragraph-card p:last-child {
+  .paragraph-card [data-paragraph-body] {
     margin-bottom: 0;
   }
 
-  .confession-page.reader-mode-enabled .paragraph-card p:last-child {
+  .confession-page.reader-mode-enabled .paragraph-card [data-paragraph-body] {
     font-size: 1.06rem;
     line-height: 1.8;
+  }
+
+  /* Reading mode strips the apparatus: the scripture proofs come out of the
+     text itself, and the catechism links go with them. What is left is the
+     confession, which is the point of the mode. */
+  .confession-page.reader-mode-enabled .paragraph-card :global(.catechism-links) {
+    display: none;
   }
 
   .paragraph-card mark.search-hit {

@@ -17,15 +17,22 @@ interface Props {
 
 const { confessionSlug, unitNumber, paragraphNumber } = Astro.props;
 
-// High and medium links both show. They arrive already ordered strongest
-// first (see questionsForParagraph), and the script below collapses everything
-// past the first few — which is what keeps a long list from becoming noise,
-// rather than throwing links away.
+// High and medium links both show. They arrive already ordered strongest first
+// (see questionsForParagraph), and everything past VISIBLE is collapsed behind
+// a toggle — which is what keeps a long list from becoming noise, rather than
+// throwing links away. Westminster 11.1 draws eleven.
+const VISIBLE = 4;
+
 const questions: ParagraphQuestion[] = questionsForParagraph(
   confessionSlug,
   unitNumber,
   paragraphNumber
 ).filter((question) => question.confidence === "high" || question.confidence === "medium");
+
+// One over the limit is not worth a toggle — showing "+1 more" costs the same
+// room as the chip it hides.
+const collapsed = questions.length > VISIBLE + 1;
+const hiddenCount = questions.length - VISIBLE;
 ---
 
 {
@@ -34,6 +41,7 @@ const questions: ParagraphQuestion[] = questionsForParagraph(
       class="catechism-links"
       aria-label="Catechism questions on this paragraph"
       data-catechism-links
+      data-collapsed={collapsed ? "true" : undefined}
     >
       <span class="catechism-label">Catechism</span>
       <ul class="catechism-chips">
@@ -55,42 +63,38 @@ const questions: ParagraphQuestion[] = questionsForParagraph(
           </li>
         ))}
       </ul>
+      {collapsed && (
+        <button type="button" class="catechism-more" data-catechism-more aria-expanded="false">
+          +{hiddenCount} more
+        </button>
+      )}
     </aside>
   )
 }
 
 <script>
-  // A well-worked paragraph can draw a lot of questions — Westminster 11.1 on
-  // justification pulls nine from the two Westminster catechisms, and each
-  // catechism added multiplies that. Collapse past the first few so the
-  // paragraph stays the thing on the page.
+  // The button and the collapsed state are rendered on the server, so the
+  // styling is Astro-scoped and the markup is correct before any JS runs. This
+  // only flips the attribute the CSS keys off.
   //
-  // Done in script rather than at build so that with no JS every link is still
-  // there and still crawlable; the collapse is the enhancement, not the
-  // default.
-  const LIMIT = 4;
+  // An earlier version built the button in JS, which silently lost the scoped
+  // style attribute and rendered it as a bare browser button.
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-catechism-more]")) {
+    const group = button.closest<HTMLElement>("[data-catechism-links]");
+    if (!group) continue;
 
-  for (const group of document.querySelectorAll<HTMLElement>("[data-catechism-links]")) {
-    const items = Array.from(group.querySelectorAll<HTMLLIElement>(".catechism-chips > li"));
-    if (items.length <= LIMIT + 1) continue;
+    const label = button.textContent?.trim() ?? "";
 
-    const hidden = items.slice(LIMIT);
-    for (const item of hidden) item.hidden = true;
-
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "catechism-more";
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.textContent = `+${hidden.length} more`;
-
-    toggle.addEventListener("click", () => {
-      const expanded = toggle.getAttribute("aria-expanded") === "true";
-      for (const item of hidden) item.hidden = expanded;
-      toggle.setAttribute("aria-expanded", String(!expanded));
-      toggle.textContent = expanded ? `+${hidden.length} more` : "Show fewer";
+    button.addEventListener("click", () => {
+      const collapsed = group.dataset.collapsed === "true";
+      if (collapsed) {
+        delete group.dataset.collapsed;
+      } else {
+        group.dataset.collapsed = "true";
+      }
+      button.setAttribute("aria-expanded", String(collapsed));
+      button.textContent = collapsed ? "Show fewer" : label;
     });
-
-    group.append(toggle);
   }
 </script>
 
@@ -152,6 +156,14 @@ const questions: ParagraphQuestion[] = questionsForParagraph(
   .catechism-chip[data-confidence="medium"] {
     border-style: dashed;
     background: transparent;
+  }
+
+  /* Collapse in CSS rather than with the `hidden` attribute, which any author
+     rule setting `display` would silently defeat. The 5 is VISIBLE + 1 — keep
+     the two in step. Hidden chips stay in the DOM, so they are still in the
+     markup for anything reading the page rather than looking at it. */
+  .catechism-links[data-collapsed="true"] .catechism-chips > li:nth-child(n + 5) {
+    display: none;
   }
 
   .catechism-more {
