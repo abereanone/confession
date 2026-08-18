@@ -10,7 +10,7 @@
     "gen:logo": "node scripts/gen-logo.cjs"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
     "astro": "^5.18.1"
   }
 }
-

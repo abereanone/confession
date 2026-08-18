@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://confess.catechize.ing/sitemap-index.xml
