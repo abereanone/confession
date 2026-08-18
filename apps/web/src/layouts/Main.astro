@@ -9,6 +9,10 @@ const siteDescription = "Search and read historic Christian confessions with the
 const logoUrl = "/logo.svg";
 const siteUrl = "https://confess.catechize.ing";
 const ogImageUrl = `${siteUrl}/ogLogo.png`;
+// Built from the production origin rather than Astro.url so that preview deploys and
+// any proxied domain still declare the canonical host, and so query strings and hashes
+// are dropped -- /bible/gen/1/?x=1 and /bible/gen/1/ are one page, not two.
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 // Register the service worker only in built output, so dev HMR isn't intercepted.
 const enablePwa = import.meta.env.PROD;
 ---
@@ -19,10 +23,11 @@ const enablePwa = import.meta.env.PROD;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={siteDescription} />
+    <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={siteDescription} />
-    <meta property="og:url" content={Astro.url.href} />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:alt" content={`${siteSettings.siteName} social preview`} />
     <meta property="og:image:width" content="1200" />
