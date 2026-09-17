@@ -80,6 +80,20 @@ const verseLookup = await getVerseLookup([...references]);
 ---
 
 <Main title={confession.title}>
+  <div class="search-return" data-search-return hidden>
+    <a class="search-return-link" data-search-return-link href="/">
+      <span aria-hidden="true">&larr;</span>
+      <span>Back to search results</span>
+    </a>
+    <button
+      type="button"
+      class="search-return-dismiss"
+      data-search-return-dismiss
+      aria-label="Dismiss back to search results"
+      title="Dismiss"
+    >&times;</button>
+  </div>
+
   <div class="confession-page" id="confession-top" data-confession={confession.slug}>
     <section class="confession-header">
       <h1>
@@ -131,6 +145,11 @@ const verseLookup = await getVerseLookup([...references]);
               id={paragraphId(unit.number, index + 1)}
               data-bible-autolink
               data-paragraph-card
+              data-has-compare={
+                comparedWith && compareHrefFor(confession.slug, unit.number, index + 1)
+                  ? "true"
+                  : undefined
+              }
               data-proof-source={hasProofTags(paragraph) ? paragraph : undefined}
               data-paragraph-ref={`${confession.shortCode} ${confession.unitLabel} ${unit.number}${
                 showParagraphMeta ? `, Paragraph ${index + 1}` : ""
@@ -145,11 +164,7 @@ const verseLookup = await getVerseLookup([...references]);
                     showParagraphMeta ? `, Paragraph ${index + 1}` : ""
                   } with ${comparedWith}`}
                 >
-                  <svg class="paragraph-share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M4 4v16" />
-                    <path d="M12 4v16" />
-                    <path d="M20 4v16" />
-                  </svg>
+                  Compare
                 </a>
               )}
               <button
@@ -648,6 +663,137 @@ const verseLookup = await getVerseLookup([...references]);
     applyFromGlobalMode(mode);
   });
 
+  // --- Landing on a #para-N-M / #unit-N link (cross-confession search results,
+  // shared paragraph links) ---
+  // The browser's own fragment scroll fires while the page is still the
+  // server-rendered version. Reader mode then rewrites every tagged paragraph
+  // and the autolinker wraps each reference in a span, both of which change the
+  // height of a very tall page — so the native scroll ends up hundreds of
+  // pixels (often whole chapters) away from the paragraph that was asked for.
+  // Re-run the scroll ourselves until the target stops moving.
+  // Set by any scroll the reader performs, so the correction passes below
+  // never yank them back to the paragraph they just scrolled away from.
+  let readerTookOver = false;
+  ["wheel", "touchstart", "keydown"].forEach((type) =>
+    window.addEventListener(type, () => {
+      readerTookOver = true;
+    }, { passive: true })
+  );
+
+  const hashTargetId = () => {
+    const match = window.location.hash.match(/^#((?:unit-\d+)|(?:para-\d+-\d+))$/i);
+    return match ? String(match[1] || "") : "";
+  };
+
+  const markHashTarget = (target) => {
+    Array.from(document.querySelectorAll(".unit.is-linked-unit")).forEach((unit) =>
+      unit.classList.remove("is-linked-unit")
+    );
+    Array.from(document.querySelectorAll(".paragraph-card.is-linked-paragraph")).forEach((card) =>
+      card.classList.remove("is-linked-paragraph")
+    );
+
+    const card = target.closest("[data-paragraph-card]") || target.querySelector("[data-paragraph-card]");
+    if (card instanceof HTMLElement) {
+      card.classList.add("is-linked-paragraph");
+    }
+    const unit = target.closest(".unit");
+    if (unit instanceof HTMLElement) {
+      unit.classList.add("is-linked-unit");
+    }
+  };
+
+  /**
+   * Scrolls to the hash target and keeps correcting, because the thing that
+   * throws the position off happens after the first scroll. Each pass is a
+   * no-op once the target already sits under the header, so this settles
+   * quickly; `attempt` caps it in case something keeps reflowing, and any
+   * scroll the reader performs themselves ends it immediately.
+   */
+  const scrollToHashTarget = (attempt = 0) => {
+    const id = hashTargetId();
+    if (!id) {
+      return;
+    }
+
+    const target = document.getElementById(id);
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (attempt === 0) {
+      markHashTarget(target);
+      readerTookOver = false;
+    } else if (readerTookOver) {
+      return;
+    }
+
+    const header = document.querySelector(".top");
+    const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+    // Mirrors the 7.5rem scroll-margin-top the cards carry for native jumps.
+    const offset = headerHeight + 24;
+    const delta = target.getBoundingClientRect().top - offset;
+
+    if (Math.abs(delta) > 4) {
+      window.scrollTo({ top: Math.max(window.scrollY + delta, 0), behavior: "auto" });
+    }
+
+    if (attempt < 12) {
+      window.setTimeout(() => scrollToHashTarget(attempt + 1), 80);
+    }
+  };
+
+  if (hashTargetId()) {
+    // Not smooth: the reader asked for this paragraph, so put them on it rather
+    // than animating past every chapter above it.
+    scrollToHashTarget();
+    // Fonts and the autolinker can still be settling at DOMContentLoaded; one
+    // more chain from `load` catches that, unless the reader has moved on.
+    window.addEventListener(
+      "load",
+      () => {
+        if (!readerTookOver) {
+          scrollToHashTarget();
+        }
+      },
+      { once: true }
+    );
+  }
+
+  window.addEventListener("hashchange", () => scrollToHashTarget());
+
+  // --- Back to search results ---
+  // The home page appends `?q=` to every result link, so its presence is the
+  // signal that this view was reached from a search and the reader has a list
+  // to go back to. Kept out of the markup otherwise.
+  (() => {
+    const chip = document.querySelector("[data-search-return]");
+    const link = document.querySelector("[data-search-return-link]");
+    const dismiss = document.querySelector("[data-search-return-dismiss]");
+    if (!(chip instanceof HTMLElement) || !(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    let query = "";
+    try {
+      query = new URLSearchParams(window.location.search).get("q") || "";
+    } catch {
+      query = "";
+    }
+    if (!query.trim()) {
+      return;
+    }
+
+    link.href = `/?q=${encodeURIComponent(query)}`;
+    chip.hidden = false;
+
+    if (dismiss instanceof HTMLButtonElement) {
+      dismiss.addEventListener("click", () => {
+        chip.hidden = true;
+      });
+    }
+  })();
+
   const scrollToConfessionTop = () => {
     if (!(confessionPage instanceof HTMLElement)) {
       return;
@@ -843,28 +989,41 @@ const verseLookup = await getVerseLookup([...references]);
 
   /* Sits beside the share control, same affordance and same reveal-on-hover
      behaviour, one slot to its left. */
+  /* Labelled rather than an icon: the three-bar glyph that used to sit here
+     read as decoration, and nothing about it said "compare". */
   .paragraph-compare {
     position: absolute;
     top: 0.4rem;
-    right: 2.5rem;
+    right: 2.6rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.9rem;
-    height: 1.9rem;
-    border: 1px solid transparent;
+    min-height: 1.9rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--surface-border);
     border-radius: 999px;
-    background: transparent;
+    background: var(--surface-bg-muted);
     color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
     line-height: 1;
-    opacity: 0.55;
+    text-decoration: none;
+    white-space: nowrap;
+    opacity: 0.75;
   }
 
   .paragraph-card:hover .paragraph-compare,
   .paragraph-compare:focus-visible,
   .paragraph-compare:hover {
     opacity: 1;
+    border-color: var(--color-link);
     color: var(--color-link);
+    text-decoration: none;
+  }
+
+  /* Keep the citation clear of the pill above it. */
+  .paragraph-card[data-has-compare] .paragraph-meta {
+    padding-right: 8rem;
   }
 
   .paragraph-share {
@@ -909,6 +1068,66 @@ const verseLookup = await getVerseLookup([...references]);
   .paragraph-card.is-sharing {
     border-color: var(--color-link);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-link) 24%, transparent);
+  }
+
+  /* Sits below the paragraph action bar (z-index 1500) so a selected
+     paragraph's Copy/Share controls are never covered by it. */
+  .search-return {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 1200;
+    display: flex;
+    align-items: stretch;
+    max-width: calc(100vw - 2rem);
+    border: 1px solid var(--tooltip-border);
+    border-radius: 999px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow-tooltip);
+    overflow: hidden;
+  }
+
+  .search-return[hidden] {
+    display: none;
+  }
+
+  .search-return-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+    color: var(--tooltip-text);
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .search-return-link:hover,
+  .search-return-link:focus-visible {
+    text-decoration: underline;
+  }
+
+  .search-return-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    border: 0;
+    border-left: 1px solid color-mix(in srgb, var(--tooltip-text) 22%, transparent);
+    background: transparent;
+    color: var(--tooltip-text);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .search-return-dismiss:hover,
+  .search-return-dismiss:focus-visible {
+    background: color-mix(in srgb, var(--tooltip-text) 12%, transparent);
+    outline: none;
   }
 
   .para-actionbar {

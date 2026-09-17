@@ -331,7 +331,18 @@ const bookCatalogJson = JSON.stringify(
       showList(true);
     };
 
-    const render = (results, terms, total, ignored) => {
+    /**
+     * Carries the query onto the confession page so it can offer a way back to
+     * this list — and so the URL a reader shares from there still says what
+     * they were looking for. The hash has to stay last.
+     */
+    const withQuery = (href, query) => {
+      const [path, hash] = String(href).split("#");
+      const separator = path.includes("?") ? "&" : "?";
+      return `${path}${separator}q=${encodeURIComponent(query)}${hash ? `#${hash}` : ""}`;
+    };
+
+    const render = (results, terms, total, ignored, query) => {
       const regex = buildHighlightRegex(terms);
       list.textContent = "";
 
@@ -340,7 +351,7 @@ const bookCatalogJson = JSON.stringify(
 
         const link = document.createElement("a");
         link.className = "result-card";
-        link.href = result.href;
+        link.href = withQuery(result.href, query);
 
         const head = document.createElement("span");
         head.className = "result-head";
@@ -390,11 +401,28 @@ const bookCatalogJson = JSON.stringify(
       showList(false);
     };
 
+    const syncUrl = (query) => {
+      try {
+        const url = new URL(window.location.href);
+        if (query) {
+          url.searchParams.set("q", query);
+        } else {
+          url.searchParams.delete("q");
+        }
+        // replaceState, not pushState: typing should not bury the page the
+        // reader arrived from under one history entry per keystroke.
+        window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+      } catch {
+        // A URL we cannot rewrite is not worth failing the search over.
+      }
+    };
+
     const run = async () => {
       const raw = input.value.trim();
       if (clearButton instanceof HTMLElement) {
         clearButton.hidden = raw.length === 0;
       }
+      syncUrl(raw);
 
       if (!raw) {
         reset();
@@ -418,7 +446,7 @@ const bookCatalogJson = JSON.stringify(
           const haystack = String(entry.text ?? "").toLowerCase();
           return terms.every((term) => haystack.includes(term.value));
         });
-        render(matches.slice(0, RESULT_LIMIT), terms, matches.length, ignored);
+        render(matches.slice(0, RESULT_LIMIT), terms, matches.length, ignored, raw);
       } catch {
         if (section instanceof HTMLElement) section.hidden = false;
         if (meta instanceof HTMLElement) {
@@ -448,6 +476,31 @@ const bookCatalogJson = JSON.stringify(
         input.focus();
       });
     }
+
+    /**
+     * Restores the search from `?q=`. This is what makes "back to search
+     * results" work: the confession page links here with the query attached,
+     * and the list rebuilds itself rather than dropping the reader on an empty
+     * home page. Also covers a reload and a shared search URL.
+     */
+    const hydrateFromUrl = () => {
+      let query = "";
+      try {
+        query = new URL(window.location.href).searchParams.get("q") || "";
+      } catch {
+        query = "";
+      }
+      if (!query || query === input.value) {
+        return;
+      }
+      input.value = query;
+      run();
+    };
+
+    hydrateFromUrl();
+    // Firefox and Safari restore the page from cache on Back without firing a
+    // load event; this is the hook that still runs.
+    window.addEventListener("pageshow", hydrateFromUrl);
   })();
 </script>
 
