@@ -8,7 +8,7 @@
 // This module deliberately imports nothing but the spine and the doc naming, so
 // a page can resolve an anchor without pulling in the corpus or the diff engine.
 
-import { DOC_SLUGS, type DocId } from "./text";
+import { COMPARE_URL, DOC_SLUGS, type DocId } from "./text";
 import spineJson from "../../data/comparison/alignment.json";
 
 type SpineRow = {
@@ -40,6 +40,11 @@ const docBySlug = new Map<string, DocId>(
  * Link from a confession paragraph to the row comparing it with the other two.
  * Null when the confession is not part of the comparison, or when the paragraph
  * has no row — which should not happen, but a missing link beats a broken one.
+ *
+ * `?from=` names the paragraph that was left, so the comparison can offer a way
+ * back to it. It is carried in the URL rather than read from history because it
+ * has to survive a reload and a link someone pastes to a friend, and because
+ * the comparison is a static page with no state of its own.
  */
 export function compareHrefFor(
   confessionSlug: string,
@@ -52,5 +57,5 @@ export function compareHrefFor(
   const rowId = rowByRef.get(`${doc}:${chapter}.${paragraph}`);
   if (!rowId) return null;
 
-  return `/compare/wcf-savoy-lbcf/#${rowId}`;
+  return `${COMPARE_URL}?from=${doc}:${chapter}.${paragraph}#${rowId}`;
 }

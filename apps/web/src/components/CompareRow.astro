@@ -156,7 +156,8 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
 <style>
   .compare-row {
     border-top: 1px solid var(--border-subtle, #2a2a2a);
-    padding: 1.25rem 0;
+    padding: 1.25rem 0 1.25rem 0.75rem;
+    margin-left: -0.75rem;
     /* Arriving from a paragraph's compare link, the row must clear both the
        site header and the sticky colour key, or it lands underneath them. */
     scroll-margin-top: calc(var(--compare-header-offset, 5.25rem) + 4rem);
@@ -173,9 +174,16 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    flex-wrap: wrap;
     margin-bottom: 0.5rem;
     font-size: 0.75rem;
-    opacity: 0.75;
+  }
+
+  .agreement {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--color-heading, inherit);
   }
 
   .kind-badge,
@@ -183,6 +191,7 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
     border: 1px solid currentColor;
     border-radius: 999px;
     padding: 0.05rem 0.5rem;
+    opacity: 0.8;
   }
 
   .confidence-badge {
@@ -307,8 +316,9 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
      Common text is left completely unstyled so the eye goes to the differences
      rather than to a page of highlights. */
   .seg-unique {
-    background: var(--confession-accent-bg, rgba(214, 138, 60, 0.28));
-    box-shadow: inset 0 -2px 0 var(--confession-accent-border, rgba(214, 138, 60, 0.6));
+    background: var(--diff-unique-bg, var(--confession-accent-bg, rgba(214, 138, 60, 0.28)));
+    box-shadow: inset 0 -2px 0
+      var(--diff-unique-rule, var(--confession-accent-border, rgba(214, 138, 60, 0.6)));
     border-radius: 0.15rem;
   }
 
@@ -333,6 +343,19 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
   @media (max-width: 800px) {
     .compare-columns {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Stacked columns mean the accent is no longer reinforced by a neighbouring
+       column in a different hue, and a phone is read in worse light than a
+       desk monitor. Thicken the rule under each marked run so the mark survives
+       both. */
+    .seg-unique {
+      box-shadow: inset 0 -3px 0
+        var(--diff-unique-rule, var(--confession-accent-border, rgba(214, 138, 60, 0.6)));
+    }
+
+    .seg-shared {
+      box-shadow: inset 0 -3px 0 var(--diff-shared-rule, rgba(90, 150, 210, 0.4));
     }
   }
 </style>

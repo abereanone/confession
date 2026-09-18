@@ -53,6 +53,24 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
 ---
 
 <Main title={`${title} | Confessions Hub`}>
+  {/* Filled in and revealed by the script below when the page was reached from a
+      paragraph's Compare link. The naming has to reach client script somehow and
+      the page is static, so it rides along as an attribute rather than through
+      a second import. */}
+  <div class="compare-return" data-compare-return data-doc-labels={JSON.stringify(DOC_LABELS)} hidden>
+    <a class="compare-return-link" data-compare-return-link href="/">
+      <span aria-hidden="true">&larr;</span>
+      <span data-compare-return-label>Back</span>
+    </a>
+    <button
+      type="button"
+      class="compare-return-dismiss"
+      data-compare-return-dismiss
+      aria-label="Dismiss back to paragraph"
+      title="Dismiss"
+    >&times;</button>
+  </div>
+
   <section class="compare card-panel" data-compare data-show-punctuation="false" id="top">
     <ul class="legend" aria-label="What the colours mean">
       {
@@ -156,6 +174,54 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
 </script>
 
 <script>
+  // --- Back to the paragraph this comparison was opened from ---
+  // Every paragraph on a confession page links here with `?from=doc:ch.para`
+  // (see lib/compare/anchors.ts), so its presence is the signal that there is
+  // somewhere to go back to. Arriving from the nav or a shared bare link leaves
+  // the chip out of the page entirely.
+  (() => {
+    const chip = document.querySelector("[data-compare-return]");
+    const link = document.querySelector("[data-compare-return-link]");
+    const label = document.querySelector("[data-compare-return-label]");
+    const dismiss = document.querySelector("[data-compare-return-dismiss]");
+    if (!(chip instanceof HTMLElement) || !(link instanceof HTMLAnchorElement)) return;
+    if (!(label instanceof HTMLElement)) return;
+
+    let from = "";
+    try {
+      from = new URLSearchParams(window.location.search).get("from") || "";
+    } catch {
+      from = "";
+    }
+
+    const match = from.match(/^([a-z]+):(\d+)\.(\d+)$/i);
+    if (!match) return;
+
+    let labels = {};
+    try {
+      labels = JSON.parse(chip.dataset.docLabels || "{}");
+    } catch {
+      return;
+    }
+
+    const doc = labels[match[1].toLowerCase()];
+    if (!doc || !doc.slug) return;
+
+    const chapter = match[2];
+    const paragraph = match[3];
+    link.href = `/confessions/${doc.slug}#para-${chapter}-${paragraph}`;
+    label.textContent = `Back to ${doc.short} ${chapter}.${paragraph}`;
+    chip.hidden = false;
+
+    if (dismiss instanceof HTMLButtonElement) {
+      dismiss.addEventListener("click", () => {
+        chip.hidden = true;
+      });
+    }
+  })();
+</script>
+
+<script>
   // Keep the sticky colour key clear of the site header, whose height changes
   // when it wraps. Cheaper and more reliable than guessing a fixed offset.
   (() => {
@@ -223,6 +289,69 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
 <style>
   .compare {
     max-width: 1400px;
+  }
+
+  /* Same chip, same corner as the "Back to search results" control on a
+     confession page — arriving somewhere from a link and wanting out again is
+     one behaviour and should look like one. Fixed rather than in the flow
+     because the comparison runs to 185 rows and the way back has to be
+     reachable from anywhere in it. */
+  .compare-return {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 1200;
+    display: flex;
+    align-items: stretch;
+    max-width: calc(100vw - 2rem);
+    border: 1px solid var(--tooltip-border);
+    border-radius: 999px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow-tooltip);
+    overflow: hidden;
+  }
+
+  .compare-return[hidden] {
+    display: none;
+  }
+
+  .compare-return-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+    color: var(--tooltip-text);
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .compare-return-link:hover,
+  .compare-return-link:focus-visible {
+    text-decoration: underline;
+  }
+
+  .compare-return-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    border: 0;
+    border-left: 1px solid color-mix(in srgb, var(--tooltip-text) 22%, transparent);
+    background: transparent;
+    color: var(--tooltip-text);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .compare-return-dismiss:hover,
+  .compare-return-dismiss:focus-visible {
+    background: color-mix(in srgb, var(--tooltip-text) 12%, transparent);
+    outline: none;
   }
 
   /* Confession pills and the punctuation setting share one row; the setting is
@@ -302,8 +431,8 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
   }
 
   .swatch-unique {
-    background: var(--confession-accent-bg);
-    box-shadow: inset 0 -2px 0 var(--confession-accent-border);
+    background: var(--diff-unique-bg, var(--confession-accent-bg));
+    box-shadow: inset 0 -2px 0 var(--diff-unique-rule, var(--confession-accent-border));
   }
 
   .swatch-shared {

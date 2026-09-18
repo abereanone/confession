@@ -37,8 +37,8 @@
      confession's own accent, so the colour says whose wording it is. Where two
      agree against the third, the pair takes this neutral and the odd one out
      keeps its accent. */
-  --diff-shared-bg: rgba(150, 163, 178, 0.16);
-  --diff-shared-rule: rgba(150, 163, 178, 0.4);
+  --diff-shared-bg: rgba(150, 163, 178, 0.24);
+  --diff-shared-rule: rgba(150, 163, 178, 0.62);
 }
 
 [data-theme="light"] {
@@ -71,8 +71,8 @@
   --tooltip-border: rgba(120, 157, 123, 0.28);
   --shadow-card: 0 16px 28px rgba(21, 33, 24, 0.12);
   --shadow-card-hover: 0 20px 34px rgba(21, 33, 24, 0.16);
-  --diff-shared-bg: rgba(84, 98, 116, 0.13);
-  --diff-shared-rule: rgba(84, 98, 116, 0.34);
+  --diff-shared-bg: rgba(84, 98, 116, 0.2);
+  --diff-shared-rule: rgba(84, 98, 116, 0.6);
 }
 
 html,
@@ -239,12 +239,16 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(109, 177, 255, 0.54);
   --confession-accent-bg: rgba(109, 177, 255, 0.2);
   --confession-accent-text: #dceeff;
+  --diff-unique-bg: rgba(109, 177, 255, 0.34);
+  --diff-unique-rule: rgba(109, 177, 255, 0.85);
 }
 
 [data-confession="lbcf-1689"] {
   --confession-accent-border: rgba(238, 195, 84, 0.58);
   --confession-accent-bg: rgba(238, 195, 84, 0.24);
   --confession-accent-text: #ffe8ab;
+  --diff-unique-bg: rgba(238, 195, 84, 0.34);
+  --diff-unique-rule: rgba(238, 195, 84, 0.88);
 }
 
 [data-confession="lbcf-1644"] {
@@ -257,6 +261,8 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(230, 122, 100, 0.58);
   --confession-accent-bg: rgba(230, 122, 100, 0.22);
   --confession-accent-text: #ffd9cf;
+  --diff-unique-bg: rgba(230, 122, 100, 0.34);
+  --diff-unique-rule: rgba(230, 122, 100, 0.88);
 }
 
 [data-confession="belgic-confession"] {
@@ -281,12 +287,16 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(45, 118, 198, 0.4);
   --confession-accent-bg: rgba(67, 135, 210, 0.16);
   --confession-accent-text: #18406d;
+  --diff-unique-bg: rgba(45, 118, 198, 0.3);
+  --diff-unique-rule: rgba(30, 94, 165, 0.85);
 }
 
 [data-theme="light"] [data-confession="lbcf-1689"] {
   --confession-accent-border: rgba(178, 132, 26, 0.44);
   --confession-accent-bg: rgba(212, 167, 57, 0.18);
   --confession-accent-text: #63450a;
+  --diff-unique-bg: rgba(206, 156, 32, 0.4);
+  --diff-unique-rule: rgba(146, 104, 12, 0.9);
 }
 
 [data-theme="light"] [data-confession="lbcf-1644"] {
@@ -299,6 +309,8 @@ a.confession-link:focus-visible {
   --confession-accent-border: rgba(180, 83, 62, 0.44);
   --confession-accent-bg: rgba(211, 111, 87, 0.16);
   --confession-accent-text: #6e2516;
+  --diff-unique-bg: rgba(196, 92, 68, 0.32);
+  --diff-unique-rule: rgba(157, 61, 40, 0.88);
 }
 
 [data-theme="light"] [data-confession="belgic-confession"] {
