@@ -440,6 +440,20 @@ const chapterAudioUrl =
 
   <script src="/sermon-player.js" is:inline defer></script>
   <script>
+    // Keep the sticky chapter audio clear of the site header (height varies when it wraps).
+    (() => {
+      const header = document.querySelector(".top");
+      if (!(header instanceof HTMLElement)) return;
+      const setOffset = () => {
+        const height = Math.ceil(header.getBoundingClientRect().height);
+        document.documentElement.style.setProperty("--reader-header-offset", `${height}px`);
+      };
+      setOffset();
+      window.addEventListener("resize", setOffset);
+      if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header);
+    })();
+  </script>
+  <script>
     import {
       findRecentChapter,
       isSameLocation,
@@ -1997,6 +2011,16 @@ const chapterAudioUrl =
     border: 1px solid var(--surface-border);
     border-radius: 10px;
     background: var(--surface-bg-muted);
+  }
+
+  /* Keep the chapter audio in view (below the site header) while it's playing.
+     --reader-header-offset tracks the header, whose height changes when it wraps. */
+  .chapter-audio:has(sermon-player[playing]) {
+    position: sticky;
+    top: var(--reader-header-offset, 5.25rem);
+    z-index: 20;
+    background: linear-gradient(var(--surface-bg-muted), var(--surface-bg-muted)), var(--color-bg);
+    box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.3);
   }
 
   .chapter-audio-label {

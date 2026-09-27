@@ -196,6 +196,9 @@
         playBtn.setAttribute("aria-label", on ? "Pause" : "Play");
         playBtn.innerHTML = on ? ICONS.pause : ICONS.play;
       };
+      // Host pages style sermon-player[playing] (e.g. sticky while reading the transcript).
+      audio.addEventListener("play", () => this.toggleAttribute("playing", true));
+      audio.addEventListener("pause", () => this.toggleAttribute("playing", false));
       // Public hook so host pages (e.g. an accordion) can stop playback.
       this._pause = () => { audio.pause(); setPlaying(false); };
       playBtn.addEventListener("click", () => {
