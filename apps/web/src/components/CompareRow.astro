@@ -8,9 +8,9 @@
 // silent here rather than that the layout drifted.
 
 import type { CompareRow } from "../lib/compare/compare";
-import { DOC_LABELS } from "../lib/compare/compare";
+import { DOC_LABELS, comboSlug } from "../lib/compare/compare";
 import { isPunctuationOnly } from "../lib/compare/align";
-import type { DocId } from "../lib/compare/text";
+import { DOC_IDS, type DocId } from "../lib/compare/text";
 
 interface Props {
   row: CompareRow;
@@ -18,9 +18,35 @@ interface Props {
   showProofs?: boolean;
   /** Off on the review page, where rows are already short and boxed. */
   backToTop?: boolean;
+  /** Per-row Hide/Show links between the three-way and pair views. */
+  columnToggles?: boolean;
 }
 
-const { row, docs, showProofs = false, backToTop = false } = Astro.props;
+const {
+  row,
+  docs,
+  showProofs = false,
+  backToTop = false,
+  columnToggles = false,
+} = Astro.props;
+
+// Hiding a column is a jump to the pair page at this same row, and showing it
+// again is a jump back to the three-way — the pair pages are the only two-column
+// views, so at most one confession is ever hidden. A Hide link is left out when
+// the other two are both silent here, because the pair page has no such row.
+const toggles = !columnToggles
+  ? []
+  : docs.length === DOC_IDS.length
+    ? docs
+        .filter((doc) => docs.some((other) => other !== doc && row.cells[other]))
+        .map((doc) => ({
+          label: `Hide ${DOC_LABELS[doc].short}`,
+          href: `/compare/${comboSlug(docs.filter((other) => other !== doc))}/#${row.id}`,
+        }))
+    : DOC_IDS.filter((doc) => !docs.includes(doc)).map((doc) => ({
+        label: `Show ${DOC_LABELS[doc].short}`,
+        href: `/compare/${comboSlug(DOC_IDS)}/#${row.id}`,
+      }));
 
 const kindLabel: Record<CompareRow["kind"], string> = {
   parallel: "",
@@ -93,6 +119,17 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
       row.confidence !== "high" && (
         <span class="confidence-badge" data-confidence={row.confidence}>
           {row.confidence} confidence
+        </span>
+      )
+    }
+    {
+      toggles.length > 0 && (
+        <span class="column-toggles">
+          {toggles.map((toggle) => (
+            <a href={toggle.href} data-keep-from>
+              {toggle.label}
+            </a>
+          ))}
         </span>
       )
     }
@@ -196,6 +233,26 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
 
   .confidence-badge {
     text-transform: capitalize;
+  }
+
+  .column-toggles {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .column-toggles a {
+    border: 1px solid var(--border-subtle, #333);
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .column-toggles a:hover,
+  .column-toggles a:focus-visible {
+    border-color: currentColor;
   }
 
   .confidence-badge[data-confidence="medium"] {

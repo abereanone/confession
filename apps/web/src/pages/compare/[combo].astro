@@ -149,7 +149,7 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
           </p>
           {group.note && <p class="group-note">{group.note}</p>}
           {group.rows.map((row) => (
-            <CompareRow row={row} docs={docs} backToTop />
+            <CompareRow row={row} docs={docs} backToTop columnToggles />
           ))}
         </section>
       ))
@@ -170,6 +170,81 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
       if (!id) return;
       if (document.getElementById(id)) window.location.hash = id;
     });
+  })();
+</script>
+
+<script>
+  // Column switcher keeps the reader's place. The links are plain hrefs so they
+  // work without script; here they pick up `?from=` (so the back chip survives)
+  // and the row the reader was last on. The pills scroll away with the title, so
+  // by the time they are clicked the reader has usually scrolled back up past
+  // the rows — hence remembering the last row seen rather than reading the
+  // viewport at click time. A pair view drops rows that exist only in the
+  // deselected document, so skip ahead to the first row the target contains.
+  (() => {
+    const links = document.querySelectorAll(".combo-switch a");
+    const rows = Array.from(document.querySelectorAll<HTMLElement>(".compare-row"));
+    if (rows.length === 0) return;
+
+    const offset = parseFloat(getComputedStyle(rows[0]).scrollMarginTop) || 0;
+
+    /** Index of the row under the sticky key, or -1 when above the first row. */
+    function topRowIndex(): number {
+      if (rows[0].getBoundingClientRect().top > offset + 1) return -1;
+      const index = rows.findIndex((row) => row.getBoundingClientRect().bottom > offset);
+      return index === -1 ? rows.length - 1 : index;
+    }
+
+    const hashIndex = rows.findIndex((row) => `#${row.id}` === window.location.hash);
+    let lastIndex = hashIndex;
+    let queued = false;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+          queued = false;
+          const index = topRowIndex();
+          if (index !== -1) lastIndex = index;
+        });
+      },
+      { passive: true }
+    );
+
+    function rowFor(targetDocs: string[]): string {
+      if (lastIndex === -1) return "";
+      for (const row of rows.slice(lastIndex)) {
+        const inTarget = targetDocs.some((doc) =>
+          row.querySelector(`.compare-cell[data-doc="${doc}"] .cell-ref`)
+        );
+        if (inTarget) return row.id;
+      }
+      return "";
+    }
+
+    function carryPlace(link: HTMLAnchorElement) {
+      const base = link.pathname;
+      const targetDocs = base.split("/").filter(Boolean).pop()?.split("-") ?? [];
+      const rowId = rowFor(targetDocs);
+      link.href = base + window.location.search + (rowId ? `#${rowId}` : "");
+    }
+
+    links.forEach((link) => {
+      if (!(link instanceof HTMLAnchorElement)) return;
+      // pointerdown/focus run before both left- and middle-click navigation.
+      link.addEventListener("pointerdown", () => carryPlace(link));
+      link.addEventListener("focus", () => carryPlace(link));
+    });
+
+    // Per-row Hide/Show links already name their row; they only need `?from=`.
+    function carryFrom(event: Event) {
+      const link = event.target instanceof Element ? event.target.closest("a[data-keep-from]") : null;
+      if (!(link instanceof HTMLAnchorElement)) return;
+      link.href = link.pathname + window.location.search + link.hash;
+    }
+    document.addEventListener("pointerdown", carryFrom);
+    document.addEventListener("focusin", carryFrom);
   })();
 </script>
 
