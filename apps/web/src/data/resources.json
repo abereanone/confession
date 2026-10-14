@@ -1,0 +1,56 @@
+[
+  {
+    "id": "mac",
+    "photo": "/images/resources/mac.jpg",
+    "name": "Michael Coughlin",
+    "url": "https://thingsabove.us/author/mac/",
+    "title": "President",
+    "bio": "Preacher from Ohio who loves Jesus, my wife, my kids, and my neighbors: including the preborn/voiceless.",
+    "sortOrder": 15
+  },
+  {
+    "id": "mac-links",
+    "photo": "/images/resources/mac.jpg",
+    "name": "Sites managed by the curator of Confessions Hub",
+    "url": "https://michaelcoughlin.net/links",
+    "title": "Link Directory",
+    "bio": "A directory of the other websites Michael Coughlin builds and maintains.",
+    "sortOrder": 16
+  },
+  {
+    "id": "catechisms",
+    "logo": "/images/resources/catechisms.png",
+    "name": "Catechisms",
+    "url": "https://catechize.ing/",
+    "title": "Website",
+    "bio": "Historic catechisms, indexed by scripture!",
+    "sortOrder": 18
+  },
+  {
+    "id": "usa",
+    "logo": "/images/resources/usa.png",
+    "name": "United States Catechism",
+    "url": "https://usa.catechize.ing/",
+    "title": "Website",
+    "bio": "Free USA catechism for kids and adults!",
+    "sortOrder": 20
+  },
+  {
+    "id": "bfg",
+    "logo": "/images/resources/bfg.png",
+    "name": "Freely Given Books",
+    "url": "https://books.freely.giving/",
+    "title": "Website",
+    "bio": "Free Christian Books!",
+    "sortOrder": 25
+  },
+  {
+    "id": "fb",
+    "logo": "/images/resources/fb.png",
+    "name": "Fetch Bible",
+    "url": "https://fetch.bible/",
+    "title": "Website",
+    "bio": "Fetch the Bible for free for your website! over a thousand translations.",
+    "sortOrder": 200
+  }
+]

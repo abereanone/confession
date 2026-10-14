@@ -1,0 +1,105 @@
+---
+import Main from "../layouts/Main.astro";
+import resourceData from "../data/resources.json";
+
+const resources = [...resourceData].sort((a, b) => a.sortOrder - b.sortOrder);
+---
+
+<Main title="Resources | Confessions Hub">
+  <h1>Resources & Contributors</h1>
+  <p>Here are some additional resources for you to enjoy.</p>
+  {resources.length ? (
+    <ul class="resource-grid">
+      {resources.map((resource) => (
+        <li class="resource-card card-panel">
+          {"photo" in resource ? (
+            <img class="resource-photo" src={resource.photo} alt={resource.name} width="96" height="96" loading="lazy" />
+          ) : "logo" in resource ? (
+            <img class="resource-logo" src={resource.logo} alt={`${resource.name} logo`} height="64" loading="lazy" />
+          ) : null}
+          <h2>{resource.name}</h2>
+          <p class="resource-bio">{resource.bio}</p>
+          <div class="resource-actions">
+            <a class="resource-link" href={resource.url} target="_blank" rel="noopener noreferrer">
+              Visit website
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p><em>No resources available yet.</em></p>
+  )}
+  <p>It goes without saying that we do not <em>necessarily</em> agree with everything that every ministry we recommend teaches or does.</p>
+</Main>
+
+<style>
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0;
+  }
+
+  .resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .resource-card h2 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .resource-photo {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .resource-logo {
+    align-self: flex-start;
+    height: 64px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+    padding: 6px;
+    background: #fff;
+    border-radius: 12px;
+  }
+
+  .resource-bio {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    opacity: 0.78;
+  }
+
+  .resource-actions {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .resource-link {
+    display: inline-block;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background-color: var(--surface-bg-muted);
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .resource-link:hover,
+  .resource-link:focus-visible {
+    background-color: var(--surface-bg-hover);
+    border-color: var(--surface-border-strong);
+  }
+</style>
