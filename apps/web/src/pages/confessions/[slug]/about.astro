@@ -45,13 +45,22 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
 
     {
       links.length > 0 && (
-        <section class="about-links" aria-labelledby="about-links-heading">
-          <h2 id="about-links-heading">Further reading</h2>
+        <section class="about-links" aria-label="Further reading and listening">
           <ul class="about-links-grid">
             {links.map((link) => (
               <li>
                 <a class="about-link-card" href={link.url} target="_blank" rel="noopener noreferrer">
-                  <span class="about-link-kind">{link.kind === "song" ? "Song" : "Reading"}</span>
+                  {link.kind === "song" ? (
+                    <svg class="about-link-icon" role="img" aria-label="Video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2.5" y="5" width="19" height="14" rx="3" />
+                      <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" />
+                    </svg>
+                  ) : (
+                    <svg class="about-link-icon" role="img" aria-label="Reading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v15H5.5A1.5 1.5 0 0 0 4 20.5z" />
+                      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v15h6.5a1.5 1.5 0 0 1 1.5 1.5z" />
+                    </svg>
+                  )}
                   <span class="about-link-label">{link.label}</span>
                 </a>
               </li>
@@ -101,10 +110,7 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
 
   .about-links {
     margin-top: 0.75rem;
-  }
-
-  .about-links h2 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
   }
 
   .about-links-grid {
@@ -118,8 +124,8 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
 
   .about-link-card {
     display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    align-items: center;
+    gap: 0.6rem;
     height: 100%;
     padding: 0.55rem 0.7rem;
     border: 1px solid var(--confession-accent-border, var(--card-border));
@@ -135,16 +141,15 @@ const displayUnitCount = getConfessionDisplayUnits(confession).length;
     border-color: var(--confession-accent-text, currentColor);
   }
 
-  .about-link-kind {
-    font-size: 0.7rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  .about-link-icon {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
     color: var(--confession-accent-text, inherit);
   }
 
   .about-link-label {
-    font-size: 0.92rem;
-    line-height: 1.3;
+    line-height: 1.4;
   }
 
   @media (max-width: 900px) {
