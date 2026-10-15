@@ -7,10 +7,17 @@ import savoyDeclarationJson from "../data/confessions/savoy-declaration.json";
 import secondHelveticConfessionJson from "../data/confessions/second-helvetic-confession.json";
 import westminsterConfessionJson from "../data/confessions/westminster-confession.json";
 
+export type UnitLink = {
+  kind: "reading" | "song";
+  label: string;
+  url: string;
+};
+
 export type Unit = {
   number: number;
   title: string;
   content: string[];
+  links?: UnitLink[];
 };
 
 export type Confession = {
@@ -29,6 +36,7 @@ type ConfessionManifest = {
 export type ConfessionAbout = {
   title: string;
   paragraphs: string[];
+  links?: UnitLink[];
 };
 
 const manifest = manifestJson as ConfessionManifest;
@@ -91,6 +99,7 @@ export function getConfessionAbout(confession: Confession): ConfessionAbout {
     return {
       title: aboutUnit.title,
       paragraphs: aboutUnit.content,
+      links: aboutUnit.links,
     };
   }
 

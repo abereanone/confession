@@ -7,6 +7,18 @@
     {
       "number": 0,
       "title": "About This Confession",
+      "links": [
+        {
+          "kind": "reading",
+          "label": "Missionary Guido de Bres (Ligonier Ministries)",
+          "url": "https://learn.ligonier.org/articles/missionary-guido-de-bres"
+        },
+        {
+          "kind": "song",
+          "label": "A song about the life of Guido de Bres (YouTube)",
+          "url": "https://www.youtube.com/watch?v=gvFpacHoiCg"
+        }
+      ],
       "content": [
         "THE CONFESSION OF FAITH Revised in the National Synod, held at Dordrecht, in the Years 1618 and 1619.",
         "The oldest of the doctrinal standards of the Reformed Churches of the Netherlands is the Confession of Faith, most commonly known as the Belgic Confession, following the seventeenth-century Latin designation Confessio Belgica. \"Belgica\" referred to the Lowlands or the whole of the Netherlands, both north and south, which today is divided into the Netherlands and Belgium. Variant names for the Belgic Confession include the Walloon Confession and the Netherlands Confession.",
