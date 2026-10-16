@@ -196,14 +196,27 @@ const OFFLINE_DOWNLOAD_ENABLED = false;
     // silently, because the failure was swallowed and still counted as saved.
     // Re-wrapping the body as a plain 200 stores it under the non-slash URL the
     // site's own links navigate to. Keep in sync with cachePage() in sw.js.
-    const cachePage = async (cache, url) => {
+    //
+    // A page is only half of what reading it offline needs: it also loads its own
+    // stylesheet and script bundles. Those used to be stored only if the reader
+    // had happened to open that kind of page online first, so a downloaded Bible
+    // chapter came up offline unstyled and with a dead reader (no chapter
+    // navigation, no book picker). Each page's assets are collected and stored
+    // with it. Keep in sync with the same helpers in sw.js.
+    const ASSET_IN_HTML = /(?:href|src)="(\/[^"]+?\.(?:css|js)(?:\?[^"]*)?)"/g;
+    const IMPORT_IN_JS = /(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+?\.js)["']/g;
+
+    const cachePage = async (cache, url, assets) => {
       const response = await fetch(url, { credentials: "same-origin" });
       if (!response.ok) {
         throw new Error(`${url} responded ${response.status}`);
       }
-      const body = await response.blob();
+      const body = await response.text();
+      for (const match of body.matchAll(ASSET_IN_HTML)) {
+        assets.add(match[1]);
+      }
       const headers = new Headers(response.headers);
-      // The blob is already decoded; carrying these over would describe it wrongly.
+      // The body is already decoded; carrying these over would describe it wrongly.
       headers.delete("content-encoding");
       headers.delete("content-length");
       await cache.put(
@@ -212,8 +225,39 @@ const OFFLINE_DOWNLOAD_ENABLED = false;
       );
     };
 
+    /** Stores the given assets plus every script chunk they import. */
+    const cacheAssets = async (cache, assets) => {
+      const queue = [...assets];
+      const seen = new Set(queue);
+      let failed = 0;
+      while (queue.length > 0) {
+        const url = queue.shift();
+        try {
+          const response = await fetch(url, { credentials: "same-origin" });
+          if (!response.ok) {
+            throw new Error(`${url} responded ${response.status}`);
+          }
+          if (url.split("?")[0].endsWith(".js")) {
+            const source = await response.clone().text();
+            for (const match of source.matchAll(IMPORT_IN_JS)) {
+              const chunk = new URL(match[1], new URL(url, window.location.origin)).pathname;
+              if (!seen.has(chunk)) {
+                seen.add(chunk);
+                queue.push(chunk);
+              }
+            }
+          }
+          await cache.put(new Request(url), response);
+        } catch {
+          failed += 1;
+        }
+      }
+      return failed;
+    };
+
     const cacheUrls = async (urls, onProgress) => {
       const cache = await caches.open(OFFLINE_CACHE);
+      const assets = new Set();
       const total = urls.length;
       let done = 0;
       let failed = 0;
@@ -225,7 +269,7 @@ const OFFLINE_DOWNLOAD_ENABLED = false;
           const url = urls[cursor];
           cursor += 1;
           try {
-            await cachePage(cache, url);
+            await cachePage(cache, url, assets);
           } catch {
             // One miss shouldn't abort the download, but it must be reported.
             failed += 1;
@@ -236,7 +280,14 @@ const OFFLINE_DOWNLOAD_ENABLED = false;
       };
 
       await Promise.all(Array.from({ length: concurrency }, () => worker()));
-      return { total, failed, saved: total - failed };
+      // A missing stylesheet or script breaks every page that uses it, so a
+      // failure here fails the whole download rather than one page.
+      const assetsFailed = await cacheAssets(cache, assets);
+      return {
+        total,
+        failed: assetsFailed > 0 ? total : failed,
+        saved: assetsFailed > 0 ? 0 : total - failed,
+      };
     };
 
     // Fetch the manifest fresh each time the dialog opens so update checks are current.

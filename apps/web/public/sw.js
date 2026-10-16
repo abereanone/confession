@@ -1,7 +1,7 @@
 /* Confessions Hub service worker — install + offline support. */
 // Bump SHELL_VERSION whenever the precached app shell changes; the old
 // precache/runtime caches are then discarded and rebuilt on activate.
-const SHELL_VERSION = "v9";
+const SHELL_VERSION = "v10";
 const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
 // HTML picked up while browsing. Versioned: pages live at stable URLs, so a
 // stale copy really is stale and should go when the shell changes.
@@ -49,16 +49,28 @@ const PRECACHE_URLS = [
  * to store, silently, because the rejection was swallowed — which is why the
  * app fell back to the home page for everything offline. Re-wrapping the body
  * as a plain 200 keys it under the non-slash URL that links navigate to.
+ *
+ * When `assets` is given, the stylesheets and scripts the page references are
+ * added to it, so they can be stored too (see cacheAssets).
  * Keep in sync with cachePage() in AppInstall.astro.
  */
-const cachePage = async (cache, url) => {
+const ASSET_IN_HTML = /(?:href|src)="(\/[^"]+?\.(?:css|js)(?:\?[^"]*)?)"/g;
+const IMPORT_IN_JS = /(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+?\.js)["']/g;
+
+const cachePage = async (cache, url, assets) => {
   const response = await fetch(url, { credentials: "same-origin" });
   if (!response.ok) {
     throw new Error(`${url} responded ${response.status}`);
   }
-  const body = await response.blob();
+  const isHtml = (response.headers.get("content-type") || "").includes("text/html");
+  const body = isHtml ? await response.text() : await response.blob();
+  if (isHtml && assets) {
+    for (const match of body.matchAll(ASSET_IN_HTML)) {
+      assets.add(match[1]);
+    }
+  }
   const headers = new Headers(response.headers);
-  // The blob is already decoded; carrying these over would describe it wrongly.
+  // The body is already decoded; carrying these over would describe it wrongly.
   headers.delete("content-encoding");
   headers.delete("content-length");
   await cache.put(
@@ -67,13 +79,53 @@ const cachePage = async (cache, url) => {
   );
 };
 
+/**
+ * Stores page assets plus every script chunk they import. A cached page whose
+ * stylesheet and scripts are missing opens offline unstyled and inert, and
+ * those were only ever stored if the reader had opened that kind of page online.
+ * Keep in sync with cacheAssets() in AppInstall.astro.
+ */
+const cacheAssets = async (cache, assets) => {
+  const queue = [...assets];
+  const seen = new Set(queue);
+  while (queue.length > 0) {
+    const url = queue.shift();
+    try {
+      if (await cache.match(url)) {
+        continue;
+      }
+      const response = await fetch(url, { credentials: "same-origin" });
+      if (!response.ok) {
+        continue;
+      }
+      if (url.split("?")[0].endsWith(".js")) {
+        const source = await response.clone().text();
+        for (const match of source.matchAll(IMPORT_IN_JS)) {
+          const chunk = new URL(match[1], new URL(url, self.location.origin)).pathname;
+          if (!seen.has(chunk)) {
+            seen.add(chunk);
+            queue.push(chunk);
+          }
+        }
+      }
+      await cache.put(new Request(url), response);
+    } catch {
+      // Best effort: a miss here is retried the next time the page is opened online.
+    }
+  }
+};
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(PRECACHE)
+    (async () => {
+      const cache = await caches.open(PRECACHE);
+      const assets = new Set();
       // Tolerate individual misses so one bad URL doesn't fail the whole install.
-      .then((cache) => Promise.all(PRECACHE_URLS.map((url) => cachePage(cache, url).catch(() => {}))))
-      .then(() => self.skipWaiting())
+      await Promise.all(PRECACHE_URLS.map((url) => cachePage(cache, url, assets).catch(() => {})));
+      // Hashed bundles go in the unversioned asset cache, like any other asset.
+      await cacheAssets(await caches.open(ASSETS), assets);
+      await self.skipWaiting();
+    })()
   );
 });
 
@@ -184,12 +236,22 @@ self.addEventListener("fetch", (event) => {
 
   // Assets (CSS/JS/JSON/images/fonts): stale-while-revalidate, into the
   // unversioned asset cache so downloaded pages keep working across updates.
+  // ignoreVary: module scripts are requested with an Origin header the stored
+  // request lacks, and a host that answers with `Vary: Origin` would otherwise
+  // make every cached script a miss offline. Assets are content-hashed, so the
+  // varying headers cannot change what is served.
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request, { ignoreVary: true }).then((cached) => {
       const network = fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(ASSETS).then((cache) => cache.put(request, copy));
+          // The offline download fetches pages without a text/html Accept header,
+          // so they arrive here; it stores them itself, and keeping a second
+          // copy in this cache doubled the space a download takes.
+          const isHtml = (response.headers.get("content-type") || "").includes("text/html");
+          if (response.ok && !isHtml) {
+            const copy = response.clone();
+            caches.open(ASSETS).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         // Offline with nothing cached: answer with a real network error rather
@@ -197,7 +259,7 @@ self.addEventListener("fetch", (event) => {
         // shows up in devtools as an unhandled SW error instead of a failed asset.
         // The stylesheet is requested as /styles/theme.css?v=<hash> but precached
         // bare, so ignore the query when offline.
-        .catch(async () => cached || (await caches.match(request, { ignoreSearch: true })) || Response.error());
+        .catch(async () => cached || (await caches.match(request, { ignoreSearch: true, ignoreVary: true })) || Response.error());
       return cached || network;
     })
   );
@@ -208,10 +270,13 @@ self.addEventListener("message", (event) => {
   const data = event.data || {};
   if (data.type === "CACHE_URLS" && Array.isArray(data.urls)) {
     event.waitUntil(
-      caches.open(RUNTIME).then((cache) =>
+      (async () => {
+        const cache = await caches.open(RUNTIME);
+        const assets = new Set();
         // cachePage, not cache.add, for the redirect reason described above.
-        Promise.all(data.urls.map((url) => cachePage(cache, url).catch(() => {})))
-      )
+        await Promise.all(data.urls.map((url) => cachePage(cache, url, assets).catch(() => {})));
+        await cacheAssets(await caches.open(ASSETS), assets);
+      })()
     );
   }
 });
