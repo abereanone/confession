@@ -23,5 +23,8 @@
     "android": "npm --workspace @confessions-hub/mobile run android",
     "preios": "npm run sync:confessions",
     "ios": "npm --workspace @confessions-hub/mobile run ios"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.3.2"
   }
 }

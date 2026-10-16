@@ -5,6 +5,9 @@ export default defineConfig({
   // Required for the sitemap: without an absolute `site` there is no origin to
   // build <loc> values from, and @astrojs/sitemap emits nothing at all.
   site: "https://confess.catechize.ing",
+  // Astro 7 defaults to "jsx", which drops the line break between text and an inline
+  // tag ("enjoy<a>x</a>and" renders as "enjoyxand"). true keeps the Astro 6 behaviour.
+  compressHTML: true,
   integrations: [
     sitemap({
       filter: (page) => {
