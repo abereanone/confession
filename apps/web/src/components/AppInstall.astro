@@ -1,11 +1,11 @@
 ---
 // Install ("Add to Mobile") + offline-download controls, shown in the header.
 //
-// The bulk download is hidden until offline reading is confirmed working end to
-// end: it presented itself as a finished feature while storing nothing, which is
-// worse than not offering it. The implementation below is left intact — flip
-// this to true to advertise it again.
-const OFFLINE_DOWNLOAD_ENABLED = false;
+// The bulk download was hidden while it stored pages without the stylesheets
+// and scripts they need, so downloaded chapters opened offline unstyled and
+// inert. Re-enabled once each page's assets were stored with it; set this to
+// false to hide the download again without touching the implementation.
+const OFFLINE_DOWNLOAD_ENABLED = true;
 ---
 <div class="app-install" data-app-install>
   <button type="button" class="install-trigger" data-install-open aria-haspopup="dialog">
