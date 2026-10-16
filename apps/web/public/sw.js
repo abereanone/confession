@@ -1,7 +1,7 @@
 /* Confessions Hub service worker — install + offline support. */
 // Bump SHELL_VERSION whenever the precached app shell changes; the old
 // precache/runtime caches are then discarded and rebuilt on activate.
-const SHELL_VERSION = "v10";
+const SHELL_VERSION = "v11";
 const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
 // HTML picked up while browsing. Versioned: pages live at stable URLs, so a
 // stale copy really is stale and should go when the shell changes.
@@ -148,6 +148,17 @@ const isHtmlRequest = (request) =>
   request.mode === "navigate" ||
   (request.headers.get("accept") || "").includes("text/html");
 
+/**
+ * A cached entry is only worth serving if it is a real page. Navigations are made
+ * with redirect mode "manual", so the host's 308 for `/confessions/lbcf-1689` comes
+ * back as an `opaqueredirect` response. Handing that to a normal fetch() (the
+ * offline download's) fails it with "an opaqueredirect type response was used for a
+ * request whose redirect mode is not manual", which is the "could not be stored"
+ * message. Entries like that may already sit in readers' caches, so skip them here.
+ */
+const usable = (response) =>
+  response && response.ok && response.type !== "opaqueredirect" ? response : undefined;
+
 /** `/bible/gen/1` <-> `/bible/gen/1/`; null for the root, which has no variant. */
 const withAlternateSlash = (url) => {
   const alternate = new URL(url);
@@ -173,12 +184,12 @@ const withAlternateSlash = (url) => {
  * `/bible/gen/1` must still find a copy stored as `/bible/gen/1/`.
  */
 const matchCachedPage = async (request) => {
-  const exact = await caches.match(request, { ignoreSearch: true });
+  const exact = usable(await caches.match(request, { ignoreSearch: true }));
   if (exact) {
     return exact;
   }
   const alternate = withAlternateSlash(request.url);
-  return alternate ? caches.match(alternate, { ignoreSearch: true }) : undefined;
+  return alternate ? usable(await caches.match(alternate, { ignoreSearch: true })) : undefined;
 };
 
 self.addEventListener("fetch", (event) => {
@@ -215,8 +226,12 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+          // Only real pages: caching the manual-redirect response (see usable())
+          // is what broke the offline download for those URLs.
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         .catch(async () => {
@@ -241,7 +256,8 @@ self.addEventListener("fetch", (event) => {
   // make every cached script a miss offline. Assets are content-hashed, so the
   // varying headers cannot change what is served.
   event.respondWith(
-    caches.match(request, { ignoreVary: true }).then((cached) => {
+    caches.match(request, { ignoreVary: true }).then((hit) => {
+      const cached = usable(hit);
       const network = fetch(request)
         .then((response) => {
           // The offline download fetches pages without a text/html Accept header,
@@ -259,7 +275,7 @@ self.addEventListener("fetch", (event) => {
         // shows up in devtools as an unhandled SW error instead of a failed asset.
         // The stylesheet is requested as /styles/theme.css?v=<hash> but precached
         // bare, so ignore the query when offline.
-        .catch(async () => cached || (await caches.match(request, { ignoreSearch: true, ignoreVary: true })) || Response.error());
+        .catch(async () => cached || usable(await caches.match(request, { ignoreSearch: true, ignoreVary: true })) || Response.error());
       return cached || network;
     })
   );
