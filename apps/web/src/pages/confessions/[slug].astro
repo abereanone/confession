@@ -252,6 +252,17 @@ const verseLookup = await getVerseLookup([...references]);
   const units = Array.from(document.querySelectorAll(".unit"));
   const paragraphCards = Array.from(document.querySelectorAll("[data-paragraph-card]"));
 
+  // The home page appends `?q=` to every search-result link. The filter box is
+  // left alone (filtering would hide the paragraphs around the one the reader
+  // came for), but the terms are highlighted so the hit is easy to find.
+  const urlQuery = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get("q") || "";
+    } catch {
+      return "";
+    }
+  })();
+
   const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   const getParagraphBodies = () =>
@@ -637,7 +648,7 @@ const verseLookup = await getVerseLookup([...references]);
 
     document.dispatchEvent(new Event("astro:page-load"));
     if (input instanceof HTMLInputElement) {
-      window.setTimeout(() => highlightMatches(input.value), 0);
+      window.setTimeout(() => highlightMatches(input.value || urlQuery), 0);
     }
   };
 
@@ -901,9 +912,28 @@ const verseLookup = await getVerseLookup([...references]);
     input.addEventListener("input", applyFilter);
     applyFilter();
   }
+
+  // Highlight the arriving search once the Bible-reference pass has finished
+  // rewriting the paragraphs, so the marks are not built on markup that is about
+  // to be replaced.
+  if (urlQuery.trim() && !(input instanceof HTMLInputElement && input.value)) {
+    const highlightArrival = () => window.setTimeout(() => highlightMatches(urlQuery), 0);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", highlightArrival, { once: true });
+    } else {
+      highlightArrival();
+    }
+  }
 </script>
 
 <style>
+  :global(mark.search-hit) {
+    border-radius: 0.18em;
+    background: rgba(255, 232, 107, 0.82);
+    color: #1f1a00;
+    padding: 0 0.08em;
+  }
+
   .confession-page {
     border: 1px solid var(--confession-accent-border, var(--surface-border));
     border-radius: 14px;

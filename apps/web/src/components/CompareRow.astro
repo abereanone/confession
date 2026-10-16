@@ -59,7 +59,8 @@ const kindLabel: Record<CompareRow["kind"], string> = {
  * Class for a segment in a given column. `agree` groups the documents that read
  * alike, so a two-document group inside a three-way comparison can be tinted
  * differently from a word only one confession has — that pairing is usually the
- * whole point ("Savoy and the 1689 agree against Westminster").
+ * whole point ("Savoy and the 1689 agree against Westminster"). Each pairing gets
+ * its own class (seg-pair-wcf-savoy and so on) so the reader can tell which two.
  */
 function segmentClass(segment: CompareRow["segments"][number], doc: DocId, total: number): string {
   if (segment.kind === "common") return "seg seg-common";
@@ -68,7 +69,9 @@ function segmentClass(segment: CompareRow["segments"][number], doc: DocId, total
   // pure CSS with no re-render.
   const punct = isPunctuationOnly(segment) ? " seg-punct" : "";
   const group = segment.agree?.find((members) => members.includes(doc));
-  if (group && group.length > 1 && group.length < total) return `seg seg-shared${punct}`;
+  if (group && group.length > 1 && group.length < total) {
+    return `seg seg-pair seg-pair-${group.join("-")}${punct}`;
+  }
   return `seg seg-unique${punct}`;
 }
 
@@ -197,7 +200,9 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
     margin-left: -0.75rem;
     /* Arriving from a paragraph's compare link, the row must clear both the
        site header and the sticky colour key, or it lands underneath them. */
-    scroll-margin-top: calc(var(--compare-header-offset, 5.25rem) + 4rem);
+    scroll-margin-top: calc(
+      var(--compare-header-offset, 5.25rem) + var(--compare-legend-height, 3rem) + 1rem
+    );
   }
 
   /* Mark the row that was linked to, so it is obvious which one you came for. */
@@ -379,12 +384,39 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
     border-radius: 0.15rem;
   }
 
-  /* Two confessions agreeing against the third: the pair recedes, so the odd
-     one out is what the eye finds. */
-  .seg-shared {
-    background: var(--diff-shared-bg, rgba(90, 150, 210, 0.18));
-    box-shadow: inset 0 -2px 0 var(--diff-shared-rule, rgba(90, 150, 210, 0.4));
+  /* Two confessions agreeing against the third: the run is split into two
+     bands, one in each agreeing confession's own colour (top and bottom, so it
+     reads the same however many lines it wraps over), with a rule in each hue
+     above and below. The odd one out keeps its own single colour. */
+  .seg-pair {
+    background: linear-gradient(to bottom, var(--pair-a-bg) 50%, var(--pair-b-bg) 50%);
+    box-shadow:
+      inset 0 2px 0 var(--pair-a-rule),
+      inset 0 -2px 0 var(--pair-b-rule);
     border-radius: 0.15rem;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .seg-pair-wcf-savoy {
+    --pair-a-bg: var(--diff-wcf-bg);
+    --pair-a-rule: var(--diff-wcf-rule);
+    --pair-b-bg: var(--diff-savoy-bg);
+    --pair-b-rule: var(--diff-savoy-rule);
+  }
+
+  .seg-pair-wcf-lbcf {
+    --pair-a-bg: var(--diff-wcf-bg);
+    --pair-a-rule: var(--diff-wcf-rule);
+    --pair-b-bg: var(--diff-lbcf-bg);
+    --pair-b-rule: var(--diff-lbcf-rule);
+  }
+
+  .seg-pair-savoy-lbcf {
+    --pair-a-bg: var(--diff-savoy-bg);
+    --pair-a-rule: var(--diff-savoy-rule);
+    --pair-b-bg: var(--diff-lbcf-bg);
+    --pair-b-rule: var(--diff-lbcf-rule);
   }
 
   :global([data-show-punctuation="false"]) .seg-punct {
@@ -411,8 +443,10 @@ const bodySegments = banded ? row.segments.slice(firstCommon) : row.segments;
         var(--diff-unique-rule, var(--confession-accent-border, rgba(214, 138, 60, 0.6)));
     }
 
-    .seg-shared {
-      box-shadow: inset 0 -3px 0 var(--diff-shared-rule, rgba(90, 150, 210, 0.4));
+    .seg-pair {
+      box-shadow:
+        inset 0 3px 0 var(--pair-a-rule),
+        inset 0 -3px 0 var(--pair-b-rule);
     }
   }
 </style>

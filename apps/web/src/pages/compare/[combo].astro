@@ -17,6 +17,7 @@ import {
   comboSlug,
   parseCombo,
 } from "../../lib/compare/compare";
+import type { DocId } from "../../lib/compare/text";
 
 export function getStaticPaths() {
   return allCombos().map((docs) => ({ params: { combo: comboSlug(docs) } }));
@@ -32,6 +33,17 @@ if (!docs) return Astro.redirect("/compare/wcf-savoy-lbcf/");
 const groups = buildComparison(docs, { foldArchaic: true, differencesOnly: false });
 
 const title = docs.map((doc) => DOC_LABELS[doc].short).join(" vs ");
+
+// Legend entries for "these two agree against the third"; only meaningful when
+// all three confessions are on the page.
+const pairs: DocId[][] =
+  docs.length === 3
+    ? [
+        ["wcf", "savoy"],
+        ["wcf", "lbcf"],
+        ["savoy", "lbcf"],
+      ]
+    : [];
 
 /**
  * A row's label in the jump menu. Every reference the row covers is shown,
@@ -82,12 +94,12 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
         ))
       }
       {
-        docs.length > 2 && (
+        pairs.map((pair) => (
           <li>
-            <span class="swatch swatch-shared" aria-hidden="true" />
-            Two agree, the third differs
+            <span class={`swatch swatch-pair swatch-pair-${pair.join("-")}`} aria-hidden="true" />
+            Only {pair.map((doc) => DOC_LABELS[doc].short).join(" + ")} agree
           </li>
-        )
+        ))
       }
     </ul>
 
@@ -168,7 +180,14 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
     select.addEventListener("change", () => {
       const id = select.value;
       if (!id) return;
-      if (document.getElementById(id)) window.location.hash = id;
+      const row = document.getElementById(id);
+      if (!row) return;
+      // Setting the hash to what it already is does not scroll, so a reader who
+      // jumped to a row, scrolled away and picked it again would go nowhere.
+      if (window.location.hash === `#${id}`) row.scrollIntoView();
+      else window.location.hash = id;
+      // Back to the prompt so the same row can be chosen again.
+      select.value = "";
     });
   })();
 </script>
@@ -303,14 +322,26 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
     const header = document.querySelector(".top");
     if (!(header instanceof HTMLElement)) return;
 
+    // The key also grows when its six entries wrap on a narrow screen, so its
+    // height is measured too rather than assumed to be one line.
+    const legend = document.querySelector(".legend");
+
     const setOffset = () => {
       const height = Math.ceil(header.getBoundingClientRect().height);
       document.documentElement.style.setProperty("--compare-header-offset", `${height}px`);
+      if (legend instanceof HTMLElement) {
+        const legendHeight = Math.ceil(legend.getBoundingClientRect().height);
+        document.documentElement.style.setProperty("--compare-legend-height", `${legendHeight}px`);
+      }
     };
 
     setOffset();
     window.addEventListener("resize", setOffset);
-    if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header);
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(setOffset);
+      observer.observe(header);
+      if (legend instanceof HTMLElement) observer.observe(legend);
+    }
   })();
 </script>
 
@@ -510,9 +541,32 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
     box-shadow: inset 0 -2px 0 var(--diff-unique-rule, var(--confession-accent-border));
   }
 
-  .swatch-shared {
-    background: var(--diff-shared-bg);
-    box-shadow: inset 0 -2px 0 var(--diff-shared-rule);
+  .swatch-pair {
+    background: linear-gradient(to bottom, var(--pair-a-bg) 50%, var(--pair-b-bg) 50%);
+    box-shadow:
+      inset 0 2px 0 var(--pair-a-rule),
+      inset 0 -2px 0 var(--pair-b-rule);
+  }
+
+  .swatch-pair-wcf-savoy {
+    --pair-a-bg: var(--diff-wcf-bg);
+    --pair-a-rule: var(--diff-wcf-rule);
+    --pair-b-bg: var(--diff-savoy-bg);
+    --pair-b-rule: var(--diff-savoy-rule);
+  }
+
+  .swatch-pair-wcf-lbcf {
+    --pair-a-bg: var(--diff-wcf-bg);
+    --pair-a-rule: var(--diff-wcf-rule);
+    --pair-b-bg: var(--diff-lbcf-bg);
+    --pair-b-rule: var(--diff-lbcf-rule);
+  }
+
+  .swatch-pair-savoy-lbcf {
+    --pair-a-bg: var(--diff-savoy-bg);
+    --pair-a-rule: var(--diff-savoy-rule);
+    --pair-b-bg: var(--diff-lbcf-bg);
+    --pair-b-rule: var(--diff-lbcf-rule);
   }
 
 

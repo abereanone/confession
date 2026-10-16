@@ -249,10 +249,27 @@ function pickBase(present: DocId[]): DocId {
   return present[0];
 }
 
+/** A folded key with its punctuation tokens dropped. */
+function wordsOnly(key: string): string {
+  return key
+    .split(" ")
+    .filter((token) => /[\p{L}\p{N}]/u.test(token))
+    .join(" ");
+}
+
+/**
+ * Group documents by identical reading. Where the segment carries any words,
+ * the grouping ignores punctuation: Savoy's ", whom the Lord shall destroy" and
+ * the 1689's "; whom the Lord shall destroy" are the same wording and should
+ * read as agreeing against Westminster, not as three separate readings. A
+ * segment of punctuation alone is still grouped on the marks themselves.
+ */
 function groupByReading(key: Partial<Record<DocId, string>>, present: DocId[]): DocId[][] {
+  const hasWords = present.some((doc) => wordsOnly(key[doc] ?? "") !== "");
   const groups = new Map<string, DocId[]>();
   for (const doc of present) {
-    const reading = key[doc] ?? " omitted";
+    const raw = key[doc];
+    const reading = raw === undefined ? "\u0000omitted" : hasWords ? `w:${wordsOnly(raw)}` : raw;
     const bucket = groups.get(reading);
     if (bucket) bucket.push(doc);
     else groups.set(reading, [doc]);

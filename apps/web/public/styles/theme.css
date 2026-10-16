@@ -35,11 +35,16 @@
   --shadow-tooltip: 0 18px 38px rgba(10, 8, 6, 0.42);
   /* Comparison view. A reading unique to one confession is tinted with that
      confession's own accent, so the colour says whose wording it is. Where two
-     agree against the third, the pair takes this magenta (clear of every
-     accent on the page) and the odd one out
-     keeps its accent. */
-  --diff-shared-bg: rgba(214, 110, 214, 0.3);
-  --diff-shared-rule: rgba(226, 130, 226, 0.85);
+     agree against the third, the run is split into two bands, one in each
+     agreeing confession's colour, so all six cases (three single, three pairs)
+     are distinct. These repeat each confession's --diff-unique values so a pair
+     can use two confessions' colours at once. */
+  --diff-wcf-bg: rgba(109, 177, 255, 0.34);
+  --diff-wcf-rule: rgba(109, 177, 255, 0.85);
+  --diff-savoy-bg: rgba(230, 122, 100, 0.34);
+  --diff-savoy-rule: rgba(230, 122, 100, 0.88);
+  --diff-lbcf-bg: rgba(238, 195, 84, 0.34);
+  --diff-lbcf-rule: rgba(238, 195, 84, 0.88);
 }
 
 [data-theme="light"] {
@@ -72,8 +77,12 @@
   --tooltip-border: rgba(120, 157, 123, 0.28);
   --shadow-card: 0 16px 28px rgba(21, 33, 24, 0.12);
   --shadow-card-hover: 0 20px 34px rgba(21, 33, 24, 0.16);
-  --diff-shared-bg: rgba(170, 60, 170, 0.2);
-  --diff-shared-rule: rgba(140, 40, 140, 0.8);
+  --diff-wcf-bg: rgba(45, 118, 198, 0.3);
+  --diff-wcf-rule: rgba(30, 94, 165, 0.85);
+  --diff-savoy-bg: rgba(196, 92, 68, 0.32);
+  --diff-savoy-rule: rgba(157, 61, 40, 0.88);
+  --diff-lbcf-bg: rgba(206, 156, 32, 0.4);
+  --diff-lbcf-rule: rgba(146, 104, 12, 0.9);
 }
 
 html,
