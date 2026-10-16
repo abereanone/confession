@@ -1,4 +1,7 @@
 ---
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { siteSettings } from "../lib/siteSettings";
 import Footer from "../components/Footer.astro";
 import AppInstall from "../components/AppInstall.astro";
@@ -15,6 +18,18 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 // Register the service worker only in built output, so dev HMR isn't intercepted.
 const enablePwa = import.meta.env.PROD;
+
+// theme.css lives in public/, so it is served as-is with no hash in its name, and
+// the service worker answers asset requests from cache first. Without a version
+// in the URL, a changed theme is not seen until a second reload (or never, for a
+// browser holding a long-lived copy). A content hash makes each edit a new URL.
+let themeVersion = "0";
+try {
+  const themeCss = readFileSync(resolve(process.cwd(), "public/styles/theme.css"));
+  themeVersion = createHash("sha1").update(themeCss).digest("hex").slice(0, 10);
+} catch {
+  // Falls back to an unversioned URL's behaviour rather than failing the build.
+}
 ---
 
 <!doctype html>
@@ -113,7 +128,7 @@ const enablePwa = import.meta.env.PROD;
         root.dataset.readerMode = readStoredReaderMode() || "study";
       })();
     </script>
-    <link rel="stylesheet" href="/styles/theme.css" />
+    <link rel="stylesheet" href={`/styles/theme.css?v=${themeVersion}`} />
   </head>
   <body>
     <header class="top">

@@ -1,7 +1,7 @@
 /* Confessions Hub service worker — install + offline support. */
 // Bump SHELL_VERSION whenever the precached app shell changes; the old
 // precache/runtime caches are then discarded and rebuilt on activate.
-const SHELL_VERSION = "v8";
+const SHELL_VERSION = "v9";
 const PRECACHE = `confessions-precache-${SHELL_VERSION}`;
 // HTML picked up while browsing. Versioned: pages live at stable URLs, so a
 // stale copy really is stale and should go when the shell changes.
@@ -195,7 +195,9 @@ self.addEventListener("fetch", (event) => {
         // Offline with nothing cached: answer with a real network error rather
         // than `undefined`, which respondWith rejects as a TypeError and which
         // shows up in devtools as an unhandled SW error instead of a failed asset.
-        .catch(() => cached || Response.error());
+        // The stylesheet is requested as /styles/theme.css?v=<hash> but precached
+        // bare, so ignore the query when offline.
+        .catch(async () => cached || (await caches.match(request, { ignoreSearch: true })) || Response.error());
       return cached || network;
     })
   );
