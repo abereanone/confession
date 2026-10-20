@@ -281,14 +281,22 @@ const chapterAudioUrl =
     </header>
     {chapterAudioUrl ? (
       <div class="chapter-audio">
-        <span class="chapter-audio-label">
+        <span class="chapter-audio-label" data-audio-label>
           Listen to {selectedBookName} {selectedChapter}
         </span>
         <sermon-player class="chapter-audio-player" src={chapterAudioUrl}></sermon-player>
-        <a class="chapter-audio-link" href={chapterAudioUrl} target="_blank" rel="noopener">
+        <a class="chapter-audio-link" href={chapterAudioUrl} target="_blank" rel="noopener" data-audio-mp3>
           Open MP3
         </a>
         <span class="chapter-audio-credit">Read by {CHAPTER_AUDIO_READER} · BSB</span>
+        {nextTarget ? (
+          <label class="chapter-audio-continue">
+            <input type="checkbox" data-audio-continue />
+            Continue to the next chapter
+          </label>
+        ) : null}
+        <button type="button" class="chapter-audio-resume" data-audio-resume hidden>▶ Keep listening</button>
+        <a class="chapter-audio-jump" href="#" data-audio-jump hidden></a>
       </div>
     ) : null}
     {chapterFootnoteCount > 0 ? (
@@ -451,6 +459,119 @@ const chapterAudioUrl =
       setOffset();
       window.addEventListener("resize", setOffset);
       if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header);
+    })();
+  </script>
+  <script>
+    // Continuous listening. Off unless the listener ticks "Continue to the next
+    // chapter" (remembered per visitor). When a chapter's audio then ends:
+    //  - page in view: go to the next chapter's page and keep playing there, so
+    //    the text follows the audio (?autoplay=1, plus &t=seconds to resume).
+    //  - page hidden (phone locked, another app open): load the next chapter
+    //    into this same player instead. A playing <audio> keeps going in the
+    //    background, but a newly loaded page can't start one without a tap, so
+    //    navigating would fall silent. Coming back offers "Go to <chapter>".
+    // Where the browser won't start audio on arrival (iPhone wants a tap on each
+    // page), a "Keep listening" button appears instead.
+    import { getChapterAudioUrl } from "../../../lib/bible/audio";
+
+    type Player = HTMLElement & { play(from?: number): Promise<boolean>; load(src: string): void; currentTime: number };
+    type Book = { code: string; name: string; chapterCount: number };
+    type Spot = { book: Book; chapter: number };
+
+    (() => {
+      const player = document.querySelector("sermon-player.chapter-audio-player") as Player | null;
+      const catalog = document.getElementById("book-catalog-data");
+      if (!player || !catalog) return;
+      const toggle = document.querySelector("[data-audio-continue]") as HTMLInputElement | null;
+      const resume = document.querySelector("[data-audio-resume]") as HTMLButtonElement | null;
+      const jump = document.querySelector("[data-audio-jump]") as HTMLAnchorElement | null;
+      const label = document.querySelector("[data-audio-label]");
+      const mp3 = document.querySelector("[data-audio-mp3]") as HTMLAnchorElement | null;
+
+      let books: Book[] = [];
+      try { books = JSON.parse(catalog.dataset.bookCatalog || "[]"); } catch {}
+      const pageBook = books.find((b) => b.code === catalog.dataset.bookCode);
+      if (!pageBook) return;
+      const pageChapter = Number(catalog.dataset.chapterNumber) || 1;
+      let playing: Spot = { book: pageBook, chapter: pageChapter };
+
+      const nextSpot = (s: Spot): Spot | null => {
+        if (s.chapter < s.book.chapterCount) return { book: s.book, chapter: s.chapter + 1 };
+        const i = books.indexOf(s.book);
+        return i >= 0 && i < books.length - 1 ? { book: books[i + 1], chapter: 1 } : null;
+      };
+      const pageHref = (s: Spot, extra: Record<string, string> = {}) => {
+        const params = new URLSearchParams();
+        const scope = new URLSearchParams(location.search).get("scope");
+        if (scope) params.set("scope", scope);
+        for (const [k, v] of Object.entries(extra)) params.set(k, v);
+        const q = params.toString();
+        return `/bible/${s.book.code}/${s.chapter}${q ? `?${q}` : ""}`;
+      };
+      // Same flag the Previous/Next links set: land on the chapter heading.
+      const goTo = (href: string) => {
+        try { sessionStorage.setItem("bible-reader-scroll-to-chapter", "1"); } catch {}
+        location.assign(href);
+      };
+
+      const CONTINUE_KEY = "bible-audio:continue";
+      if (toggle) {
+        try { toggle.checked = localStorage.getItem(CONTINUE_KEY) === "1"; } catch {}
+        toggle.addEventListener("change", () => {
+          try { localStorage.setItem(CONTINUE_KEY, toggle.checked ? "1" : "0"); } catch {}
+        });
+      }
+
+      player.addEventListener("ended", () => {
+        if (!toggle?.checked) return;
+        const next = nextSpot(playing);
+        if (!next) return;
+        if (document.visibilityState === "visible") {
+          goTo(pageHref(next, { autoplay: "1" }));
+          return;
+        }
+        const src = getChapterAudioUrl(next.book.code, next.chapter);
+        if (!src) return;
+        playing = next;
+        player.load(src);
+        void player.play();
+        if (label) label.textContent = `Listening to ${next.book.name} ${next.chapter}`;
+        if (mp3) mp3.href = src;
+      });
+
+      // Back on the page after the audio moved on in the background.
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState !== "visible" || !jump) return;
+        if (playing.book === pageBook && playing.chapter === pageChapter) return;
+        jump.textContent = `Go to ${playing.book.name} ${playing.chapter} →`;
+        jump.href = pageHref(playing);
+        jump.hidden = false;
+      });
+      jump?.addEventListener("click", (event) => {
+        event.preventDefault();
+        const t = Math.floor(player.currentTime || 0);
+        goTo(pageHref(playing, { autoplay: "1", ...(t > 0 ? { t: String(t) } : {}) }));
+      });
+
+      // Arriving from the previous chapter: start playing, or offer a button.
+      const url = new URL(location.href);
+      if (url.searchParams.get("autoplay") === "1") {
+        const from = Number(url.searchParams.get("t")) || 0;
+        url.searchParams.delete("autoplay");
+        url.searchParams.delete("t");
+        history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+        customElements.whenDefined("sermon-player").then(async () => {
+          if (await player.play(from)) return;
+          if (!resume) return;
+          resume.hidden = false;
+          resume.addEventListener("click", () => {
+            resume.hidden = true;
+            void player.play(from);
+          }, { once: true });
+        });
+      }
+      // Starting it with the player's own button clears the prompt too.
+      player.addEventListener("click", () => { if (resume) resume.hidden = true; });
     })();
   </script>
   <script>
@@ -2065,6 +2186,44 @@ const chapterAudioUrl =
     color: var(--color-muted);
     font-size: 0.78rem;
     font-weight: 600;
+  }
+
+  .chapter-audio-continue {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chapter-audio-continue input {
+    margin: 0;
+    accent-color: var(--color-link);
+  }
+
+  .chapter-audio-resume,
+  .chapter-audio-jump {
+    flex-basis: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-link);
+    background: var(--color-link);
+    color: var(--color-bg);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .chapter-audio-resume[hidden],
+  .chapter-audio-jump[hidden] {
+    display: none;
   }
 
   .chapter-footnotes-controls {

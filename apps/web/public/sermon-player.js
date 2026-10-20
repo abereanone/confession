@@ -17,6 +17,10 @@
  *   sermon-player { --sp-accent: #8B1F33; --sp-track: #DDD3BC; }
  *
  * No download button is rendered when the `download-name` attribute is omitted.
+ *
+ * Host pages can drive it: an "ended" event fires on the element when playback
+ * finishes; play(fromSeconds?) resolves false if the browser blocks it (no tap
+ * yet on this page); load(src) swaps in another file without rebuilding.
  */
 (() => {
   if (customElements.get("sermon-player")) return;
@@ -189,6 +193,8 @@
         playBtn.dataset.playing = "0";
         playBtn.setAttribute("aria-label", "Play");
         playBtn.innerHTML = ICONS.play;
+        // Let the host page react (e.g. go on to the next chapter).
+        this.dispatchEvent(new Event("ended"));
       });
 
       const setPlaying = (on) => {
@@ -199,8 +205,27 @@
       // Host pages style sermon-player[playing] (e.g. sticky while reading the transcript).
       audio.addEventListener("play", () => this.toggleAttribute("playing", true));
       audio.addEventListener("pause", () => this.toggleAttribute("playing", false));
-      // Public hook so host pages (e.g. an accordion) can stop playback.
+      // Public hooks so host pages can stop, start or swap playback.
       this._pause = () => { audio.pause(); setPlaying(false); };
+      this._play = (from) => {
+        if (from > 0) {
+          // Before metadata loads, a seek may be ignored; apply it once it can stick.
+          if (audio.readyState >= 1) audio.currentTime = from;
+          else audio.addEventListener("loadedmetadata", () => { audio.currentTime = from; }, { once: true });
+        }
+        return audio.play().then(() => { setPlaying(true); return true; }, () => { setPlaying(false); return false; });
+      };
+      this._load = (next) => {
+        audio.pause();
+        audio.src = next;
+        audio.playbackRate = rate;
+        this.setAttribute("src", next);
+        const dl = root.querySelector(".dl");
+        if (dl) dl.setAttribute("href", next);
+        seek.value = "0";
+        dur.textContent = "--:--";
+        paint();
+      };
       playBtn.addEventListener("click", () => {
         if (audio.paused) { audio.play(); setPlaying(true); }
         else { audio.pause(); setPlaying(false); }
@@ -227,6 +252,9 @@
     }
 
     pause() { if (this._pause) this._pause(); }
+    play(from = 0) { return this._play ? this._play(from) : Promise.resolve(false); }
+    load(src) { if (this._load) this._load(src); }
+    get currentTime() { return this._audio ? this._audio.currentTime : 0; }
 
     disconnectedCallback() {
       if (this._audio) { this._audio.pause(); this._audio.src = ""; }
