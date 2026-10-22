@@ -75,6 +75,14 @@ evidence rather than authority. Ones already checked:
 | WCF | opc.org/wcf.html | It is the 1788 American revision — expect ~14 legitimate divergences |
 | Savoy | grace.org.uk, tfcchurch.co.uk | Both share the typo `consanguity`, so they likely descend from one transcription and are not independent witnesses |
 
+For scan/OCR damage (`limes` for `times`, `tule`, `form` for `from`, glued or
+missing punctuation) run `node scripts/scan-confession-typos.mjs <slug>`. It
+flags words the rest of the corpus and the BSB have never used, plus pattern
+hits; it cannot see real words used wrongly, so still diff against an edition.
+The Second Helvetic was checked this way against creeds.net/reformed/helvetic
+(`c01.htm`–`c30.htm`). That edition inlines scripture refs and has typos of
+its own (`forner`, `chruch`), so only act on differences where *ours* is wrong.
+
 The strongest internal check is cross-document: where the three confessions
 share a paragraph, a reading present in two of them and absent from the third
 is usually an error in the third. That is how Savoy 18.2 was caught carrying
