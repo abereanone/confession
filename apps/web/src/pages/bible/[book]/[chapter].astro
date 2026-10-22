@@ -1979,6 +1979,53 @@ const chapterAudioUrl =
     min-width: 7rem;
   }
 
+  /* Compact book/chapter lists: the default popup rows are tall with large
+     type, which shows only ~14 books on a phone. Fallback styles cover
+     browsers that honour option metrics; base-select (Chromium, incl. Android)
+     gives full control of the popup. */
+  .control-group select :global(option) {
+    font-size: 0.85rem;
+    line-height: 1.15;
+    padding: 0.1rem 0.5rem;
+    min-height: 0;
+  }
+
+  @supports (appearance: base-select) {
+    .control-group select,
+    .control-group select::picker(select) {
+      appearance: base-select;
+    }
+
+    .control-group select::picker(select) {
+      background: var(--input-bg);
+      color: var(--input-text);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 0.2rem;
+      max-height: min(80dvh, 44rem);
+    }
+
+    .control-group select::picker-icon {
+      color: var(--input-text);
+    }
+
+    .control-group select :global(option) {
+      padding: 0.12rem 0.6rem;
+      line-height: 1.2;
+      font-size: 0.85rem;
+      border-radius: 4px;
+    }
+
+    .control-group select :global(option):hover,
+    .control-group select :global(option):checked {
+      background: var(--surface-bg-hover);
+    }
+
+    .control-group select :global(option)::checkmark {
+      display: none;
+    }
+  }
+
   .control-group-query {
     flex: 1 1 26rem;
   }
