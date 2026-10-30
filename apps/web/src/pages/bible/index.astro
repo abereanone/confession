@@ -76,7 +76,9 @@ import Main from "../../layouts/Main.astro";
     if (!asksForDestination) {
       const position = readPosition();
       if (position) {
-        window.location.replace(markHref(position, "resume"));
+        // Land at the top (book picker) of the saved chapter; the reader page
+        // offers a link down to the saved verse.
+        window.location.replace(markHref({ ...position, verse: 0 }, "bookmark"));
         return;
       }
     }

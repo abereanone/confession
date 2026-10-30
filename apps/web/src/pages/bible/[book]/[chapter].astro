@@ -165,6 +165,7 @@ const chapterAudioUrl =
   <p class="resume-note" data-resume-note hidden role="status">
     <span class="resume-bar-label">Your place is saved</span>
     <span class="resume-bar-ref" data-resume-note-ref></span>
+    <a class="resume-note-jump" data-resume-note-jump href="#" hidden></a>
   </p>
 
   <section class="reader-tools card-panel">
@@ -623,6 +624,7 @@ const chapterAudioUrl =
       const resumeBarRef = document.querySelector("[data-resume-bar-ref]");
       const resumeNote = document.querySelector("[data-resume-note]");
       const resumeNoteRef = document.querySelector("[data-resume-note-ref]");
+      const resumeNoteJump = document.querySelector("[data-resume-note-jump]");
       const chapterBookmarkButton = document.querySelector("[data-chapter-bookmark]");
       const readerScrollStorageKey = "bible-reader-scroll-to-chapter";
       const includeLinkStorageKey = "bible-copy-include-link";
@@ -1017,6 +1019,14 @@ const chapterAudioUrl =
         }
         if (resumeNoteRef instanceof HTMLElement && here) {
           resumeNoteRef.textContent = position.label;
+        }
+        if (resumeNoteJump instanceof HTMLAnchorElement) {
+          const jumpVerse = here && position.verse > 1 ? position.verse : 0;
+          resumeNoteJump.hidden = !jumpVerse;
+          if (jumpVerse) {
+            resumeNoteJump.href = `#verse-${jumpVerse}`;
+            resumeNoteJump.textContent = `Go to verse ${jumpVerse} ↓`;
+          }
         }
       };
 
@@ -2099,6 +2109,15 @@ const chapterAudioUrl =
     border-radius: 10px;
     background: var(--surface-bg-muted);
     color: var(--color-muted);
+  }
+
+  .resume-note-jump {
+    margin-left: 0.6rem;
+    font-weight: 700;
+  }
+
+  .resume-note-jump[hidden] {
+    display: none;
   }
 
   .resume-note[hidden] {
