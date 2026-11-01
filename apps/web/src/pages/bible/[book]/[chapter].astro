@@ -2882,6 +2882,12 @@ const PLAYER_VERSION = "2026-11-01";
   }
 
   @media (max-width: 32rem) {
+    /* The audio bar is crowded on a phone; the player and the next-chapter option stay. */
+    .chapter-audio-link,
+    .chapter-audio-credit {
+      display: none;
+    }
+
     /* Compact enough to sit beside the verse number without covering the next verse. */
     .verse-actionbar {
       max-width: calc(100vw - 4rem);
