@@ -501,7 +501,7 @@ const PLAYER_VERSION = "2026-11-01";
       const pageChapter = Number(catalog.dataset.chapterNumber) || 1;
       let playing: Spot = { book: pageBook, chapter: pageChapter };
 
-      // ?debug=1 shows the checkbox on phones and a running log of what the player does
+      // ?debug=1 shows a running log of what the player does
       // (kept across the hop to the next chapter), for working out why it stalls.
       const debugOn = new URLSearchParams(location.search).get("debug") === "1";
       const debugEl = document.querySelector("[data-audio-debug]") as HTMLElement | null;
@@ -509,7 +509,6 @@ const PLAYER_VERSION = "2026-11-01";
       const debugLines: string[] = [];
       if (debugOn) {
         try { debugLines.push(...JSON.parse(sessionStorage.getItem(DEBUG_KEY) || "[]")); } catch {}
-        document.querySelector(".chapter-audio-continue")?.classList.add("is-debug");
       }
       const log = (msg: string) => {
         if (!debugOn || !debugEl) return;
@@ -2318,14 +2317,7 @@ const PLAYER_VERSION = "2026-11-01";
     accent-color: var(--color-link);
   }
 
-  /* Hidden on phones for now: on Android the audio ends without moving on.
-     Add ?debug=1 to the address to show it, plus a log of what the player does. */
-  @media (hover: none) and (pointer: coarse) {
-    .chapter-audio-continue:not(.is-debug) {
-      display: none;
-    }
-  }
-
+  /* ?debug=1 on the address shows a log of what the player does. */
   .chapter-audio-debug {
     flex-basis: 100%;
     margin: 0;
