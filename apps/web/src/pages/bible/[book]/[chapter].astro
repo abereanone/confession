@@ -149,6 +149,10 @@ const chapterAudioUrl =
   selectedBookCode && selectedChapter > 0
     ? getChapterAudioUrl(selectedBookCode, selectedChapter)
     : null;
+// The service worker serves scripts stale-while-revalidate and assumes their names carry a
+// hash. sermon-player.js does not, so a phone that cached an older copy kept it. Change this
+// whenever public/sermon-player.js changes: the new address is a cache miss everywhere.
+const PLAYER_VERSION = "2026-11-01";
 ---
 
 <Main title="Bible Reader">
@@ -448,7 +452,7 @@ const chapterAudioUrl =
     hidden
   ></div>
 
-  <script src="/sermon-player.js" is:inline defer></script>
+  <script src={`/sermon-player.js?v=${PLAYER_VERSION}`} is:inline defer></script>
   <script>
     // Keep the sticky chapter audio clear of the site header (height varies when it wraps).
     (() => {
@@ -515,6 +519,7 @@ const chapterAudioUrl =
         debugEl.hidden = false;
         try { sessionStorage.setItem(DEBUG_KEY, JSON.stringify(debugLines)); } catch {}
       };
+      let playerEnded = false;
       if (debugOn) {
         customElements.whenDefined("sermon-player").then(() => {
           const audio = (player as any)._audio as HTMLAudioElement | undefined;
@@ -523,6 +528,11 @@ const chapterAudioUrl =
             audio.addEventListener(type, () => {
               const code = type === "error" ? ` code ${audio.error?.code}` : "";
               log(`audio ${type}${code} at ${audio.currentTime.toFixed(1)}/${(audio.duration || 0).toFixed(1)}`);
+              // The player runs before this listener, so it has already announced the end if it will.
+              if (type === "ended") {
+                if (!playerEnded) log("sermon-player did not announce the end (old copy of sermon-player.js?)");
+                playerEnded = false;
+              }
             });
           }
         });
@@ -559,6 +569,7 @@ const chapterAudioUrl =
       log(`open ${pageBook.name} ${pageChapter}, ${document.visibilityState}, box ${toggle?.checked ? "ticked" : "off"}`);
 
       player.addEventListener("ended", () => {
+        playerEnded = true;
         if (!toggle?.checked) { log("ended: box not ticked, stopping"); return; }
         const next = nextSpot(playing);
         if (!next) { log("ended: no next chapter"); return; }
