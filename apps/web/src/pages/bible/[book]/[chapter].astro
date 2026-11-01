@@ -2269,6 +2269,13 @@ const chapterAudioUrl =
     accent-color: var(--color-link);
   }
 
+  /* Hidden on phones for now: on Android the audio ends without moving on. */
+  @media (hover: none) and (pointer: coarse) {
+    .chapter-audio-continue {
+      display: none;
+    }
+  }
+
   .chapter-audio-resume,
   .chapter-audio-jump {
     flex-basis: 100%;
