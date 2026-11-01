@@ -294,12 +294,14 @@ const PLAYER_VERSION = "2026-11-01";
           Open MP3
         </a>
         <span class="chapter-audio-credit">Read by {CHAPTER_AUDIO_READER} · BSB</span>
-        {nextTarget ? (
-          <label class="chapter-audio-continue">
-            <input type="checkbox" data-audio-continue />
-            Continue to the next chapter
-          </label>
-        ) : null}
+        <label class="chapter-audio-continue">
+          <input type="checkbox" data-audio-continue />
+          Continuous play
+        </label>
+        <label class="chapter-audio-continue">
+          <input type="checkbox" data-audio-repeat />
+          Repeat book
+        </label>
         <button type="button" class="chapter-audio-resume" data-audio-resume hidden>▶ Keep listening</button>
         <a class="chapter-audio-jump" href="#" data-audio-jump hidden></a>
         <p class="chapter-audio-debug" data-audio-debug hidden></p>
@@ -468,8 +470,10 @@ const PLAYER_VERSION = "2026-11-01";
     })();
   </script>
   <script>
-    // Continuous listening. Off unless the listener ticks "Continue to the next
-    // chapter" (remembered per visitor). When a chapter's audio then ends:
+    // Continuous listening. Off unless the listener ticks "Continuous play"
+    // (remembered per visitor). "Repeat book" makes the last chapter of a book
+    // go back to its chapter 1 instead of on to the next book. When a chapter's
+    // audio then ends:
     //  - page in view: go to the next chapter's page and keep playing there, so
     //    the text follows the audio (?autoplay=1, plus &t=seconds to resume).
     //  - page hidden (phone locked, another app open): load the next chapter
@@ -489,6 +493,7 @@ const PLAYER_VERSION = "2026-11-01";
       const catalog = document.getElementById("book-catalog-data");
       if (!player || !catalog) return;
       const toggle = document.querySelector("[data-audio-continue]") as HTMLInputElement | null;
+      const repeat = document.querySelector("[data-audio-repeat]") as HTMLInputElement | null;
       const resume = document.querySelector("[data-audio-resume]") as HTMLButtonElement | null;
       const jump = document.querySelector("[data-audio-jump]") as HTMLAnchorElement | null;
       const label = document.querySelector("[data-audio-label]");
@@ -539,6 +544,7 @@ const PLAYER_VERSION = "2026-11-01";
 
       const nextSpot = (s: Spot): Spot | null => {
         if (s.chapter < s.book.chapterCount) return { book: s.book, chapter: s.chapter + 1 };
+        if (repeat?.checked) return { book: s.book, chapter: 1 };
         const i = books.indexOf(s.book);
         return i >= 0 && i < books.length - 1 ? { book: books[i + 1], chapter: 1 } : null;
       };
@@ -563,6 +569,14 @@ const PLAYER_VERSION = "2026-11-01";
         toggle.addEventListener("change", () => {
           try { localStorage.setItem(CONTINUE_KEY, toggle.checked ? "1" : "0"); } catch {}
           log(`box ${toggle.checked ? "ticked" : "unticked"}`);
+        });
+      }
+      const REPEAT_KEY = "bible-audio:repeat";
+      if (repeat) {
+        try { repeat.checked = localStorage.getItem(REPEAT_KEY) === "1"; } catch {}
+        repeat.addEventListener("change", () => {
+          try { localStorage.setItem(REPEAT_KEY, repeat.checked ? "1" : "0"); } catch {}
+          log(`repeat ${repeat.checked ? "ticked" : "unticked"}`);
         });
       }
       log(`open ${pageBook.name} ${pageChapter}, ${document.visibilityState}, box ${toggle?.checked ? "ticked" : "off"}`);
