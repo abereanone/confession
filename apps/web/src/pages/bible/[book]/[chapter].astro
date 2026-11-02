@@ -302,6 +302,10 @@ const PLAYER_VERSION = "2026-11-01";
           <input type="checkbox" data-audio-repeat />
           Repeat book
         </label>
+        <label class="chapter-audio-continue">
+          <input type="checkbox" data-audio-repeat-chapter />
+          Repeat chapter
+        </label>
         <button type="button" class="chapter-audio-resume" data-audio-resume hidden>▶ Keep listening</button>
         <a class="chapter-audio-jump" href="#" data-audio-jump hidden></a>
         <p class="chapter-audio-debug" data-audio-debug hidden></p>
@@ -472,7 +476,8 @@ const PLAYER_VERSION = "2026-11-01";
   <script>
     // Continuous listening. Off unless the listener ticks "Continuous play"
     // (remembered per visitor). "Repeat book" makes the last chapter of a book
-    // go back to its chapter 1 instead of on to the next book. When a chapter's
+    // go back to its chapter 1 instead of on to the next book; "Repeat chapter"
+    // plays the same chapter again. The two exclude each other. When a chapter's
     // audio then ends:
     //  - page in view: go to the next chapter's page and keep playing there, so
     //    the text follows the audio (?autoplay=1, plus &t=seconds to resume).
@@ -494,6 +499,7 @@ const PLAYER_VERSION = "2026-11-01";
       if (!player || !catalog) return;
       const toggle = document.querySelector("[data-audio-continue]") as HTMLInputElement | null;
       const repeat = document.querySelector("[data-audio-repeat]") as HTMLInputElement | null;
+      const repeatChapter = document.querySelector("[data-audio-repeat-chapter]") as HTMLInputElement | null;
       const resume = document.querySelector("[data-audio-resume]") as HTMLButtonElement | null;
       const jump = document.querySelector("[data-audio-jump]") as HTMLAnchorElement | null;
       const label = document.querySelector("[data-audio-label]");
@@ -543,6 +549,7 @@ const PLAYER_VERSION = "2026-11-01";
       }
 
       const nextSpot = (s: Spot): Spot | null => {
+        if (repeatChapter?.checked) return { book: s.book, chapter: s.chapter };
         if (s.chapter < s.book.chapterCount) return { book: s.book, chapter: s.chapter + 1 };
         if (repeat?.checked) return { book: s.book, chapter: 1 };
         const i = books.indexOf(s.book);
@@ -572,11 +579,28 @@ const PLAYER_VERSION = "2026-11-01";
         });
       }
       const REPEAT_KEY = "bible-audio:repeat";
-      if (repeat) {
-        try { repeat.checked = localStorage.getItem(REPEAT_KEY) === "1"; } catch {}
+      const REPEAT_CHAPTER_KEY = "bible-audio:repeat-chapter";
+      if (repeat && repeatChapter) {
+        try {
+          repeat.checked = localStorage.getItem(REPEAT_KEY) === "1";
+          repeatChapter.checked = localStorage.getItem(REPEAT_CHAPTER_KEY) === "1";
+        } catch {}
+        if (repeat.checked && repeatChapter.checked) repeatChapter.checked = false;
+        const save = () => {
+          try {
+            localStorage.setItem(REPEAT_KEY, repeat.checked ? "1" : "0");
+            localStorage.setItem(REPEAT_CHAPTER_KEY, repeatChapter.checked ? "1" : "0");
+          } catch {}
+        };
         repeat.addEventListener("change", () => {
-          try { localStorage.setItem(REPEAT_KEY, repeat.checked ? "1" : "0"); } catch {}
-          log(`repeat ${repeat.checked ? "ticked" : "unticked"}`);
+          if (repeat.checked) repeatChapter.checked = false;
+          save();
+          log(`repeat book ${repeat.checked ? "ticked" : "unticked"}`);
+        });
+        repeatChapter.addEventListener("change", () => {
+          if (repeatChapter.checked) repeat.checked = false;
+          save();
+          log(`repeat chapter ${repeatChapter.checked ? "ticked" : "unticked"}`);
         });
       }
       log(`open ${pageBook.name} ${pageChapter}, ${document.visibilityState}, box ${toggle?.checked ? "ticked" : "off"}`);
