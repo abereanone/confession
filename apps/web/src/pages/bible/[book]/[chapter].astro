@@ -592,13 +592,19 @@ const PLAYER_VERSION = "2026-11-01";
             localStorage.setItem(REPEAT_CHAPTER_KEY, repeatChapter.checked ? "1" : "0");
           } catch {}
         };
+        const checkContinue = () => {
+          if (!toggle || toggle.checked) return;
+          toggle.checked = true;
+          try { localStorage.setItem(CONTINUE_KEY, "1"); } catch {}
+          log("box auto-ticked by repeat option");
+        };
         repeat.addEventListener("change", () => {
-          if (repeat.checked) repeatChapter.checked = false;
+          if (repeat.checked) { repeatChapter.checked = false; checkContinue(); }
           save();
           log(`repeat book ${repeat.checked ? "ticked" : "unticked"}`);
         });
         repeatChapter.addEventListener("change", () => {
-          if (repeatChapter.checked) repeat.checked = false;
+          if (repeatChapter.checked) { repeat.checked = false; checkContinue(); }
           save();
           log(`repeat chapter ${repeatChapter.checked ? "ticked" : "unticked"}`);
         });
