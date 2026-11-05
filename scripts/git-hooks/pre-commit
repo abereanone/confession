@@ -1,0 +1,15 @@
+#!/bin/sh
+# Stops a commit that changes the Bible master while the other sites still
+# carry the old text. Fix: node scripts/sync-bible-to-sites.mjs, commit and
+# push each site, then commit here again.
+#
+# Turned on with: git config core.hooksPath scripts/git-hooks
+if git diff --cached --name-only | grep -qE '^shared/data/(bsb\.json|bible-cited\.json)$'; then
+  if ! node scripts/sync-bible-to-sites.mjs --check; then
+    echo ""
+    echo "COMMIT STOPPED: the Bible master changed but the other sites do not match it."
+    echo "Run:  node scripts/sync-bible-to-sites.mjs"
+    echo "then commit and push each site that changed, then commit here again."
+    exit 1
+  fi
+fi
