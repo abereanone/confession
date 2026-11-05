@@ -618,7 +618,7 @@ export async function getVerseLookup(
           if (verse) {
             parts.push({
               reference: verse.reference,
-              text: `${v} ${verse.text}`,
+              text: verse.text,
               version: verse.version,
             });
           }
@@ -626,8 +626,9 @@ export async function getVerseLookup(
         if (parts.length > 0) {
           const versions = parts.map((part) => part.version);
           const version = summarizeVersionLabels(versions);
+          // The tooltip already shows the reference, so the first verse gets no number.
           lookup[key] = {
-            text: parts.map((part) => part.text).join(" "),
+            text: parts.map((part, index) => (index === 0 ? part.text : `${part.reference?.split(":").pop() ?? start + index} ${part.text}`)).join(" "),
             version,
             parts: new Set(versions.map((value) => normalizeVersionLabel(value))).size > 1 ? parts : undefined,
           };
