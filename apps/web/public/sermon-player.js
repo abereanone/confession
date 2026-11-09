@@ -203,7 +203,11 @@
         playBtn.innerHTML = on ? ICONS.pause : ICONS.play;
       };
       // Host pages style sermon-player[playing] (e.g. sticky while reading the transcript).
-      audio.addEventListener("play", () => this.toggleAttribute("playing", true));
+      // sermon-player[started] stays set after a pause, so a host can keep the bar pinned.
+      audio.addEventListener("play", () => {
+        this.toggleAttribute("playing", true);
+        this.toggleAttribute("started", true);
+      });
       audio.addEventListener("pause", () => this.toggleAttribute("playing", false));
       // Public hooks so host pages can stop, start or swap playback.
       this._pause = () => { audio.pause(); setPlaying(false); };

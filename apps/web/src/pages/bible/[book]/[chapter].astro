@@ -152,7 +152,7 @@ const chapterAudioUrl =
 // The service worker serves scripts stale-while-revalidate and assumes their names carry a
 // hash. sermon-player.js does not, so a phone that cached an older copy kept it. Change this
 // whenever public/sermon-player.js changes: the new address is a cache miss everywhere.
-const PLAYER_VERSION = "2026-11-01";
+const PLAYER_VERSION = "2026-11-09";
 ---
 
 <Main title="Bible Reader">
@@ -2292,9 +2292,10 @@ const PLAYER_VERSION = "2026-11-01";
     background: var(--surface-bg-muted);
   }
 
-  /* Keep the chapter audio in view (below the site header) while it's playing.
-     --reader-header-offset tracks the header, whose height changes when it wraps. */
-  .chapter-audio:has(sermon-player[playing]) {
+  /* Keep the chapter audio in view (below the site header) once it has started, and
+     through a pause, so it doesn't jump back up the page. --reader-header-offset
+     tracks the header, whose height changes when it wraps. */
+  .chapter-audio:has(sermon-player[started]) {
     position: sticky;
     top: var(--reader-header-offset, 5.25rem);
     z-index: 20;
