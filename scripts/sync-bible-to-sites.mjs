@@ -32,6 +32,7 @@ const astroSites = [
 const staticSites = [
   { site: "thingsabove.us", dir: "assets" },
   { site: "michaelcoughlin.net", dir: "mnet-shared" },
+  { site: "macaudio", dir: "public/bible" },
 ];
 
 const bsb = JSON.parse(await readFile(path.join(confessionRoot, "shared/data/bsb.json"), "utf8"));
