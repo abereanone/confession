@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/go-links.mjs dist --base /go/ --own confess.catechize.ing",
     "preview": "astro preview",
     "gen:logo": "node scripts/gen-logo.cjs"
   },
