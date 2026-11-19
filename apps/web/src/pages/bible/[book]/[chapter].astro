@@ -108,6 +108,7 @@ const chapterChangesByVerse = new Map<
   Awaited<ReturnType<typeof listBsbChanges>>
 >();
 let chapterFootnoteCount = 0;
+let chapterHasDivineName = false;
 
 if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
   const chapterMaxVerse = chapterVerses[chapterVerses.length - 1]?.verse ?? chapterVerses.length;
@@ -134,6 +135,9 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
       const existing = chapterChangesByVerse.get(change.verse) ?? [];
       existing.push(change);
       chapterChangesByVerse.set(change.verse, existing);
+      if (change.isDivineNameChange) {
+        chapterHasDivineName = true;
+      }
     });
 }
 
@@ -156,7 +160,7 @@ const PLAYER_VERSION = "2026-11-09";
 ---
 
 <Main title="Bible Reader">
-  <h1>{provider}</h1>
+  <h1 class="bible-title">{provider}</h1>
 
   <a class="resume-bar" data-resume-bar href="/bible" hidden>
     <span class="resume-bar-text">
@@ -172,7 +176,14 @@ const PLAYER_VERSION = "2026-11-09";
     <a class="resume-note-jump" data-resume-note-jump href="#" hidden></a>
   </p>
 
-  <section class="reader-tools card-panel">
+  <div class="picker-backdrop" data-picker-close hidden></div>
+  <section class="reader-tools card-panel" id="bible-picker" data-picker aria-label="Choose a chapter">
+    <div class="picker-sheet-head">
+      <span class="picker-sheet-title">Choose a chapter</span>
+      <button type="button" class="picker-sheet-close" data-picker-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
     <div class="controls">
       <div class="scope-pills" role="group" aria-label="Book scope">
         <button
@@ -260,8 +271,24 @@ const PLAYER_VERSION = "2026-11-09";
 
   <section class="card-panel section-spacer">
     <header class="chapter-header">
-      <h2>{selectedBookName} {selectedChapter}</h2>
+      <h2>
+        <button
+          type="button"
+          class="chapter-pick"
+          data-picker-open
+          aria-controls="bible-picker"
+          aria-expanded="false"
+        >
+          {selectedBookName} {selectedChapter}<span class="chapter-pick-caret" aria-hidden="true">▾</span>
+        </button>
+      </h2>
       <div class="chapter-header-actions">
+        {chapterAudioUrl ? (
+          <button type="button" class="chapter-listen" data-audio-listen>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" /></svg>
+            Listen
+          </button>
+        ) : null}
         <button
           type="button"
           class="chapter-bookmark"
@@ -294,6 +321,18 @@ const PLAYER_VERSION = "2026-11-09";
           Open MP3
         </a>
         <span class="chapter-audio-credit">Read by {CHAPTER_AUDIO_READER} · BSB</span>
+        <button
+          type="button"
+          class="chapter-audio-icon chapter-audio-settings"
+          data-audio-settings
+          aria-expanded="false"
+          aria-label="Playback options"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+        </button>
+        <button type="button" class="chapter-audio-icon chapter-audio-close" data-audio-close aria-label="Stop and close player">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
         <label class="chapter-audio-continue">
           <input type="checkbox" data-audio-continue />
           Continuous play
@@ -311,11 +350,19 @@ const PLAYER_VERSION = "2026-11-09";
         <p class="chapter-audio-debug" data-audio-debug hidden></p>
       </div>
     ) : null}
-    {chapterFootnoteCount > 0 ? (
+    {chapterFootnoteCount > 0 || chapterHasDivineName ? (
       <div class="chapter-footnotes-controls" data-chapter-footnotes-controls>
-        <p class="meta">
-          {chapterFootnoteCount} verse{chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
-        </p>
+        {chapterFootnoteCount > 0 ? (
+          <p class="meta">
+            <span class="footnote-key" aria-hidden="true"></span>
+            {chapterFootnoteCount} verse{chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
+          </p>
+        ) : null}
+        {chapterHasDivineName ? (
+          <p class="meta">
+            “LORD” is shown as Yahweh. <a href="/bible/changes">See all changes to the BSB</a>
+          </p>
+        ) : null}
       </div>
     ) : null}
 
@@ -323,7 +370,11 @@ const PLAYER_VERSION = "2026-11-09";
       <ol class="verse-list">
         {chapterVerses.map((verse) => {
           const footnote = chapterFootnotesByVerse.get(verse.verse);
-          const changes = chapterChangesByVerse.get(verse.verse) ?? [];
+          // The divine-name change is on thousands of verses, so it is explained once
+          // above the chapter instead of with a ? on each verse.
+          const changes = (chapterChangesByVerse.get(verse.verse) ?? []).filter(
+            (change) => !change.isDivineNameChange
+          );
           return (
             <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
               <a
@@ -471,6 +522,79 @@ const PLAYER_VERSION = "2026-11-09";
       setOffset();
       window.addEventListener("resize", setOffset);
       if ("ResizeObserver" in window) new ResizeObserver(setOffset).observe(header);
+    })();
+  </script>
+  <script>
+    // Phone layout: the chapter title opens the picker as a bottom sheet, Listen
+    // starts the chapter audio (which then docks above the tab bar), and the
+    // docked player has its own close and options buttons.
+    (() => {
+      const phone = window.matchMedia("(max-width: 720px)");
+      const root = document.documentElement;
+      const picker = document.querySelector("[data-picker]");
+      const backdrop = document.querySelector(".picker-backdrop");
+      const openers = document.querySelectorAll("[data-picker-open]");
+
+      const setPickerOpen = (open: boolean) => {
+        root.classList.toggle("picker-open", open);
+        if (backdrop instanceof HTMLElement) backdrop.hidden = !open;
+        openers.forEach((button) => button.setAttribute("aria-expanded", open ? "true" : "false"));
+        if (open) {
+          const input = picker?.querySelector("[data-lookup-input]");
+          // Focusing the search box would pop the keyboard over the sheet; focus the book list instead.
+          const book = picker?.querySelector("[data-book-select]");
+          if (book instanceof HTMLElement) book.focus({ preventScroll: true });
+          else if (input instanceof HTMLElement) input.focus({ preventScroll: true });
+        }
+      };
+
+      openers.forEach((button) =>
+        button.addEventListener("click", () => {
+          if (phone.matches) {
+            setPickerOpen(!root.classList.contains("picker-open"));
+          } else {
+            const book = picker?.querySelector("[data-book-select]");
+            if (book instanceof HTMLElement) {
+              picker?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+              book.focus({ preventScroll: true });
+            }
+          }
+        })
+      );
+      document.querySelectorAll("[data-picker-close]").forEach((el) =>
+        el.addEventListener("click", () => setPickerOpen(false))
+      );
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && root.classList.contains("picker-open")) setPickerOpen(false);
+      });
+      // A search shows its results on the page, behind the sheet.
+      picker?.querySelector("[data-lookup-form]")?.addEventListener("submit", () => setPickerOpen(false));
+      phone.addEventListener?.("change", () => setPickerOpen(false));
+
+      type Player = HTMLElement & { play: (from?: number) => Promise<boolean>; pause: () => void };
+      const player = document.querySelector("sermon-player") as Player | null;
+      const audio = document.querySelector(".chapter-audio");
+
+      document.querySelector("[data-audio-listen]")?.addEventListener("click", () => {
+        if (!player) return;
+        // play(0) resumes from the current position; it only seeks for a time above 0.
+        if (player.hasAttribute("playing")) player.pause();
+        else player.play(0);
+      });
+
+      document.querySelector("[data-audio-close]")?.addEventListener("click", () => {
+        if (!player) return;
+        player.pause();
+        player.removeAttribute("started");
+        audio?.classList.remove("show-settings");
+      });
+
+      const settings = document.querySelector("[data-audio-settings]");
+      settings?.addEventListener("click", () => {
+        const open = !audio?.classList.contains("show-settings");
+        audio?.classList.toggle("show-settings", open);
+        settings.setAttribute("aria-expanded", open ? "true" : "false");
+      });
     })();
   </script>
   <script>
@@ -2923,6 +3047,281 @@ const PLAYER_VERSION = "2026-11-09";
     .verse-actionbar-switch-track,
     .verse-actionbar-switch-thumb {
       transition: none;
+    }
+  }
+
+  /* The chapter title doubles as the picker button on phones; on wider screens it
+     reads as a plain heading. */
+  .chapter-pick {
+    all: unset;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+
+  .chapter-pick:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  .chapter-pick-caret,
+  .chapter-listen,
+  .picker-sheet-head,
+  .picker-backdrop,
+  .chapter-audio-icon {
+    display: none;
+  }
+
+  .footnote-key {
+    display: none;
+  }
+
+  .chapter-footnotes-controls .meta + .meta {
+    margin-top: 0.15rem;
+  }
+
+  @media (max-width: 720px) {
+    .bible-title {
+      display: none;
+    }
+
+    /* The picker becomes a bottom sheet opened from the chapter title. */
+    .reader-tools {
+      display: none;
+      position: fixed;
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1100;
+      max-height: 85vh;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0.75rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+      border-radius: 18px 18px 0 0;
+      border-bottom: 0;
+      /* card-bg is slightly see-through; lay it over the page colour so text behind doesn't show. */
+      background: linear-gradient(var(--card-bg), var(--card-bg)), var(--color-bg);
+      box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .reader-tools .controls > * {
+      flex: none;
+    }
+
+    :global(html.picker-open) .reader-tools {
+      display: block;
+    }
+
+    .picker-backdrop:not([hidden]) {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 1050;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .picker-sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .picker-sheet-title {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--color-heading);
+    }
+
+    .picker-sheet-close,
+    .chapter-audio-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-bg-muted);
+      color: var(--color-text);
+    }
+
+    .picker-sheet-close svg,
+    .chapter-audio-icon svg,
+    .chapter-listen svg {
+      width: 1.1rem;
+      height: 1.1rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .reader-tools .controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .reader-tools .scope-pills {
+      align-self: flex-start;
+    }
+
+    .reader-tools .control-group {
+      flex-wrap: wrap;
+      align-content: flex-start;
+    }
+
+    .reader-tools .control-group select {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .reader-tools .control-group-query label {
+      flex: 1 1 100%;
+    }
+
+    .reader-tools .control-group-query input {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    /* Chapter heading row: title (picker) on the left, Listen + Bookmark on the right. */
+    .chapter-header {
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+    }
+
+    .chapter-header h2 {
+      min-width: 0;
+    }
+
+    .chapter-pick-caret {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0 0.45rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      vertical-align: middle;
+      color: var(--color-link);
+    }
+
+    .chapter-header-actions {
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+      flex: none;
+    }
+
+    .chapter-listen {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.35rem 0.75rem 0.35rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--surface-border-strong);
+      background: transparent;
+      color: var(--color-link);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .chapter-listen svg {
+      fill: currentColor;
+    }
+
+    /* Previous / Next stay at the end of the chapter only. */
+    .chapter-header .chapter-nav {
+      display: none;
+    }
+
+    /* Audio: hidden until Listen is pressed (or a chapter carries on playing),
+       then docked above the tab bar as a compact player. */
+    .chapter-audio {
+      display: none;
+    }
+
+    .chapter-audio:has(sermon-player[started]),
+    .chapter-audio:has([data-audio-resume]:not([hidden])) {
+      display: flex;
+      position: fixed;
+      top: auto;
+      left: 0.5rem;
+      right: 0.5rem;
+      bottom: calc(var(--tabbar-space, 0px) + 0.5rem);
+      z-index: 1000;
+      margin: 0;
+      gap: 0.4rem 0.5rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 14px;
+      border-color: var(--surface-border-strong);
+      background: linear-gradient(var(--card-bg), var(--card-bg)), var(--color-bg);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .chapter-audio .chapter-audio-label {
+      flex: 1 1 100%;
+      font-size: 0.85rem;
+    }
+
+    .chapter-audio .chapter-audio-player {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .chapter-audio-icon {
+      flex: none;
+    }
+
+    .chapter-audio .chapter-audio-continue {
+      display: none;
+    }
+
+    .chapter-audio.show-settings .chapter-audio-continue {
+      display: inline-flex;
+    }
+
+    .chapter-audio-settings[aria-expanded="true"] {
+      border-color: var(--color-link);
+      color: var(--color-link);
+    }
+
+    /* Leave room so the last verses and Previous/Next aren't hidden behind the player. */
+    .section-spacer:has(.chapter-audio sermon-player[started]) {
+      padding-bottom: 7rem;
+    }
+
+    /* Study Mode: a small dot after the verse instead of the MORE pill. */
+    .verse-footnote-pill {
+      font-size: 0;
+      letter-spacing: 0;
+      min-height: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      vertical-align: middle;
+    }
+
+    .verse-footnote-pill::before,
+    .footnote-key {
+      content: "";
+      display: inline-block;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--color-link);
+    }
+
+    .footnote-key {
+      margin-right: 0.4rem;
+      vertical-align: 0.1em;
     }
   }
 

@@ -18,6 +18,17 @@ const ogImageUrl = `${siteUrl}/ogLogo.png`;
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 // Register the service worker only in built output, so dev HMR isn't intercepted.
 const enablePwa = import.meta.env.PROD;
+// Which bottom tab (phones only) is lit for this page.
+const path = Astro.url.pathname;
+const activeTab = path.startsWith("/bible/bookmarks")
+  ? "bookmarks"
+  : path.startsWith("/bible")
+    ? "bible"
+    : path.startsWith("/scriptures")
+      ? "scriptures"
+      : path === "/" || path.startsWith("/confessions") || path.startsWith("/compare")
+        ? "confessions"
+        : "";
 
 // theme.css lives in public/, so it is served as-is with no hash in its name, and
 // the service worker answers asset requests from cache first. Without a version
@@ -125,7 +136,15 @@ try {
         };
 
         root.dataset.theme = readStoredTheme() || prefersDark() || "light";
-        root.dataset.readerMode = readStoredReaderMode() || "study";
+        // Phones open in Reading Mode until the reader picks a mode themselves.
+        const isPhone = () => {
+          try {
+            return window.matchMedia("(max-width: 720px)").matches;
+          } catch {
+            return false;
+          }
+        };
+        root.dataset.readerMode = readStoredReaderMode() || (isPhone() ? "read" : "study");
       })();
     </script>
     <link rel="stylesheet" href={`/styles/theme.css?v=${themeVersion}`} />
@@ -135,13 +154,23 @@ try {
       <a href="/" class="brand" aria-label={`${siteSettings.siteName} home`}>
         <img src={logoUrl} alt="" class="brand-logo" width="96" height="96" />
       </a>
-      <nav>
+      <nav class="top-nav">
         <a href="/">Confessions</a>
         <a href="/scriptures">Scriptures</a>
         <a href="/bible">Bible</a>
         <a href="/bible/bookmarks">Bookmarks</a>
       </nav>
-      <div class="header-controls">
+      <button
+        type="button"
+        class="menu-toggle"
+        data-menu-toggle
+        aria-expanded="false"
+        aria-controls="site-menu"
+        aria-label="Menu"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+      <div class="header-controls" id="site-menu" data-site-menu>
         <AppInstall />
         <button type="button" class="reader-toggle" data-reader-toggle aria-label="Toggle reading mode">
           <span data-reader-toggle-label>Reading Mode</span>
@@ -149,8 +178,32 @@ try {
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
           <span data-theme-toggle-label>Dark</span>
         </button>
+        <div class="menu-links">
+          <a href="/compare">Compare confessions</a>
+          <a href="/bible/changes">What's New?</a>
+          <a href="/resources">Resources</a>
+          <a href="/about">About</a>
+        </div>
       </div>
     </header>
+    <nav class="tabbar" aria-label="Main">
+      <a href="/" aria-current={activeTab === "confessions" ? "page" : undefined}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l3 3v15H6z" /><path d="M9 10h6M9 14h6" /></svg>
+        Confessions
+      </a>
+      <a href="/scriptures" aria-current={activeTab === "scriptures" ? "page" : undefined}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h10M4 18h13" /></svg>
+        Scriptures
+      </a>
+      <a href="/bible" aria-current={activeTab === "bible" ? "page" : undefined}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M12 8v6M9 11h6" /></svg>
+        Bible
+      </a>
+      <a href="/bible/bookmarks" aria-current={activeTab === "bookmarks" ? "page" : undefined}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 4h12v17l-6-4-6 4z" /></svg>
+        Bookmarks
+      </a>
+    </nav>
     <main>
       <slot />
     </main>
@@ -181,7 +234,16 @@ try {
         const readStoredReaderMode = () => {
           try {
             const value = window.localStorage.getItem(readerStorageKey);
-            return value === "read" || value === "study" ? value : "study";
+            return value === "read" || value === "study" ? value : defaultReaderMode();
+          } catch {
+            return defaultReaderMode();
+          }
+        };
+
+        // Matches the head script: phones default to Reading Mode.
+        const defaultReaderMode = () => {
+          try {
+            return window.matchMedia("(max-width: 720px)").matches ? "read" : "study";
           } catch {
             return "study";
           }
@@ -304,15 +366,62 @@ try {
           }
         };
 
+        // Phones: the menu button opens the header controls as a panel, and the
+        // header slides out of the way while reading down the page.
+        const setMenuOpen = (open) => {
+          root.classList.toggle("menu-open", open);
+          document.querySelectorAll("[data-menu-toggle]").forEach((button) => {
+            button.setAttribute("aria-expanded", open ? "true" : "false");
+          });
+        };
+
+        const initPhoneHeader = () => {
+          const header = document.querySelector(".top");
+          if (!(header instanceof HTMLElement)) {
+            return;
+          }
+          let lastY = window.scrollY;
+          window.addEventListener(
+            "scroll",
+            () => {
+              const y = window.scrollY;
+              const delta = y - lastY;
+              if (Math.abs(delta) < 6) {
+                return;
+              }
+              const hide =
+                delta > 0 && y > header.offsetHeight && !root.classList.contains("menu-open");
+              header.classList.toggle("is-tucked", hide);
+              lastY = y;
+            },
+            { passive: true }
+          );
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && root.classList.contains("menu-open")) {
+              setMenuOpen(false);
+            }
+          });
+        };
+
         const init = () => {
           applyTheme(readStoredTheme() || root.dataset.theme || "light", false);
           applyReaderMode(readStoredReaderMode(), false);
           forceStudyModeForReference();
           document.addEventListener("astro:page-load", forceStudyModeForReference);
+          initPhoneHeader();
           document.addEventListener("click", (event) => {
             const target = event.target instanceof Element ? event.target : null;
             if (!target) {
               return;
+            }
+
+            const menuTrigger = target.closest("[data-menu-toggle]");
+            if (menuTrigger) {
+              setMenuOpen(!root.classList.contains("menu-open"));
+              return;
+            }
+            if (root.classList.contains("menu-open") && !target.closest("[data-site-menu]")) {
+              setMenuOpen(false);
             }
 
             const themeTrigger = target.closest("[data-theme-toggle]");
@@ -399,9 +508,134 @@ try {
     margin: 0 auto;
   }
 
+  .menu-toggle,
+  .menu-links,
+  .tabbar {
+    display: none;
+  }
+
+  /* Phones: one slim header row (logo + menu), the main links in a bottom tab
+     bar, and the header controls in a panel behind the menu button. */
   @media (max-width: 720px) {
+    .top {
+      flex-wrap: nowrap;
+      padding: 0.35rem 0.75rem;
+      transition: transform 0.2s ease-out;
+    }
+
+    .top.is-tucked {
+      transform: translateY(-100%);
+    }
+
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+
+    .top-nav {
+      display: none;
+    }
+
+    .menu-toggle {
+      display: inline-grid;
+      place-items: center;
+      margin-left: auto;
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text);
+    }
+
+    .menu-toggle[aria-expanded="true"] {
+      border-color: var(--surface-border);
+      background: var(--surface-bg-muted);
+    }
+
+    .menu-toggle svg,
+    .tabbar svg {
+      width: 1.35rem;
+      height: 1.35rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .header-controls {
-      margin-left: 0;
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+      padding: 0.9rem 1rem 1.1rem;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--surface-border-strong);
+      box-shadow: var(--shadow-card);
+    }
+
+    :global(html.menu-open) .header-controls {
+      display: flex;
+    }
+
+    .menu-links {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--surface-border);
+      margin-top: 0.2rem;
+    }
+
+    .menu-links a {
+      padding: 0.7rem 0.15rem;
+      border-bottom: 1px solid var(--surface-border);
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .menu-links a:last-child {
+      border-bottom: 0;
+    }
+
+    .tabbar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--color-nav-bg);
+      border-top: 1px solid var(--surface-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .tabbar a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      min-height: 3.6rem;
+      font-size: 0.72rem;
+      color: var(--color-muted);
+      text-decoration: none;
+    }
+
+    .tabbar a[aria-current="page"] {
+      color: var(--color-link);
+      font-weight: 700;
+    }
+
+    :global(body) {
+      padding-bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px));
     }
   }
 

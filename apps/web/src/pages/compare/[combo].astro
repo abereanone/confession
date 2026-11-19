@@ -404,7 +404,7 @@ function rowLabel(row: (typeof groups)[number]["rows"][number]): string {
      reachable from anywhere in it. */
   .compare-return {
     position: fixed;
-    bottom: 1rem;
+    bottom: calc(1rem + var(--tabbar-space, 0px));
     left: 1rem;
     z-index: 1200;
     display: flex;

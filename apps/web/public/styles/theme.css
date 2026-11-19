@@ -344,7 +344,7 @@ a.confession-link:focus-visible {
 .reader-notice {
   position: fixed;
   left: 50%;
-  bottom: 1.5rem;
+  bottom: calc(1.5rem + var(--tabbar-space, 0px));
   z-index: 2000;
   max-width: min(92vw, 30rem);
   padding: 0.75rem 1.1rem;
@@ -373,5 +373,12 @@ a.confession-link:focus-visible {
   .reader-notice {
     transition: opacity 0.25s ease;
     transform: translate(-50%, 0);
+  }
+}
+
+/* Height of the phone bottom tab bar (Main.astro), so fixed chips sit above it. */
+@media (max-width: 720px) {
+  :root {
+    --tabbar-space: calc(3.6rem + env(safe-area-inset-bottom, 0px));
   }
 }

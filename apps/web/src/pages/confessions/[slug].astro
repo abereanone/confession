@@ -1104,7 +1104,7 @@ const verseLookup = await getVerseLookup([...references]);
      paragraph's Copy/Share controls are never covered by it. */
   .search-return {
     position: fixed;
-    bottom: 1rem;
+    bottom: calc(1rem + var(--tabbar-space, 0px));
     left: 1rem;
     z-index: 1200;
     display: flex;
