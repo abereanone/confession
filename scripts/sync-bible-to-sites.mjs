@@ -28,6 +28,8 @@ const astroSites = [
   "suffering.catechize.ing",
   "abolition.ing",
   "heritage-restored-site",
+  "dorean.ing",
+  "biblicalcounsel.ing",
 ];
 const staticSites = [
   { site: "thingsabove.us", dir: "assets" },
