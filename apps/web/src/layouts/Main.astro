@@ -160,6 +160,7 @@ try {
         <a href="/bible">Bible</a>
         <a href="/bible/bookmarks">Bookmarks</a>
       </nav>
+      <a href="/bible" class="header-bible" aria-current={activeTab === "bible" ? "page" : undefined}>Bible</a>
       <button
         type="button"
         class="menu-toggle"
@@ -510,6 +511,7 @@ try {
 
   .menu-toggle,
   .menu-links,
+  .header-bible,
   .tabbar {
     display: none;
   }
@@ -547,6 +549,21 @@ try {
       border: 1px solid transparent;
       background: transparent;
       color: var(--color-text);
+    }
+
+    /* Phones keep a Bible link in the slim header, beside the menu button. */
+    .header-bible {
+      display: inline-flex;
+      align-items: center;
+      margin-left: auto;
+      padding: 0.4rem 0.6rem;
+      color: var(--color-link);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .header-bible + .menu-toggle {
+      margin-left: 0.25rem;
     }
 
     .menu-toggle[aria-expanded="true"] {
