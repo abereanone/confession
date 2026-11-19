@@ -109,6 +109,7 @@ const chapterChangesByVerse = new Map<
 >();
 let chapterFootnoteCount = 0;
 let chapterHasDivineName = false;
+let chapterHasPluralYou = false;
 
 if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
   const chapterMaxVerse = chapterVerses[chapterVerses.length - 1]?.verse ?? chapterVerses.length;
@@ -137,6 +138,9 @@ if (selectedBookCode && selectedChapter > 0 && chapterVerses.length > 0) {
       chapterChangesByVerse.set(change.verse, existing);
       if (change.isDivineNameChange) {
         chapterHasDivineName = true;
+      }
+      if (change.type === "plural_you") {
+        chapterHasPluralYou = true;
       }
     });
 }
@@ -351,7 +355,7 @@ const PLAYER_VERSION = "2026-11-09";
         <p class="chapter-audio-debug" data-audio-debug hidden></p>
       </div>
     ) : null}
-    {chapterFootnoteCount > 0 || chapterHasDivineName ? (
+    {chapterFootnoteCount > 0 || chapterHasDivineName || chapterHasPluralYou ? (
       <div class="chapter-footnotes-controls" data-chapter-footnotes-controls>
         {chapterFootnoteCount > 0 ? (
           <p class="meta">
@@ -359,9 +363,11 @@ const PLAYER_VERSION = "2026-11-09";
             {chapterFootnoteCount} verse{chapterFootnoteCount === 1 ? "" : "s"} with confession references in this chapter
           </p>
         ) : null}
-        {chapterHasDivineName ? (
+        {chapterHasDivineName || chapterHasPluralYou ? (
           <p class="meta">
-            “LORD” is shown as Yahweh. <a href="/bible/changes">See all changes to the BSB</a>
+            {chapterHasDivineName ? "“LORD” is shown as Yahweh. " : ""}
+            {chapterHasPluralYou ? "you+ marks a plural “you.” " : ""}
+            <a href="/bible/changes">See all changes to the BSB</a>
           </p>
         ) : null}
       </div>
@@ -371,10 +377,10 @@ const PLAYER_VERSION = "2026-11-09";
       <ol class="verse-list">
         {chapterVerses.map((verse) => {
           const footnote = chapterFootnotesByVerse.get(verse.verse);
-          // The divine-name change is on thousands of verses, so it is explained once
-          // above the chapter instead of with a ? on each verse.
+          // The divine-name and plural-you changes are on thousands of verses, so they
+          // are explained once above the chapter instead of with a ? on each verse.
           const changes = (chapterChangesByVerse.get(verse.verse) ?? []).filter(
-            (change) => !change.isDivineNameChange
+            (change) => !change.isDivineNameChange && change.type !== "plural_you"
           );
           return (
             <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
