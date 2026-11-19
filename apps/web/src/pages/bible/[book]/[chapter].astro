@@ -324,11 +324,11 @@ const PLAYER_VERSION = "2026-11-09";
         <span class="chapter-audio-pills">
           <button type="button" class="chapter-audio-mode" data-audio-continue-pill aria-pressed="false">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h12" /><path d="M13 7l5 5-5 5" /></svg>
-            Continuous play
+            <span data-audio-continue-label>Stopping at End</span>
           </button>
           <button type="button" class="chapter-audio-mode" data-audio-repeat-pill>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l3 3-3 3" /><path d="M4 11V9a4 4 0 0 1 4-4h12" /><path d="M7 22l-3-3 3-3" /><path d="M20 13v2a4 4 0 0 1-4 4H4" /></svg>
-            <span data-audio-repeat-label>Stop at end</span>
+            <span data-audio-repeat-label>Repeat Off</span>
           </button>
         </span>
         <button type="button" class="chapter-audio-icon chapter-audio-close" data-audio-close aria-label="Stop and close player">
@@ -589,7 +589,7 @@ const PLAYER_VERSION = "2026-11-09";
       });
 
       // Two pills stand in for the three checkboxes on phones: Continuous play
-      // (on/off) and a repeat pill cycling Stop at end -> Repeat chapter -> Repeat
+      // (on/off) and a repeat pill cycling Repeat Off -> Repeat Chapter -> Repeat
       // book. They tick the real boxes and fire their change events, so the
       // continuous-play script and the saved preferences work as on desktop.
       const continuePill = document.querySelector("[data-audio-continue-pill]");
@@ -598,16 +598,19 @@ const PLAYER_VERSION = "2026-11-09";
       const boxContinue = document.querySelector("[data-audio-continue]") as HTMLInputElement | null;
       const boxBook = document.querySelector("[data-audio-repeat]") as HTMLInputElement | null;
       const boxChapter = document.querySelector("[data-audio-repeat-chapter]") as HTMLInputElement | null;
+      // Labels describe the current state; a tap moves to the next one.
+      const continueLabel = document.querySelector("[data-audio-continue-label]");
       const repeats = [
-        { label: "Stop at end", book: false, chapter: false },
-        { label: "Repeat chapter", book: false, chapter: true },
-        { label: "Repeat book", book: true, chapter: false },
+        { label: "Repeat Off", book: false, chapter: false },
+        { label: "Repeat Chapter: On", book: false, chapter: true },
+        { label: "Repeat Book: On", book: true, chapter: false },
       ];
       const currentRepeat = () => (boxChapter?.checked ? 1 : boxBook?.checked ? 2 : 0);
       const showMode = () => {
         const on = Boolean(boxContinue?.checked);
         continuePill?.setAttribute("aria-pressed", on ? "true" : "false");
         continuePill?.classList.toggle("is-on", on);
+        if (continueLabel) continueLabel.textContent = on ? "Continuous Play" : "Stopping at End";
         const repeat = repeats[currentRepeat()];
         if (repeatLabel) repeatLabel.textContent = repeat.label;
         repeatPill?.setAttribute("aria-label", `${repeat.label}. Tap to change.`);
@@ -3347,6 +3350,7 @@ const PLAYER_VERSION = "2026-11-09";
       order: 2;
       flex: 1 1 100%;
       display: flex;
+      flex-wrap: wrap;
       gap: 0.4rem;
     }
 
