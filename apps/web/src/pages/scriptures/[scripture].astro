@@ -1,5 +1,6 @@
 ---
 import Main from "../../layouts/Main.astro";
+import VerseText from "../../components/VerseText.astro";
 import { findScripture, listScriptures } from "../../lib/scriptures";
 import {
   getBibleChapter,
@@ -142,13 +143,13 @@ const versePreview = await getVersePreview();
             <p>
               {part.reference ? <strong>{part.reference}</strong> : null}
               {part.reference ? " " : ""}
-              {part.text} ({normalizeVersionLabel(part.version)})
+              <VerseText text={part.text} /> ({normalizeVersionLabel(part.version)})
             </p>
           ))}
         </div>
       ) : (
         <p>
-          {versePreview.text}
+          <VerseText text={versePreview.text} />
           {" "}({normalizeVersionLabel(versePreview.version)})
         </p>
       )

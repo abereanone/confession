@@ -1,6 +1,7 @@
 import { autoLinkBibleRefs } from "../lib/bible/autoLinkBibleRefs";
 import { normalizeReference } from "../lib/bible/normalizeRef";
 import { isSingleChapterBook } from "../lib/scriptureRanges";
+import { setVerseText } from "./pluralYou.js";
 
 function normalizeLookupKey(reference) {
   return normalizeReference(reference || "")
@@ -122,7 +123,7 @@ function ensureTooltip(element) {
     chapterLinkElement.textContent = `Open ${chapterLink.label} in Bible Reader`;
     tooltip.append(chapterLinkElement);
   } else {
-    tooltip.textContent = getTooltipText(reference, verse);
+    setVerseText(tooltip, getTooltipText(reference, verse));
   }
   document.body.appendChild(tooltip);
 

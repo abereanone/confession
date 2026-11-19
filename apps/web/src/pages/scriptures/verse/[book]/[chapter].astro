@@ -1,5 +1,6 @@
 ---
 import Main from "../../../../layouts/Main.astro";
+import VerseText from "../../../../components/VerseText.astro";
 import { getBibleChapter, listBibleBooks } from "../../../../lib/bible/bibleData";
 import { buildChapterVerseScriptureMap } from "../../../../lib/scriptureRanges";
 import { listScriptures, type ScriptureLocation } from "../../../../lib/scriptures";
@@ -151,7 +152,7 @@ const chapterHref = `/bible/${selectedBookCode}/${selectedChapter}`;
       {verseSections.map((section) => (
         <li class="verse-section card-panel" id={`verse-${section.verse}`}>
           <h2>{selectedBookName} {selectedChapter}:{section.verse}</h2>
-          {section.text ? <p class="verse-text">{section.text}</p> : null}
+          {section.text ? <p class="verse-text"><VerseText text={section.text} /></p> : null}
           <p class="meta">
             {section.locations.length} confession link{section.locations.length === 1 ? "" : "s"} from{" "}
             {section.referenceCount} scripture reference{section.referenceCount === 1 ? "" : "s"}

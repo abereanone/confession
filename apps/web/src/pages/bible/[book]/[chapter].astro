@@ -1,5 +1,6 @@
 ---
 import Main from "../../../layouts/Main.astro";
+import VerseText from "../../../components/VerseText.astro";
 import {
   getBibleProviderName,
   getBibleChapter,
@@ -366,7 +367,7 @@ const PLAYER_VERSION = "2026-11-09";
         {chapterHasDivineName || chapterHasPluralYou ? (
           <p class="meta">
             {chapterHasDivineName ? "“LORD” is shown as Yahweh. " : ""}
-            {chapterHasPluralYou ? "you+ marks a plural “you.” " : ""}
+            {chapterHasPluralYou ? <><VerseText text="you+" /> marks a plural “you.” </> : ""}
             <a href="/bible/changes">See all changes to the BSB</a>
           </p>
         ) : null}
@@ -396,7 +397,7 @@ const PLAYER_VERSION = "2026-11-09";
               >
                 {verse.verse}
               </a>
-              <span class="verse-text" data-verse-text>{verse.text}</span>
+              <span class="verse-text" data-verse-text><VerseText text={verse.text} /></span>
               {changes.length > 0 ? (
                 <span class="verse-change" data-verse-change>
                   <button
