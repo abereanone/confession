@@ -321,14 +321,9 @@ const PLAYER_VERSION = "2026-11-09";
           Open MP3
         </a>
         <span class="chapter-audio-credit">Read by {CHAPTER_AUDIO_READER} · BSB</span>
-        <button
-          type="button"
-          class="chapter-audio-icon chapter-audio-settings"
-          data-audio-settings
-          aria-expanded="false"
-          aria-label="Playback options"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+        <button type="button" class="chapter-audio-mode" data-audio-mode aria-label="When the chapter ends">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l3 3-3 3" /><path d="M4 11V9a4 4 0 0 1 4-4h12" /><path d="M7 22l-3-3 3-3" /><path d="M20 13v2a4 4 0 0 1-4 4H4" /></svg>
+          <span data-audio-mode-label>Stop at end</span>
         </button>
         <button type="button" class="chapter-audio-icon chapter-audio-close" data-audio-close aria-label="Stop and close player">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -573,7 +568,6 @@ const PLAYER_VERSION = "2026-11-09";
 
       type Player = HTMLElement & { play: (from?: number) => Promise<boolean>; pause: () => void };
       const player = document.querySelector("sermon-player") as Player | null;
-      const audio = document.querySelector(".chapter-audio");
 
       document.querySelector("[data-audio-listen]")?.addEventListener("click", () => {
         if (!player) return;
@@ -586,15 +580,53 @@ const PLAYER_VERSION = "2026-11-09";
         if (!player) return;
         player.pause();
         player.removeAttribute("started");
-        audio?.classList.remove("show-settings");
       });
 
-      const settings = document.querySelector("[data-audio-settings]");
-      settings?.addEventListener("click", () => {
-        const open = !audio?.classList.contains("show-settings");
-        audio?.classList.toggle("show-settings", open);
-        settings.setAttribute("aria-expanded", open ? "true" : "false");
+      // One button stands in for the three checkboxes on phones. It ticks the real
+      // boxes and fires their change events, so the continuous-play script and the
+      // saved preferences work exactly as they do on desktop.
+      const modeButton = document.querySelector("[data-audio-mode]");
+      const modeLabel = document.querySelector("[data-audio-mode-label]");
+      const boxContinue = document.querySelector("[data-audio-continue]") as HTMLInputElement | null;
+      const boxBook = document.querySelector("[data-audio-repeat]") as HTMLInputElement | null;
+      const boxChapter = document.querySelector("[data-audio-repeat-chapter]") as HTMLInputElement | null;
+      const modes = [
+        { label: "Stop at end", cont: false, book: false, chapter: false },
+        { label: "Next chapter", cont: true, book: false, chapter: false },
+        { label: "Repeat chapter", cont: true, book: false, chapter: true },
+        { label: "Repeat book", cont: true, book: true, chapter: false },
+      ];
+      const currentMode = () => {
+        if (boxChapter?.checked) return 2;
+        if (boxBook?.checked) return 3;
+        return boxContinue?.checked ? 1 : 0;
+      };
+      const showMode = () => {
+        const mode = modes[currentMode()];
+        if (modeLabel) modeLabel.textContent = mode.label;
+        modeButton?.setAttribute("aria-label", `When the chapter ends: ${mode.label}. Tap to change.`);
+        modeButton?.classList.toggle("is-on", currentMode() > 0);
+      };
+      const setBox = (box: HTMLInputElement | null, value: boolean) => {
+        if (!box || box.checked === value) return;
+        box.checked = value;
+        box.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      modeButton?.addEventListener("click", () => {
+        const next = modes[(currentMode() + 1) % modes.length];
+        // Clear the repeats first: each one ticks Continuous play when it is set.
+        setBox(boxBook, next.book);
+        setBox(boxChapter, next.chapter);
+        setBox(boxContinue, next.cont);
+        showMode();
       });
+      [boxContinue, boxBook, boxChapter].forEach((box) => box?.addEventListener("change", showMode));
+      // The continuous-play script restores the saved boxes after this one runs.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", showMode, { once: true });
+      } else {
+        showMode();
+      }
     })();
   </script>
   <script>
@@ -3069,7 +3101,8 @@ const PLAYER_VERSION = "2026-11-09";
   .chapter-listen,
   .picker-sheet-head,
   .picker-backdrop,
-  .chapter-audio-icon {
+  .chapter-audio-icon,
+  .chapter-audio-mode {
     display: none;
   }
 
@@ -3264,29 +3297,62 @@ const PLAYER_VERSION = "2026-11-09";
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
     }
 
+    /* Top row: title, repeat mode, close. Second row: the player, full width. */
     .chapter-audio .chapter-audio-label {
-      flex: 1 1 100%;
+      flex: 1 1 0;
+      min-width: 0;
       font-size: 0.85rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .chapter-audio .chapter-audio-player {
-      flex: 1 1 0;
+      order: 1;
+      flex: 1 1 100%;
       min-width: 0;
+    }
+
+    .chapter-audio .chapter-audio-link,
+    .chapter-audio .chapter-audio-credit {
+      display: none;
     }
 
     .chapter-audio-icon {
       flex: none;
     }
 
+    /* The repeat button below replaces these on phones. */
     .chapter-audio .chapter-audio-continue {
       display: none;
     }
 
-    .chapter-audio.show-settings .chapter-audio-continue {
+    .chapter-audio-mode {
       display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-bg-muted);
+      color: var(--color-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
-    .chapter-audio-settings[aria-expanded="true"] {
+    .chapter-audio-mode svg {
+      width: 1rem;
+      height: 1rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chapter-audio-mode.is-on {
       border-color: var(--color-link);
       color: var(--color-link);
     }
