@@ -1538,6 +1538,8 @@ const PLAYER_VERSION = "2026-11-09";
         return activeBookCode;
       };
 
+      // preferredChapter 0 = no chapter chosen yet: a "Ch." placeholder is selected so
+      // that picking chapter 1 still fires a change.
       const populateChapterOptions = (bookCode, preferredChapter) => {
         if (!(chapterSelect instanceof HTMLSelectElement)) {
           return 1;
@@ -1545,9 +1547,18 @@ const PLAYER_VERSION = "2026-11-09";
 
         const selectedBook = bookCatalog.find((book) => book.code === bookCode);
         const maxChapter = selectedBook?.chapterCount || 1;
-        const safeChapter = Math.min(Math.max(preferredChapter, 1), maxChapter);
+        const safeChapter =
+          preferredChapter > 0 ? Math.min(preferredChapter, maxChapter) : 0;
 
         chapterSelect.innerHTML = "";
+        if (!safeChapter) {
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Ch.";
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          chapterSelect.append(placeholder);
+        }
         for (let chapterNumber = 1; chapterNumber <= maxChapter; chapterNumber += 1) {
           const option = document.createElement("option");
           option.value = String(chapterNumber);
@@ -1557,6 +1568,23 @@ const PLAYER_VERSION = "2026-11-09";
         }
 
         return safeChapter;
+      };
+
+      // Same breakpoint as the phone picker sheet.
+      const phoneLayout = window.matchMedia("(max-width: 720px)");
+
+      // After a book is picked, open the chapter list straight away where the
+      // browser allows it; otherwise just move focus there.
+      const promptForChapter = () => {
+        if (!(chapterSelect instanceof HTMLSelectElement)) {
+          return;
+        }
+        chapterSelect.focus();
+        try {
+          chapterSelect.showPicker?.();
+        } catch {
+          // showPicker needs a user gesture / isn't supported everywhere.
+        }
       };
 
       let activeScope = getActiveScope();
@@ -1581,18 +1609,29 @@ const PLAYER_VERSION = "2026-11-09";
           if (!nextBookCode) {
             return;
           }
-          populateChapterOptions(nextBookCode, 1);
-          window.location.assign(buildChapterUrl(nextBookCode, 1, activeScope));
+          // Desktop: a book goes straight to its chapter 1.
+          if (!phoneLayout.matches) {
+            populateChapterOptions(nextBookCode, 1);
+            window.location.assign(buildChapterUrl(nextBookCode, 1, activeScope));
+            return;
+          }
+          // Phone: navigating would close the picker sheet, so wait for a chapter.
+          // Same book again keeps its chapter.
+          if (nextBookCode === currentBookCode) {
+            populateChapterOptions(nextBookCode, currentChapterNumber);
+            return;
+          }
+          populateChapterOptions(nextBookCode, 0);
+          promptForChapter();
         });
 
         chapterSelect.addEventListener("change", () => {
           const nextBookCode = String(bookSelect.value || "");
-          if (!nextBookCode) {
+          const nextChapter = Number.parseInt(String(chapterSelect.value || ""), 10);
+          if (!nextBookCode || !Number.isFinite(nextChapter) || nextChapter < 1) {
             return;
           }
-          const nextChapter = Number.parseInt(String(chapterSelect.value || "1"), 10);
-          const safeChapter = Number.isFinite(nextChapter) && nextChapter > 0 ? nextChapter : 1;
-          window.location.assign(buildChapterUrl(nextBookCode, safeChapter, activeScope));
+          window.location.assign(buildChapterUrl(nextBookCode, nextChapter, activeScope));
         });
       }
 
@@ -1619,8 +1658,11 @@ const PLAYER_VERSION = "2026-11-09";
             if (!scopedBookCode) {
               return;
             }
-            populateChapterOptions(scopedBookCode, 1);
-            window.location.assign(buildChapterUrl(scopedBookCode, 1, activeScope));
+            // Don't navigate: wait for a chapter (or a book, on desktop).
+            populateChapterOptions(
+              scopedBookCode,
+              scopedBookCode === currentBookCode ? currentChapterNumber : 0
+            );
           }
         });
       }
