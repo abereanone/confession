@@ -2482,10 +2482,10 @@ const PLAYER_VERSION = "2026-11-09";
     width: 2.15rem;
     height: 2.15rem;
     padding: 0;
-    border: 1px solid var(--surface-border);
+    border: 1px solid color-mix(in srgb, var(--color-link) 45%, transparent);
     border-radius: 999px;
-    background: var(--surface-bg-muted);
-    color: var(--color-muted);
+    background: color-mix(in srgb, var(--color-link) 18%, transparent);
+    color: var(--color-link);
     line-height: 1;
     cursor: pointer;
   }
@@ -2493,15 +2493,15 @@ const PLAYER_VERSION = "2026-11-09";
   .chapter-bookmark:hover,
   .chapter-bookmark:focus-visible {
     border-color: var(--color-link);
-    background: var(--surface-bg);
-    color: var(--color-link);
+    background: color-mix(in srgb, var(--color-link) 28%, transparent);
     outline: none;
   }
 
+  /* Saved: solid, so it clearly differs from the tinted resting state. */
   .chapter-bookmark[aria-pressed="true"] {
     border-color: var(--color-link);
-    background: color-mix(in srgb, var(--color-link) 14%, var(--surface-bg));
-    color: var(--color-link);
+    background: var(--color-link);
+    color: var(--color-bg);
   }
 
   .chapter-bookmark-icon {
@@ -2735,7 +2735,7 @@ const PLAYER_VERSION = "2026-11-09";
   }
 
   .verse-item.is-selected {
-    background: color-mix(in srgb, var(--color-link) 16%, var(--surface-bg));
+    background: color-mix(in srgb, var(--color-link) 18%, transparent);
     border: 1px solid var(--color-link);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-link) 28%, transparent);
   }
@@ -3318,8 +3318,9 @@ const PLAYER_VERSION = "2026-11-09";
       display: inline-block;
       margin-left: 0.4rem;
       padding: 0 0.45rem;
-      border: 1px solid var(--surface-border);
+      border: 1px solid color-mix(in srgb, var(--color-link) 45%, transparent);
       border-radius: 999px;
+      background: color-mix(in srgb, var(--color-link) 18%, transparent);
       font-family: var(--font-body);
       font-size: 0.8rem;
       line-height: 1.5;
@@ -3339,8 +3340,8 @@ const PLAYER_VERSION = "2026-11-09";
       gap: 0.3rem;
       padding: 0.35rem 0.75rem 0.35rem 0.55rem;
       border-radius: 999px;
-      border: 1px solid var(--surface-border-strong);
-      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--color-link) 45%, transparent);
+      background: color-mix(in srgb, var(--color-link) 18%, transparent);
       color: var(--color-link);
       font-weight: 700;
       font-size: 0.9rem;
