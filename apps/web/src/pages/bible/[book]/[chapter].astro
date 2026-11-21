@@ -1979,6 +1979,16 @@ const PLAYER_VERSION = "2026-11-09";
       let lastWrittenVerse = 0;
       let positionFrame = 0;
 
+      // Resuming lands at the top of the saved chapter, where (on phones) verse 1
+      // is already on screen. Until the reader scrolls, keep the saved verse
+      // instead of overwriting it with whatever sits at the top.
+      const holdSavedVerse =
+        Boolean(positionAtArrival) &&
+        positionAtArrival.book === currentBookCode &&
+        positionAtArrival.chapter === currentChapterNumber &&
+        positionAtArrival.verse > 1;
+      let readerScrolled = false;
+
       // Just past the arrival settle (below), so a resumed chapter records the
       // verse it landed on rather than the top of the page. The re-render is for
       // a first-ever visit, where there was no position to describe on load.
@@ -2011,6 +2021,10 @@ const PLAYER_VERSION = "2026-11-09";
         if (!trackingArmed || !currentBookCode) {
           return;
         }
+        if (holdSavedVerse && !readerScrolled) {
+          markSessionReading();
+          return;
+        }
         const verseNumber = getTopmostVisibleVerse();
         if (verseNumber === lastWrittenVerse) {
           return;
@@ -2040,6 +2054,7 @@ const PLAYER_VERSION = "2026-11-09";
           // ignore that window so it cannot masquerade as the reader's own scroll.
           if (Date.now() - trackingStartedAt > 400) {
             trackingArmed = true;
+            readerScrolled = true;
           }
           if (positionFrame) {
             return;
