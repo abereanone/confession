@@ -115,7 +115,10 @@ Separate references with `; `, verses within a reference with `, `, ranges with 
   (`lbcf-1689` still has a few bare-range entries that don't resolve.)
 - **Strip verse-part letters**: `1Co 2:11b` → `1Co 2:11`.
 - **Watch versification.** Sources using Hebrew psalm numbering count the
-  superscription; e.g. `Ps. 42:6 & 12` is BSB `Psa 42:5, 11`.
+  superscription; e.g. `Ps. 42:6 & 12` is BSB `Psa 42:5, 11`. The Belgic's
+  proofs came from Dutch/French Bibles numbered this way; all its Psalm
+  proofs were reviewed and corrected in November 2026. The English-origin
+  confessions (WCF, Savoy, 1644, 1689) use English numbering.
 
 ### Always validate new proofs against the corpus
 
