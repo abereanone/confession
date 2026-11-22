@@ -457,6 +457,18 @@ const PLAYER_VERSION = "2026-11-09";
       )}
       {nextChapterHref ? <a href={nextChapterHref} data-reader-nav>Next</a> : <span class="chapter-nav-disabled">Next</span>}
     </div>
+
+    {/* Phones: swipe left/right or tap these to change chapter. */}
+    {previousChapterHref ? (
+      <a href={previousChapterHref} class="chapter-arrow chapter-arrow-prev" data-reader-nav data-swipe-prev aria-label="Previous chapter">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      </a>
+    ) : null}
+    {nextChapterHref ? (
+      <a href={nextChapterHref} class="chapter-arrow chapter-arrow-next" data-reader-nav data-swipe-next aria-label="Next chapter">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+      </a>
+    ) : null}
   </section>
 
   <div
@@ -1674,6 +1686,61 @@ const PLAYER_VERSION = "2026-11-09";
         link.addEventListener("click", requestReaderScroll);
       }
 
+      // Phones: a clearly sideways swipe changes chapter (via the edge arrows,
+      // so it lands on the chapter heading like Previous/Next). Left alone:
+      // swipes from the screen edge (Android back), text selections, the open
+      // picker, form controls and the audio player.
+      {
+        const phoneQuery = window.matchMedia("(max-width: 720px)");
+        const prevArrow = document.querySelector("[data-swipe-prev]");
+        const nextArrow = document.querySelector("[data-swipe-next]");
+        let start = null;
+        document.addEventListener(
+          "touchstart",
+          (event) => {
+            start = null;
+            if (!phoneQuery.matches || event.touches.length !== 1) return;
+            if (document.documentElement.classList.contains("picker-open")) return;
+            const target = event.target;
+            if (target instanceof Element && target.closest("input, select, textarea, button, sermon-player, .chapter-audio, [data-verse-actionbar], [data-picker]")) return;
+            const t = event.touches[0];
+            if (t.clientX < 25 || t.clientX > window.innerWidth - 25) return;
+            start = { x: t.clientX, y: t.clientY, time: Date.now() };
+          },
+          { passive: true }
+        );
+        document.addEventListener(
+          "touchend",
+          (event) => {
+            if (!start) return;
+            const t = event.changedTouches[0];
+            const dx = t.clientX - start.x;
+            const dy = t.clientY - start.y;
+            const quick = Date.now() - start.time < 800;
+            start = null;
+            if (!quick || Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
+            const selection = window.getSelection();
+            if (selection && !selection.isCollapsed && selection.toString().trim()) return;
+            const arrow = dx < 0 ? nextArrow : prevArrow;
+            if (arrow instanceof HTMLAnchorElement) arrow.click();
+          },
+          { passive: true }
+        );
+        document.addEventListener("touchcancel", () => { start = null; }, { passive: true });
+
+        // Fade the arrows while scrolling so they don't sit over the text.
+        let scrollTimer = 0;
+        window.addEventListener(
+          "scroll",
+          () => {
+            document.documentElement.classList.add("reader-scrolling");
+            clearTimeout(scrollTimer);
+            scrollTimer = window.setTimeout(() => document.documentElement.classList.remove("reader-scrolling"), 500);
+          },
+          { passive: true }
+        );
+      }
+
       const buildResultHref = (verse, query, scope) => {
         const params = new URLSearchParams();
         if (query) {
@@ -2691,6 +2758,11 @@ const PLAYER_VERSION = "2026-11-09";
     margin-top: 0.8rem;
   }
 
+  /* Phone-only edge arrows; see the 720px block. */
+  .chapter-arrow {
+    display: none;
+  }
+
   .verse-list {
     margin: 0.9rem 0 0;
     padding-left: 0;
@@ -3363,9 +3435,51 @@ const PLAYER_VERSION = "2026-11-09";
       fill: currentColor;
     }
 
-    /* Previous / Next stay at the end of the chapter only. */
-    .chapter-header .chapter-nav {
+    /* Previous / Next are replaced by swiping and the edge arrows. */
+    .chapter-nav {
       display: none;
+    }
+
+    .chapter-arrow {
+      display: grid;
+      place-items: center;
+      position: fixed;
+      top: 50%;
+      z-index: 900;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-top: -1.25rem;
+      border-radius: 999px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-bg-muted);
+      color: var(--color-link);
+      opacity: 0.55;
+      transition: opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .chapter-arrow-prev {
+      left: 0.35rem;
+    }
+
+    .chapter-arrow-next {
+      right: 0.35rem;
+    }
+
+    .chapter-arrow svg {
+      width: 1.3rem;
+      height: 1.3rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    :global(html.reader-scrolling) .chapter-arrow,
+    :global(html.picker-open) .chapter-arrow {
+      opacity: 0;
+      pointer-events: none;
     }
 
     /* Audio: hidden until Listen is pressed (or a chapter carries on playing),
