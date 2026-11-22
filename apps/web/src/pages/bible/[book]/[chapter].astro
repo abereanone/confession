@@ -2366,6 +2366,18 @@ const PLAYER_VERSION = "2026-11-09";
     }
   }
 
+  /* Phones: the picker sheet sits at the bottom of the screen, so a custom
+     popup drops off the bottom and can't scroll. Use the native list instead
+     (a full-screen, scrollable dialog on Android). */
+  @media (max-width: 720px) {
+    @supports (appearance: base-select) {
+      .control-group select,
+      .control-group select::picker(select) {
+        appearance: auto;
+      }
+    }
+  }
+
   .control-group-query {
     flex: 1 1 26rem;
   }
