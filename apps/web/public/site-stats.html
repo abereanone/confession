@@ -83,6 +83,23 @@
   .stat .num { font-family: var(--serif); font-size: 2.4rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .stat .label { color: var(--text-soft); font-size: 0.92rem; }
 
+  .booktable { width: 100%; border-collapse: collapse; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+  .booktable th, .booktable td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  /* The header row stays in view while scrolling down a long table (and repeats on each printed page). */
+  .booktable thead th { position: sticky; top: 0; z-index: 1; background: var(--bg); font-weight: 600; color: var(--text-soft); font-size: 0.82rem; vertical-align: bottom; white-space: normal; box-shadow: inset 0 -1px 0 var(--border); }
+  .booktable thead { display: table-header-group; }
+  .booktable th[scope="row"], .booktable thead th:first-child { text-align: left; font-weight: 500; white-space: normal; min-width: 11rem; }
+  .booktable tr { break-inside: avoid; }
+  /* Phones: no header row to lose track of. Each book is a block, and every number carries its own label. */
+  @media (max-width: 640px) {
+    .booktable thead { display: none; }
+    .booktable, .booktable tbody { display: block; }
+    .booktable tr { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.2rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .booktable th[scope="row"] { grid-column: 1 / -1; min-width: 0; padding: 0 0 0.2rem; border: 0; font-weight: 600; }
+    .booktable td { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0; border: 0; text-align: right; }
+    .booktable td::before { content: attr(data-label); color: var(--text-soft); text-align: left; white-space: normal; }
+    .booktable td.none { display: none; }
+  }
   .bars { display: flex; flex-direction: column; gap: 0.7rem; margin: 0; padding: 0; list-style: none; }
   .bars li { display: grid; grid-template-columns: minmax(0, 21rem) minmax(0, 1fr) 3.6rem; gap: 0.75rem; align-items: center; font-size: 0.95rem; }
   .bars .name { min-width: 0; overflow-wrap: anywhere; }
@@ -127,28 +144,29 @@
     <div class="eyebrow">Reformed Confessions (confess.catechize.ing) · confess.catechize.ing</div>
     <h1>How people are using Reformed Confessions (confess.catechize.ing)</h1>
     <dl class="period">
-      <dt>Period covered</dt><dd>October 17, 2026 – November 15, 2026 (the last 30 days)</dd>
-      <dt>Compared with</dt><dd>September 17, 2026 – October 16, 2026</dd>
-      <dt>Numbers pulled</dt><dd>November 16, 2026</dd>
+      <dt>Period covered</dt><dd>October 24, 2026 – November 22, 2026 (the last 30 days)</dd>
+      <dt>Compared with</dt><dd>September 24, 2026 – October 23, 2026</dd>
+      <dt>Numbers pulled</dt><dd>November 23, 2026</dd>
     </dl>
   </header>
 
   <div class="summary">
     <h2>The short version</h2>
     <ul>
-      <li>About <strong>190 visits</strong> in the last 30 days.</li>
-      <li>The most-viewed pages are <strong>Home page</strong>, <strong>Bible – Psa</strong> and <strong>Bible – Bookmarks</strong>.</li>
-      <li>59% of visitors are on a phone or tablet.</li>
-      <li>Pages load fast for 96% of visitors.</li>
+      <li>About <strong>300 visits</strong> in the last 30 days.</li>
+      <li>The most-viewed pages are <strong>Bible – Psa</strong>, <strong>Home page</strong> and <strong>Bible – Col</strong>.</li>
+      <li>54% of visitors are on a phone or tablet.</li>
+      <li>Pages load fast for 95% of visitors.</li>
+      <li>People followed links from this site to other sites about <strong>4 times</strong> in the 14 days counted so far.</li>
     </ul>
   </div>
 
   <section>
     <h2>How many people visit</h2>
     <div class="stats">
-      <div class="stat"><div class="num">~190</div><div class="label">visits, the last 30 days</div></div>
-      <div class="stat"><div class="num">~44</div><div class="label">visits in an average week</div></div>
-      <div class="stat"><div class="num">~93</div><div class="label">visits in the period before</div></div>
+      <div class="stat"><div class="num">~300</div><div class="label">visits, the last 30 days</div></div>
+      <div class="stat"><div class="num">~69</div><div class="label">visits in an average week</div></div>
+      <div class="stat"><div class="num">~98</div><div class="label">visits in the period before</div></div>
     </div>
     <p class="sowhat">A visit is one arrival at the site. Someone who comes back on another day counts again, so visits are not the same as different people.</p>
   </section>
@@ -156,14 +174,14 @@
   <section>
     <h2>Year to date (since July 15, 2026)</h2>
     <div class="stats">
-      <div class="stat"><div class="num">~530</div><div class="label">visits, year to date</div></div>
+      <div class="stat"><div class="num">~670</div><div class="label">visits, year to date</div></div>
     </div>
     <ul class="bars" aria-label="Visits by month">
-      <li><span class="name">July (from the 15th)</span><span class="track"><span class="fill" style="width:33%"></span></span><span class="val">50</span></li>
-      <li><span class="name">August</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">150</span></li>
-      <li><span class="name">September</span><span class="track"><span class="fill" style="width:60%"></span></span><span class="val">90</span></li>
-      <li><span class="name">October</span><span class="track"><span class="fill" style="width:74%"></span></span><span class="val">111</span></li>
-      <li><span class="name">November (so far)</span><span class="track"><span class="fill" style="width:87%"></span></span><span class="val">130</span></li>
+      <li><span class="name">July (from the 15th)</span><span class="track"><span class="fill" style="width:19%"></span></span><span class="val">50</span></li>
+      <li><span class="name">August</span><span class="track"><span class="fill" style="width:57%"></span></span><span class="val">150</span></li>
+      <li><span class="name">September</span><span class="track"><span class="fill" style="width:34%"></span></span><span class="val">90</span></li>
+      <li><span class="name">October</span><span class="track"><span class="fill" style="width:42%"></span></span><span class="val">111</span></li>
+      <li><span class="name">November (so far)</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">264</span></li>
     </ul>
     <p class="sowhat">Visitor counts for 2026 begin July 15, 2026. Cloudflare keeps only about 13 weeks of visitor counts, and saving them here started after that, so earlier months cannot be filled in.</p>
   </section>
@@ -171,12 +189,12 @@
   <section>
     <h2>What people look at</h2>
     <ul class="bars" aria-label="Most viewed pages">
-      <li><span class="name">Home page</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">122</span></li>
-      <li><span class="name">Bible – Psa</span><span class="track"><span class="fill" style="width:72%"></span></span><span class="val">88</span></li>
-      <li><span class="name">Bible – Bookmarks</span><span class="track"><span class="fill" style="width:34%"></span></span><span class="val">41</span></li>
-      <li><span class="name">Bible – Col</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="val">37</span></li>
-      <li><span class="name">Bible – Pro</span><span class="track"><span class="fill" style="width:27%"></span></span><span class="val">33</span></li>
-      <li><span class="name">Bible – Gen</span><span class="track"><span class="fill" style="width:20%"></span></span><span class="val">24</span></li>
+      <li><span class="name">Bible – Psa</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">169</span></li>
+      <li><span class="name">Home page</span><span class="track"><span class="fill" style="width:85%"></span></span><span class="val">143</span></li>
+      <li><span class="name">Bible – Col</span><span class="track"><span class="fill" style="width:24%"></span></span><span class="val">41</span></li>
+      <li><span class="name">Bible – Gen</span><span class="track"><span class="fill" style="width:23%"></span></span><span class="val">39</span></li>
+      <li><span class="name">Bible – Bookmarks</span><span class="track"><span class="fill" style="width:21%"></span></span><span class="val">36</span></li>
+      <li><span class="name">Bible – Pro</span><span class="track"><span class="fill" style="width:20%"></span></span><span class="val">33</span></li>
     </ul>
 
   </section>
@@ -184,24 +202,37 @@
   <section class="newpage">
     <h2>How people find us</h2>
     <ul class="bars" aria-label="How visitors arrived">
-      <li><span class="name">Typed the address, bookmark, or a link in a text or email</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">186</span></li>
-      <li><span class="name">laruebaptist.org</span><span class="track"><span class="fill" style="width:3%"></span></span><span class="val">2</span></li>
+      <li><span class="name">Typed the address, bookmark, or a link in a text or email</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">292</span></li>
+      <li><span class="name">laruebaptist.org</span><span class="track"><span class="fill" style="width:3%"></span></span><span class="val">5</span></li>
     </ul>
-    <p class="sowhat">41% of visits are on a computer and 59% on a phone or tablet.</p>
+    <p class="sowhat">46% of visits are on a computer and 54% on a phone or tablet.</p>
   </section>
 
   <section>
     <h2>How fast the pages load</h2>
     <div class="stats">
-      <div class="stat"><div class="num">96%</div><div class="label">of visits see the main content quickly</div></div>
+      <div class="stat"><div class="num">95%</div><div class="label">of visits see the main content quickly</div></div>
       <div class="stat"><div class="num">100%</div><div class="label">respond quickly to taps and clicks</div></div>
-      <div class="stat"><div class="num">99%</div><div class="label">stay steady without things jumping</div></div>
+      <div class="stat"><div class="num">100%</div><div class="label">stay steady without things jumping</div></div>
     </div>
     <p class="sowhat">Pages load fast for most visitors.</p>
   </section>
 
+  <section>
+    <h2>Links people followed</h2>
+    <div class="stats">
+      <div class="stat"><div class="num">4</div><div class="label">clicks on links to other sites</div></div>
+      <div class="stat"><div class="num">2</div><div class="label">different links followed</div></div>
+    </div>
+    <ul class="bars" aria-label="Links followed">
+      <li><span class="name">catechize-2brv01</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">3</span></li>
+      <li><span class="name">github-2d1hei</span><span class="track"><span class="fill" style="width:33%"></span></span><span class="val">1</span></li>
+    </ul>
+    <p class="sowhat">Each click on a link that leaves this site is counted on the way out. Named search engines and scripts are left out. Clicks have been counted for 14 of the 30 days.</p>
+  </section>
+
   <div class="foot">
-    <p>Updated November 16, 2026. Numbers come from Cloudflare, covering October 17, 2026 – November 15, 2026. All figures are rounded estimates. The tool does not use cookies or track individuals.</p>
+    <p>Updated November 23, 2026. Numbers come from Cloudflare, covering October 24, 2026 – November 22, 2026. All figures are rounded estimates. The tool does not use cookies or track individuals.</p>
   </div>
 </div>
 </body>
