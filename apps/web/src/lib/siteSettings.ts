@@ -1,4 +1,5 @@
-const googleAnalyticsMeasurementId = String(import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "G-TK98VB1MR2").trim();
+// Google Analytics removed 2026-11-24: stats come from Cloudflare (C:/code/site-stats).
+const googleAnalyticsMeasurementId = String(import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? "").trim();
 
 export const siteSettings = {
   siteName: "Confessions Hub",
