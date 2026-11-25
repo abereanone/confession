@@ -37,6 +37,8 @@ export type BibleVerse = {
   chapter: number;
   verse: number;
   text: string;
+  /** Psalm superscription, on verse 1 only. */
+  title?: string;
   version: string;
   searchText: string;
 };
@@ -431,6 +433,7 @@ async function loadBibleData(): Promise<LoadedBibleData> {
           chapter,
           verse,
           text,
+          ...(typeof rawVerse?.title === "string" && rawVerse.title.trim() ? { title: rawVerse.title.trim() } : {}),
           version,
           searchText: `${reference} ${text}`.toLowerCase(),
         };

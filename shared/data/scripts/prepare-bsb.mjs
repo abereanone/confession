@@ -23,9 +23,13 @@ function normalizeVerseEntry(rawEntry, chapter, verse) {
         ? rawEntry.text
         : "";
 
+  // Psalm superscriptions live in their own field on verse 1 (not a verse 0, so refs stay put).
+  const title = rawEntry && typeof rawEntry === "object" && typeof rawEntry.title === "string" ? rawEntry.title : "";
+
   return {
     chapter,
     verse,
+    ...(title ? { title: rewriteDivineNameConventions(title).trim() } : {}),
     text: rewriteDivineNameConventions(rawText).trim(),
   };
 }

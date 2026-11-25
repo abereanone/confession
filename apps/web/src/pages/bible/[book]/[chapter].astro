@@ -384,6 +384,8 @@ const PLAYER_VERSION = "2026-11-09";
             (change) => !change.isDivineNameChange && change.type !== "plural_you"
           );
           return (
+            <>
+            {verse.title ? <li class="psalm-title">{verse.title}</li> : null}
             <li class:list={["verse-item", targetVerse === verse.verse && "is-target"]} id={`verse-${verse.verse}`}>
               <a
                 href={`#verse-${verse.verse}`}
@@ -442,6 +444,7 @@ const PLAYER_VERSION = "2026-11-09";
                 </span>
               ) : null}
             </li>
+            </>
           );
         })}
       </ol>
@@ -2769,6 +2772,12 @@ const PLAYER_VERSION = "2026-11-09";
     list-style: none;
     display: grid;
     gap: 0.1rem;
+  }
+
+  .psalm-title {
+    padding: 0.1rem 0.45rem 0.35rem;
+    font-style: italic;
+    line-height: 1.3;
   }
 
   .verse-item {
