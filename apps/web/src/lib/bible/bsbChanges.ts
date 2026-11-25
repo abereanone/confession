@@ -91,7 +91,7 @@ const changeTypeDetails: Record<string, { label: string; description: string }> 
 const divineNameHighlightPatterns: Record<string, { before: RegExp; after: RegExp }> = {
   divine_name1: {
     before: /\b(the LORD GOD|GOD the LORD)\b/g,
-    after: /\bYah\u2014Yaweh himself\u2014/g,
+    after: /\bYah\u2014Yahweh himself\u2014/g,
   },
   divine_name2: {
     before: /\bTHE LORD\b/g,

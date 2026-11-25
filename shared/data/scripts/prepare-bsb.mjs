@@ -9,7 +9,7 @@ function rewriteDivineNameConventions(text) {
   return String(text ?? "")
     .replace(/\\f \+ \\fr 2:4 \\ft LORD or GOD, with capital letters.*?\\f\*/g, "")
     .replace(/\\f \+ \\fr .*? \\ft That is, the LORD\\f\*/g, "")
-    .replace(/\b(the LORD GOD|GOD the LORD)\b/g, "Yah\u2014Yaweh himself\u2014")
+    .replace(/\b(the LORD GOD|GOD the LORD)\b ?/g, "Yah\u2014Yahweh himself\u2014")
     .replace(/\bTHE LORD\b/g, "YAHWEH")
     .replace(/(\b[Tt]he )?\bLORD\b(?! OF LORDS)/g, "Yahweh")
     .replace(/(?<!UNKNOWN )\bGOD\b/g, "Yahweh");

@@ -142,7 +142,7 @@ function applyTransformations(text, context, tracker) {
 
   result = tracker.track(
     result,
-    result.replace(/\b(the LORD GOD|GOD the LORD)\b/g, "Yah\u2014Yaweh himself\u2014"),
+    result.replace(/\b(the LORD GOD|GOD the LORD)\b ?/g, "Yah\u2014Yahweh himself\u2014"),
     { type: "divine_name1", ...context }
   );
 
