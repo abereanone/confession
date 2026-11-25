@@ -47174,10 +47174,10 @@
     "chapter": 3,
     "verse": 9,
     "type": "override",
-    "version": "ESV",
-    "reason": "The BSB puts a comma after people, which is an interpretation that seems to indicate all people are made in the likeness of God, which is not what the original text says. The original text says that we curse people who are made in the likeness of God, which is a different meaning.",
+    "version": "BSB (modified)",
+    "reason": "The BSB puts a comma after “men,” which reads as if all people are made in the likeness of God; the original says we curse people who are made in the likeness of God. Comma removed. (This verse was the ESV until 2026-11-25; the ESV is under copyright.)",
     "before": "With the tongue we bless our Lord and Father, and with it we curse men, who have been made in God’s likeness.",
-    "after": "With it we bless our Lord and Father, and with it we curse people who are made in the likeness of God."
+    "after": "With the tongue we bless our Lord and Father, and with it we curse men who have been made in God’s likeness."
   },
   {
     "book": "1jn",
